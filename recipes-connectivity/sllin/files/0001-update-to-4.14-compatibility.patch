@@ -1,0 +1,43 @@
+From dd2e2fc520e01d5878fe6dd0aacb9a77422567ca Mon Sep 17 00:00:00 2001
+From: Mikhail Ulyanov <mikhail.ulyanov@cogentembedded.com>
+Date: Mon, 6 Aug 2018 17:45:30 +0300
+Subject: [PATCH] update to 4.14 compatibility
+
+Signed-off-by: Mikhail Ulyanov <mikhail.ulyanov@cogentembedded.com>
+---
+ sllin.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/sllin.c b/sllin.c
+index 2088794..6098ae3 100644
+--- a/sllin.c
++++ b/sllin.c
+@@ -58,6 +58,7 @@
+ #include <linux/if_arp.h>
+ #include <linux/if_ether.h>
+ #include <linux/sched.h>
++#include <linux/sched/types.h>
+ #include <linux/delay.h>
+ #include <linux/init.h>
+ #include <linux/can.h>
+@@ -616,7 +617,7 @@ static const struct net_device_ops sll_netdev_ops = {
+ static void sll_setup(struct net_device *dev)
+ {
+ 	dev->netdev_ops		= &sll_netdev_ops;
+-	dev->destructor		= sll_free_netdev;
++	dev->priv_destructor   	= sll_free_netdev;
+ 
+ 	dev->hard_header_len	= 0;
+ 	dev->addr_len		= 0;
+@@ -1822,7 +1823,7 @@ static void __exit sllin_exit(void)
+ 		if (sl->tty) {
+ 			netdev_dbg(sl->dev, "tty discipline still running\n");
+ 			/* Intentionally leak the control block. */
+-			dev->destructor = NULL;
++			dev->priv_destructor = NULL;
+ 		}
+ 
+ 		unregister_netdev(dev);
+-- 
+2.11.0
+
