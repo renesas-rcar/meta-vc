@@ -1,0 +1,44 @@
+From 070f0b58d5837902dca48aca9c952a8c4d07173a Mon Sep 17 00:00:00 2001
+From: "dennis.ostermann" <dennis.ostermann@renesas.com>
+Date: Wed, 1 Jul 2020 09:01:00 +0200
+Subject: [PATCH] H3VC3: Add I2C5 for CPLD access
+
+---
+ arch/arm/dts/h3vc3.dtsi | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/arch/arm/dts/h3vc3.dtsi b/arch/arm/dts/h3vc3.dtsi
+index 79adc70ce7..d1b8dafdc0 100644
+--- a/arch/arm/dts/h3vc3.dtsi
++++ b/arch/arm/dts/h3vc3.dtsi
+@@ -243,6 +243,15 @@
+ 	};
+ };
+ 
++/* CPLD access */
++&i2c5 {
++        pinctrl-0 = <&i2c5_pins>;
++        pinctrl-names = "default";
++
++        status = "okay";
++        clock-frequency = <100000>;
++};
++
+ &i2c_dvfs {
+ 	status = "okay";
+ 
+@@ -308,6 +317,11 @@
+ 		function = "i2c2";
+ 	};
+ 
++        i2c5_pins: i2c5 {
++                groups = "i2c5";
++                function = "i2c5";
++        };
++
+ 	irq0_pins: irq0 {
+ 		groups = "intc_ex_irq0";
+ 		function = "intc_ex";
+-- 
+2.17.1
+

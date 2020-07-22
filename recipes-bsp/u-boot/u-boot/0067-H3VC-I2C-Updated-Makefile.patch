@@ -1,0 +1,23 @@
+From 6e0f0e7cc5bb8d57c083027646325794c90cf87f Mon Sep 17 00:00:00 2001
+From: "dennis.ostermann" <dennis.ostermann@renesas.com>
+Date: Wed, 1 Jul 2020 11:19:45 +0200
+Subject: [PATCH] H3VC: I2C: Updated Makefile
+
+---
+ drivers/i2c/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/i2c/Makefile b/drivers/i2c/Makefile
+index da368cc02a..53c01ba484 100644
+--- a/drivers/i2c/Makefile
++++ b/drivers/i2c/Makefile
+@@ -39,5 +39,5 @@ obj-$(CONFIG_SYS_I2C_UNIPHIER) += i2c-uniphier.o
+ obj-$(CONFIG_SYS_I2C_UNIPHIER_F) += i2c-uniphier-f.o
+ obj-$(CONFIG_SYS_I2C_ZYNQ) += zynq_i2c.o
+ obj-$(CONFIG_TEGRA186_BPMP_I2C) += tegra186_bpmp_i2c.o
+-
++obj-$(CONFIG_DM_I2C_RCAR) += rcar_i2c_dm.o
+ obj-$(CONFIG_I2C_MUX) += muxes/
+-- 
+2.17.1
+
