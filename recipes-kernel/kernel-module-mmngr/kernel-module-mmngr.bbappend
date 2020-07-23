@@ -1,0 +1,2 @@
+MMNGR_CFG_h3vc = "MMNGR_SALVATORX"
+
