@@ -1,0 +1,25 @@
+From 603377a4d7b8756494f0b9e3a03500621afe802d Mon Sep 17 00:00:00 2001
+From: Vito Colagiacomo <vito.colagiacomo@renesas.com>
+Date: Mon, 15 Jun 2020 20:48:33 +0200
+Subject: [PATCH] mtd: spi-nor: renesas-rpc: Do not use DMA by default.
+
+---
+ drivers/mtd/spi-nor/renesas-rpc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mtd/spi-nor/renesas-rpc.c b/drivers/mtd/spi-nor/renesas-rpc.c
+index 3aea0aeb5412..4d0b52d76e19 100644
+--- a/drivers/mtd/spi-nor/renesas-rpc.c
++++ b/drivers/mtd/spi-nor/renesas-rpc.c
+@@ -20,7 +20,7 @@
+ 
+ #include "renesas-rpc.h"
+ 
+-static bool use_dma = true;
++static bool use_dma = false;
+ module_param(use_dma, bool, 0);
+ MODULE_PARM_DESC(use_dma, "DMA support. 0 = Disable, 1 = Enable");
+ 
+-- 
+2.17.1
+

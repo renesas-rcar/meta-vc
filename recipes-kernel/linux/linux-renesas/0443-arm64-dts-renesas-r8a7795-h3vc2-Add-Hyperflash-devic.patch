@@ -1,0 +1,57 @@
+From 72d1690f5676cbe2e270050b6f9d90148c0b2748 Mon Sep 17 00:00:00 2001
+From: Vito Colagiacomo <vito.colagiacomo@renesas.com>
+Date: Fri, 5 Jun 2020 16:06:40 +0200
+Subject: [PATCH] arm64: dts: renesas: r8a7795-h3vc2: Add Hyperflash device
+ node
+
+---
+ arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts | 36 +++++++++++++++++++
+ 1 file changed, 36 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts b/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts
+index e5c6ceacdd13..984427e62e5b 100644
+--- a/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts
++++ b/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts
+@@ -1032,3 +1032,39 @@
+ &vspi1 {
+ 	status = "okay";
+ };
++
++&rpc0 {
++	status = "okay";
++
++	flash@0 {
++		compatible = "cfi-flash";
++		reg = <0>;
++
++		partitions {
++			compatible = "fixed-partitions";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			bootparam@0 {
++				reg = <0x00000000 0x040000>;
++				read-only;
++			};
++			bl2@00040000 {
++				reg = <0x00040000 0x140000>;
++				read-only;
++			};
++			cert_header_sa6@00180000 {
++				reg = <0x00180000 0x040000>;
++				read-only;
++			};
++			bl31@001C0000 {
++				reg = <0x001C0000 0x480000>;
++				read-only;
++			};
++			uboot@00640000 {
++				reg = <0x00640000 0x0C0000>;
++				read-only;
++			};
++		};
++	};
++};
+-- 
+2.17.1
+

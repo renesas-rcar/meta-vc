@@ -1,0 +1,47 @@
+From 03504a6ffc4f06402ba0dcc29c2f3826cb505c1b Mon Sep 17 00:00:00 2001
+From: "dennis.ostermann" <dennis.ostermann@renesas.com>
+Date: Tue, 30 Jun 2020 15:39:00 +0200
+Subject: [PATCH] H3VC: RSwitch1 changed to RGMII
+
+---
+ drivers/net/ethernet/renesas/rswitch_eth/rswitch_eth_main.c | 4 ++--
+ drivers/net/ethernet/renesas/rswitch_eth/rswitch_eth_main.h | 1 +
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/renesas/rswitch_eth/rswitch_eth_main.c b/drivers/net/ethernet/renesas/rswitch_eth/rswitch_eth_main.c
+index 5e66d6341666..b86a617c6900 100755
+--- a/drivers/net/ethernet/renesas/rswitch_eth/rswitch_eth_main.c
++++ b/drivers/net/ethernet/renesas/rswitch_eth/rswitch_eth_main.c
+@@ -2762,7 +2762,7 @@ static int port_MII_Initialise(struct net_device * ndev)
+     
+ 
+ 
+-    MIR = RSWITCH_MIR_MII;
++    MIR = RSWITCH_MIR_RGMII;
+     portreg_write(ndev, MIR, RSWITCH_RMAC_MPIC);
+     
+ 
+@@ -6306,7 +6306,7 @@ static int drv_Probe_CreateNetdev(struct platform_device * pdev, uint32_t PortNu
+     char                       PortName[IFNAMSIZ];
+     int     err = 0;
+ 
+-    u32 MIR = RSWITCH_MIR_MII;
++    u32 MIR = RSWITCH_MIR_RGMII;
+     u32 EAMS = 0;
+     sprintf(PortName, "%s%u", RSWITCHETH_BASE_AVB_PORTNAME, PortNumber);
+     
+diff --git a/drivers/net/ethernet/renesas/rswitch_eth/rswitch_eth_main.h b/drivers/net/ethernet/renesas/rswitch_eth/rswitch_eth_main.h
+index 10e70417f162..c6816805953f 100755
+--- a/drivers/net/ethernet/renesas/rswitch_eth/rswitch_eth_main.h
++++ b/drivers/net/ethernet/renesas/rswitch_eth/rswitch_eth_main.h
+@@ -65,6 +65,7 @@
+ #define RSWITCH_MIR_GMII                 0x00011304
+ #define RSWITCH_MIR_MII                  0x01130004
+ #define RSWITCH_MIR_RMII                 0x01130005
++#define RSWITCH_MIR_RGMII                0x01130007
+ #define RENESAS_RSWITCH_PMAC_BIT         4
+ #define RENESAS_RSWITCH_MAX_FRAME_SIZE_OFFSET 0
+ #define RENESAS_RSWITCH_FRAME_DISCARD_ENABLE  16
+-- 
+2.17.1
+

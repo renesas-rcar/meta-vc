@@ -1,0 +1,355 @@
+From b59a119b50ab2956eef61e6d653b6c63d3b203da Mon Sep 17 00:00:00 2001
+From: Vito Colagiacomo <vito.colagiacomo@renesas.com>
+Date: Tue, 23 Jun 2020 12:37:40 +0200
+Subject: [PATCH] Add cetibox-poweroff driver
+
+It sends an i2c command to the CPLD to poweroff the board.
+
+Original driver developed by CETITEC:
+https://github.com/CETIBOX-Base/linux.git
+---
+ arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts |   7 +
+ drivers/i2c/busses/i2c-rcar.c                 |  79 ++++++++
+ drivers/power/reset/Kconfig                   |   6 +
+ drivers/power/reset/Makefile                  |   1 +
+ drivers/power/reset/cetibox-poweroff.c        | 191 ++++++++++++++++++
+ 5 files changed, 284 insertions(+)
+ create mode 100644 drivers/power/reset/cetibox-poweroff.c
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts b/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts
+index ca46e7b7745c..7da76447685a 100644
+--- a/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts
++++ b/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts
+@@ -253,6 +253,13 @@
+ 
+ 		status = "okay";
+ 	};
++
++	cetibox-power {
++		status = "okay";
++		compatible = "cetitec,cetibox-poweroff";
++		wakecpld = <&i2c5 0x3C>; /* i2c bus, i2c addr */
++		//wakecpld-config = <&i2c1 0x60>; /* i2c bus, i2c addr */
++	};
+ };
+ 
+ &audio_clk_a {
+diff --git a/drivers/i2c/busses/i2c-rcar.c b/drivers/i2c/busses/i2c-rcar.c
+index da205bd98d8c..9b085dc60831 100644
+--- a/drivers/i2c/busses/i2c-rcar.c
++++ b/drivers/i2c/busses/i2c-rcar.c
+@@ -912,6 +912,85 @@ static const struct i2c_algorithm rcar_i2c_algo = {
+ 	.unreg_slave	= rcar_unreg_slave,
+ };
+ 
++/* Transfer i2c messages without sleeping or using IRQs.
++   Used by the shutdown/reboot code in cetibox-poweroff.c */
++int rcar_i2c_xfer_atomic(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
++{
++	struct rcar_i2c_priv *priv = i2c_get_adapdata(adap);
++	int err, j;
++	uint32_t regval;
++
++	if (priv->suspended)
++		return -EBUSY;
++
++	if ((msgs[0].flags & I2C_M_RD) ||
++		(msgs[0].len == 0) ||
++		num > 1) {
++		// Read from slave and repeated start not supported for atomic
++		// stop after address not supported by this HW
++		return -ENOTSUPP;
++	}
++
++	if (priv->devtype == I2C_RCAR_GEN3 && priv->rstc)
++		rcar_i2c_do_reset(priv);
++
++	rcar_i2c_init(priv);
++
++	err = rcar_i2c_bus_barrier(priv);
++	if (err != 0) {
++		return err;
++	}
++
++	/* Start i2c write transfer */
++	rcar_i2c_write(priv, ICMAR, msgs[0].addr << 1);
++	rcar_i2c_write(priv, ICMIER, 0);
++	rcar_i2c_write(priv, ICMSR, 0);
++	rcar_i2c_write(priv, ICMCR, RCAR_BUS_PHASE_START);
++
++	/* Wait for outputting address */
++	while (((regval = rcar_i2c_read(priv, ICMSR)) & (MAT | MDE)) != (MAT | MDE)) {
++		if (regval & (MAL | MNR)) {
++			rcar_i2c_write(priv, ICMCR, MDBS);
++			rcar_i2c_write(priv, ICMSR, 0x7F);
++			return -EIO;
++		}
++	}
++	rcar_i2c_write(priv, ICMCR, MDBS | MIE);
++
++	/* Monitor transmission of data */
++	for (j = 0;j < msgs[0].len;++j) {
++		rcar_i2c_write(priv, ICRXTX, msgs[0].buf[j]);
++		rcar_i2c_write(priv, ICMSR, RCAR_IRQ_ACK_SEND);
++
++		while (((regval = rcar_i2c_read(priv, ICMSR)) & MDE) != MDE) {
++			if (regval & (MAL | MNR)) {
++				rcar_i2c_write(priv, ICMCR, MDBS);
++				rcar_i2c_write(priv, ICMSR, 0x7F);
++				return -EIO;
++			}
++		}
++
++		rcar_i2c_write(priv, ICMCR, MDBS | MIE);
++	}
++
++	rcar_i2c_write(priv, ICMCR, RCAR_BUS_PHASE_STOP);
++	rcar_i2c_write(priv, ICMSR, RCAR_IRQ_ACK_SEND);
++
++	/* Wait for end of transmission */
++	while (((regval = rcar_i2c_read(priv, ICMSR)) & MST) != MST) {
++		if (regval & (MAL | MNR)) {
++			rcar_i2c_write(priv, ICMCR, MDBS);
++			rcar_i2c_write(priv, ICMSR, 0x7F);
++			return -EIO;
++		}
++	}
++
++	rcar_i2c_write(priv, ICMSR, 0);
++
++	return 0;
++}
++EXPORT_SYMBOL(rcar_i2c_xfer_atomic);
++
+ static const struct of_device_id rcar_i2c_dt_ids[] = {
+ 	{ .compatible = "renesas,i2c-r8a7778", .data = (void *)I2C_RCAR_GEN1 },
+ 	{ .compatible = "renesas,i2c-r8a7779", .data = (void *)I2C_RCAR_GEN1 },
+diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+index ca0de1a78e85..7de99928b353 100644
+--- a/drivers/power/reset/Kconfig
++++ b/drivers/power/reset/Kconfig
+@@ -92,6 +92,12 @@ config POWER_RESET_GPIO_RESTART
+ 	  If your board needs a GPIO high/low to restart, say Y and
+ 	  create a binding in your devicetree.
+ 
++config POWER_RESET_CETIBOX_POWEROFF
++	bool "CETITEC X3 power-off driver"
++	depends on I2C
++	help
++	  Poweroff support for CETITEC X3 boards via wakecpld.
++
+ config POWER_RESET_HISI
+ 	bool "Hisilicon power-off driver"
+ 	depends on ARCH_HISI
+diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
+index aeb65edb17b7..58a84ade9d91 100644
+--- a/drivers/power/reset/Makefile
++++ b/drivers/power/reset/Makefile
+@@ -7,6 +7,7 @@ obj-$(CONFIG_POWER_RESET_AXXIA) += axxia-reset.o
+ obj-$(CONFIG_POWER_RESET_BRCMKONA) += brcm-kona-reset.o
+ obj-$(CONFIG_POWER_RESET_BRCMSTB) += brcmstb-reboot.o
+ obj-$(CONFIG_POWER_RESET_GEMINI_POWEROFF) += gemini-poweroff.o
++obj-$(CONFIG_POWER_RESET_CETIBOX_POWEROFF) += cetibox-poweroff.o
+ obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
+ obj-$(CONFIG_POWER_RESET_GPIO_RESTART) += gpio-restart.o
+ obj-$(CONFIG_POWER_RESET_HISI) += hisi-reboot.o
+diff --git a/drivers/power/reset/cetibox-poweroff.c b/drivers/power/reset/cetibox-poweroff.c
+new file mode 100644
+index 000000000000..8c7878cd7d11
+--- /dev/null
++++ b/drivers/power/reset/cetibox-poweroff.c
+@@ -0,0 +1,191 @@
++/* Power off driver for CETiBOX
++ * Copyright (c) 2018, CETiTEC GmbH.  All rights reserved.
++ *
++ * based on imx-snvs-poweroff.c
++ * based on msm-poweroff.c
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/i2c.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/reboot.h>
++#include <linux/pm_runtime.h>
++
++#define I2C_REG 5
++#define I2C_VAL 1
++
++#define I2C_CONF_REFRESH 0x79
++
++extern int rcar_i2c_xfer_atomic(struct i2c_adapter *adap, struct i2c_msg *msgs,
++								int num);
++
++static struct i2c_adapter *i2c_adapt_cplds = NULL, *i2c_adapt_config = NULL;
++static unsigned short wakecpld_addr, wakecpld_config_addr;
++static struct platform_device *cetibox_poweroff_pdev = NULL;
++
++extern void (*arm_pm_restart)(enum reboot_mode reboot_mode, const char *cmd);
++static void (*orig_arm_pm_restart)(enum reboot_mode reboot_mode, const char *cmd) = NULL;
++
++static void wakecpld_poweroff(void)
++{
++	int err, i;
++	struct i2c_msg msgs[1];
++	char data[2];
++
++	if (!i2c_adapt_cplds) {
++		dev_err(&cetibox_poweroff_pdev->dev, "wakecpld: Couldn't power off cpld\n");
++		return;
++	}
++
++	dev_info(&cetibox_poweroff_pdev->dev, "Sending poweroff on bus %s addr %hu\n",
++			 i2c_adapt_cplds->name, wakecpld_addr);
++	data[0] = I2C_REG;
++	data[1] = I2C_VAL;
++	msgs[0].addr = wakecpld_addr;
++	msgs[0].flags = 0;
++	msgs[0].len = 2;
++	msgs[0].buf = data;
++
++	/* Spurious i2c failures occur sometimes, retry a few times */
++	i = 0;
++	do {
++		err = rcar_i2c_xfer_atomic(i2c_adapt_cplds, msgs, 1);
++	} while (i++ < 5 && err != 0);
++
++	if (unlikely(err < 0)) {
++		dev_err(&cetibox_poweroff_pdev->dev, "%lu-bit %s failed at 0x%02x: %d\n", sizeof(data)*8,
++				"write", I2C_REG, err);
++	}
++
++	while(true)
++		cpu_relax();
++}
++
++static void wakecpld_reconfigure(enum reboot_mode reboot_mode, const char *arg)
++{
++	int err, i;
++	struct i2c_msg msgs[1];
++	char data[4];
++
++	if (!arg || strcmp(arg, "reload_cpld") != 0) {
++		dev_info(&cetibox_poweroff_pdev->dev,
++				 "Not reconfiguring CPLD because arg not set (%s)\n",
++				 arg);
++		goto reboot;
++	}
++	if (!i2c_adapt_config) {
++		printk(KERN_ERR "wakecpld: Couldn't reconfigure cpld\n");
++		goto reboot;
++	}
++
++	dev_info(&cetibox_poweroff_pdev->dev, "Sending refresh on bus %s addr %hu\n",
++			 i2c_adapt_config->name, wakecpld_config_addr);
++	data[0] = I2C_CONF_REFRESH;
++	data[1] = 0;
++	data[2] = 0;
++	data[3] = 0;
++	msgs[0].addr = wakecpld_config_addr;
++	msgs[0].flags = 0;
++	msgs[0].len = 4;
++	msgs[0].buf = data;
++
++	/* Spurious i2c failures occur sometimes, retry a few times */
++	i = 0;
++	do {
++		err = rcar_i2c_xfer_atomic(i2c_adapt_config, msgs, 1);
++	} while (i++ < 5 && err != 0);
++
++	if (unlikely(err < 0)) {
++		dev_err(&cetibox_poweroff_pdev->dev, "%lu-bit %s failed at 0x%02x\n", sizeof(data)*8,
++				"write", I2C_REG);
++	}
++
++  reboot:
++	if (orig_arm_pm_restart)
++		orig_arm_pm_restart(reboot_mode, arg);
++}
++
++static int cetibox_poweroff_probe(struct platform_device *pdev)
++{
++	int err;
++	struct of_phandle_args args;
++	struct device_node *np = pdev->dev.of_node;
++
++	if (!i2c_adapt_cplds) {
++		err = of_parse_phandle_with_fixed_args(np, "wakecpld", 1, 0, &args);
++		i2c_adapt_cplds = of_get_i2c_adapter_by_node(args.np);
++		of_node_put(args.np);
++		if (!i2c_adapt_cplds) {
++			return -EPROBE_DEFER;
++		}
++		wakecpld_addr = args.args[0];
++		// FIXME: We can't wake up i2c controller in atomic context when
++		// wakecpld_poweroff is called, so keep them awake always.
++		pm_runtime_get_sync(&i2c_adapt_cplds->dev);
++	}
++
++	if (!i2c_adapt_config) {
++		err = of_parse_phandle_with_fixed_args(np, "wakecpld-config", 1, 0, &args);
++		i2c_adapt_config = of_get_i2c_adapter_by_node(args.np);
++		of_node_put(args.np);
++		if (!i2c_adapt_config) {
++			return -EPROBE_DEFER;
++		}
++		wakecpld_config_addr = args.args[0];
++		// FIXME: We can't wake up i2c controller in atomic context when
++		// wakecpld_restart is called, so keep them awake always.
++		pm_runtime_get_sync(&i2c_adapt_config->dev);
++	}
++
++	orig_arm_pm_restart = arm_pm_restart;
++	cetibox_poweroff_pdev = pdev;
++	arm_pm_restart = wakecpld_reconfigure;
++	pm_power_off = wakecpld_poweroff;
++
++	return 0;
++}
++
++static int cetibox_poweroff_remove(struct platform_device *pdev)
++{
++	if (pm_power_off == wakecpld_poweroff)
++		pm_power_off = NULL;
++	if (arm_pm_restart == wakecpld_reconfigure)
++		arm_pm_restart = orig_arm_pm_restart;
++
++	if (i2c_adapt_config) {
++		pm_runtime_put(&i2c_adapt_config->dev);
++		i2c_put_adapter(i2c_adapt_config);
++	}
++	if (i2c_adapt_cplds) {
++		pm_runtime_put(&i2c_adapt_cplds->dev);
++		i2c_put_adapter(i2c_adapt_cplds);
++	}
++
++	return 0;
++}
++
++static const struct of_device_id cetibox_poweroff_dt_ids[] = {
++	{ .compatible = "cetitec,cetibox-poweroff" },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, cetibox_poweroff_dt_ids);
++
++static struct platform_driver cetibox_poweroff_driver = {
++	.driver = {
++		.name = "cetibox-poweroff",
++		.of_match_table = of_match_ptr(cetibox_poweroff_dt_ids),
++	},
++	.probe = cetibox_poweroff_probe,
++	.remove = cetibox_poweroff_remove,
++};
++module_platform_driver(cetibox_poweroff_driver);
+-- 
+2.17.1
+
