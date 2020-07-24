@@ -117,7 +117,7 @@ version.c \
 
 
 
-INC_DIR = "${TOPDIR}/../meta-renesas/meta-rcar-gen3/recipes-rswitch/ptp4lrswitch1/files"
+INC_DIR = "${THISDIR}/files"
 
 KERNEL_PATH = "${TOPDIR}/tmp/work-shared/h3vc/kernel-source/"
 
