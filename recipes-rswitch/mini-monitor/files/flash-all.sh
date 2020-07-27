@@ -4,24 +4,39 @@
 DEF_TTY=/dev/ttyUSB0
 FLASH_CMD_DELAY=${FLASH_CMD_DELAY:-0.5}
 
-
-MINIMON_SREC=${MINIMON_SREC:-./$(ls -1 AArch64_Gen3_H3_M3_Scif_MiniMon_V*.mot)}
-BOOTPARAM_SREC=${BOOTPARAM_SREC:-./bootparam_sa0.srec}
-BL2_SREC=${BL2_SREC:-./bl2-h3vc.srec}
-CERT_SREC=${CERT_SREC:-./cert_header_sa6.srec}
-BL31_SREC=${BL31_SREC:-./bl31-h3vc.srec}
-TEE_SREC=${TEE_SREC:-./tee-h3vc.srec}
-UBOOT_SREC=${UBOOT_SREC:-./u-boot-elf-h3vc3.srec}
-
-echo "Using Mini Monitor '${MINIMON_SREC}'"
-echo "Using U-Boot '${UBOOT_SREC}'"
-
-
 if [ -z "$1" ]; then
     TTY=${DEF_TTY}
 else
     TTY=$1
 fi
+echo "Using TTY '${TTY}'"
+
+if [ -z "$2" ]; then
+    DEF_PATH=.
+else
+    DEF_PATH=$2
+fi
+echo "SREC path is '${DEF_PATH}'"
+
+if [ -z "$3" ]; then
+    TG=h3vc3
+else
+    TG=$3
+fi
+echo "Board model '${TG}'"
+
+
+MINIMON_SREC=${MINIMON_SREC:-${DEF_PATH}/$(ls -1 AArch64_Gen3_H3_M3_Scif_MiniMon_V*.mot)}
+BOOTPARAM_SREC=${BOOTPARAM_SREC:-${DEF_PATH}/bootparam_sa0.srec}
+BL2_SREC=${BL2_SREC:-${DEF_PATH}/bl2-h3vc.srec}
+CERT_SREC=${CERT_SREC:-${DEF_PATH}/cert_header_sa6.srec}
+BL31_SREC=${BL31_SREC:-${DEF_PATH}/bl31-h3vc.srec}
+TEE_SREC=${TEE_SREC:-${DEF_PATH}/tee-h3vc.srec}
+UBOOT_SREC=${UBOOT_SREC:-${DEF_PATH}/u-boot-elf-${TG}.srec}
+
+echo "Using Mini Monitor '${MINIMON_SREC}'"
+echo "Using U-Boot '${UBOOT_SREC}'"
+
 
 if [[ ! -c ${TTY} ]]; then
     echo "${TTY} is not a valid TTY"
@@ -53,7 +68,7 @@ sleep ${DELAY}
 
 echo "Downloading Mini Monitor..."
 
-dd if=${MINIMON_SREC} status=progress bs=1 of=/${TTY}
+dd if=${MINIMON_SREC} status=progress bs=1 of=${TTY}
 
 
 sleep ${DELAY}
