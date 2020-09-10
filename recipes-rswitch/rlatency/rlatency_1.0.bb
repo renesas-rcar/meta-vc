@@ -9,8 +9,16 @@ SECTION = "latency"
 LICENSE = "MIT"
 
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
-SRC_FILES := "latency.c "
 
+SRC_URI="file://rlatency-v1.0.0.tar.gz"
+
+S = "${WORKDIR}/rlatency"
+
+
+
+include rlatency-devel.inc
+
+SRC_FILES := "latency.c "
 
 INC_DIR = "${TOPDIR}/../meta-renesas/meta-rcar-gen3/recipes-rswitch/rlatency/files"
 
@@ -21,9 +29,7 @@ LFLAGS	+= "-lc -lm -lpthread -lrt"
 
 LDFLAGS = "${LFLAGS}"
 #CFLAGS = "${OSFLAG} ${CDEFS} ${WARNING} ${INCLUDEFLAGS} -D_THREAD_SAFE"
-SRC_URI= "file://latency.c"
 
-S = "${WORKDIR}"
 do_compile() {
 	${CC} ${SRC_FILES}  ${LDFLAGS} ${INCLUDEFLAGS} -o rlatency
 }
