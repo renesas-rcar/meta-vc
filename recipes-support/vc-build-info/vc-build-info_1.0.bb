@@ -1,6 +1,6 @@
-# Add RSwitch1 specific build information files
-DESCRIPTION = "RSwitch specific build information"
-SECTION = "rswitch1-build-info"
+# Add VC specific build information files
+DESCRIPTION = "VC specific build information"
+SECTION = "vc-build-info"
 
 
 LICENSE = "MIT"
