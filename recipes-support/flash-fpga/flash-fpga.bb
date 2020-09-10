@@ -7,14 +7,11 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 RDEPENDS_${PN} =+ "bash"
 
-SRC_URI = "file://flash_fpga_over_spi.sh \
-           file://jic-converter/jic2bin.sh \
-           file://jic-converter/Makefile \
-           file://jic-converter/reverse_bits.c \
-           file://nvcr-chk/flash-chk-nvcr.c \
-           file://nvcr-chk/Makefile \
-          "
-S = "${WORKDIR}"
+SRC_URI = "file://flash-fpga-v1.0.0.tar.gz"
+S = "${WORKDIR}/flash-fpga-v1.0.0"
+
+
+include flash-fpga-devel.inc
 
 TARGET_CC_ARCH += "${LDFLAGS}"
 do_compile() {
