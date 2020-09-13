@@ -5,25 +5,27 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}/:"
 COMPATIBLE_MACHINE = "salvator-x|h3ulcb|m3ulcb|m3nulcb|h3vc|ebisu"
 
 RENESAS_BSP_URL = " \
- git://git@ree-dusgitlab.ree.adwin.renesas.com/r-car-gen3-yocto/renesas-linux.git"
+ git://github.com/renesas-rcar/linux-bsp-vc.git"
+BRANCH = "v4.14.75-ltsi/rcar-3.9.7-rswitch2"
 
-BRANCH = "v4.14.75-rswitch1/rcar-3.9.7"
 
-# Always use latest version
-SRCREV = "${AUTOREV}"
+SRCREV = "13b4b9693539795dbebb779c8ab147f23179945e"
+SRC_URI = "${RENESAS_BSP_URL};protocol=git;nocheckout=1;branch=${BRANCH}"
 
-SRC_URI = "${RENESAS_BSP_URL};protocol=ssh;nocheckout=1;branch=${BRANCH}"
+LINUX_VERSION ?= "4.14.75"
+PV = "${LINUX_VERSION}+git${SRCPV}"
+PR = "r1"
 
-PR = "r2"
 
-SRC_URI_append_h3vc = " \
-    file://0001-Add-cetibox-poweroff-driver.patch \
+SRC_URI_append = " \
     file://defconfig \
+    file://touch.cfg \
     file://h3vc.cfg \
-    file://0445-H3VC-RSwitch1-changed-to-RGMII.patch \
+    file://rswitch2.cfg \
     file://0446-H3VC-Added-MT25QU01-flash-IC-via-SPI.patch \
     file://0447-H3VC-BD9571MWV-Disable-IRQ-for-now.patch \
-    file://0448-H3VC-Added-dedicated-DT-for-H3VC3.patch \
+    file://0001-Add-cetibox-poweroff-driver.patch \ 
+    ${@base_conditional("USE_AVB", "1", " file://usb-video-class.cfg", "", d)} \
 "
 
 # Enable access to Hyperflash from Linux
@@ -47,6 +49,7 @@ ENABLE_HYPERFLASH = " \
     file://hyperflash.cfg \
 "
 
+
 SRC_URI_append_h3vc = " \
     ${@oe.utils.conditional("ENABLE_HYPERFLASH_LINUX", "1", "${ENABLE_HYPERFLASH}", "", d)} \
 "
@@ -54,3 +57,4 @@ SRC_URI_append_h3vc = " \
 KERNEL_DEVICETREE_append_h3vc = " \
     renesas/r8a7795-h3vc2.dtb \
 "
+
