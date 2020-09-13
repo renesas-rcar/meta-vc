@@ -9,6 +9,13 @@ SECTION = "devdump"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
+
+SRC_URI = "file://devdump-v1.0.0.tar.gz"
+
+S = "${WORKDIR}/devdump"
+
+include devdump-devel.inc 
+
 SRC_FILES := "dump.c "
 
 
@@ -23,9 +30,6 @@ LFLAGS	+= "-lc"
 
 LDFLAGS = "${LFLAGS}"
 
-SRC_URI= "file://dump.c"
-
-S = "${WORKDIR}"
 do_compile() {
 	${CC} ${SRC_FILES}  ${LDFLAGS} ${INCLUDEFLAGS} -o devdump
 }
