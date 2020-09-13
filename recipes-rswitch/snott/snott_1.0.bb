@@ -7,9 +7,16 @@ DESCRIPTION = "SNOTT tools application"
 SECTION = "snott"
 #DEPENDS = "pthread"
 LICENSE = "MIT"
-#LIC_FILES_CHKSUM = "file://LICENSE;md5=96af5705d6f64a88e035781ef00e98a8"
-#LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+
+SRC_URI = "file://snott-v1.0.0.tar.gz"
+
+S = "${WORKDIR}/snott"
+
+
+
+include snott-devel.inc
+
 SRC_FILES := "SNOTT.c "
 
 
@@ -24,9 +31,6 @@ LFLAGS	+= "-lc -lm -lpthread -lrt"
 
 LDFLAGS = "${LFLAGS}"
 
-SRC_URI= "file://SNOTT.c"
-
-S = "${WORKDIR}"
 do_compile() {
 	${CC} ${SRC_FILES}  ${LDFLAGS} ${INCLUDEFLAGS} -o snott
 }
