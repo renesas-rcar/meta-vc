@@ -4,12 +4,22 @@
 #
 
 DESCRIPTION = "ptp4l tools application for rswitch"
-SECTION = "ptp4lrswitch1"
+SECTION = "ptp4lrswitch"
 DEPENDS = ""
 LICENSE = "MIT"
 #LIC_FILES_CHKSUM = "file://LICENSE;md5=96af5705d6f64a88e035781ef00e98a8"
 #LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+
+
+SRC_URI = "file://ptp4lrswitch-v1.0.0.tar.gz"
+
+S = "${WORKDIR}/ptp4lrswitch"
+
+include ptp4lrswitch-devel.inc
+
+
+
 SRC_FILES := "ptp4l.c \
 bmc.c \
 clock.c \
@@ -126,41 +136,8 @@ INCLUDEFLAGS += "-I${INC_DIR}/. -I${KERNEL_PATH}"
 LFLAGS	= "-lc -lm"
 LDFLAGS = "${LFLAGS}"
 #CFLAGS = "${OSFLAG} ${CDEFS} ${WARNING} ${INCLUDEFLAGS} -D_THREAD_SAFE"
-SRC_URI= "file://ptp4l.c \
-          file://bmc.c \
-          file://clock.c \
-          file://clockadj.c \
-          file://clockcheck.c \
-          file://config.c \
-          file://fault.c \
-          file://filter.c \
-          file://fsm.c \
-          file://mave.c \
-          file://mmedian.c \
-          file://msg.c \
-          file://phc.c \
-          file://pi.c \
-          file://port.c \
-          file://print.c \
-          file://raw.c \
-          file://servo.c \
-          file://sk.c \
-          file://stats.c \
-          file://tlv.c \
-          file://transport.c \
-          file://udp.c \
-          file://udp6.c \
-          file://uds.c \
-          file://util.c \
-          file://version.c \
-          file://hwstamp_ctl.c \
-          file://phc2sys.c \
-          file://pmc.c \
-          file://pmc_common.c \
-          file://sysoff.c \         
-"
 
-S = "${WORKDIR}"
+
 do_compile() {
 	${CC} ${SRC_FILES_pmc}  ${LDFLAGS} ${INCLUDEFLAGS} -o pmc
         ${CC} ${SRC_FILES_ptp4l}  ${LDFLAGS} ${INCLUDEFLAGS} -o ptp4l
