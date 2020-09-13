@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<R-SWITCH>
+	<PHY-Config>
+		<Port>
+			<PortNumber>1</PortNumber>
+			<Mode>Master</Mode>
+		</Port>
+		<Port>
+			<PortNumber>2</PortNumber>
+			<Mode>Master</Mode>
+		</Port>
+		<Port>
+			<PortNumber>3</PortNumber>
+			<Mode>Master</Mode>
+		</Port>
+		<Port>
+			<PortNumber>4</PortNumber>
+			<Mode>Master</Mode>
+		</Port>
+		<Port>
+			<PortNumber>5</PortNumber>
+			<Mode>Master</Mode>
+		</Port>
+	</PHY-Config>
+</R-SWITCH>
