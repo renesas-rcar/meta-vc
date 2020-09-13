@@ -9,8 +9,8 @@ BRANCH = "master"
 
 # Use latest version
 #SRCREV = "${AUTOREV}"
-SRCREV="a1a25961a36cb434ead5383b88349d0df45d54b8"
-#SRCREV = "ce387eb870d73fef9d38750ab4dd39e1dcba72e8"
+SRCREV = "d805691b5b1b8b6b28dff4a9a30f320f22dc57c4"
+
 
 SRC_URI = "${RENESAS_RSWITCHTOOL_URL};protocol=ssh;branch=${BRANCH}"
 S = "${WORKDIR}/git/"
