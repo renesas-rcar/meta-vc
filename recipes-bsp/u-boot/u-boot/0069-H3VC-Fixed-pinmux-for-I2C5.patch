@@ -1,0 +1,128 @@
+From 56820ef83f46761159e4fc72771eae5dff5fcf82 Mon Sep 17 00:00:00 2001
+From: "dennis.ostermann" <dennis.ostermann@renesas.com>
+Date: Tue, 7 Jul 2020 11:38:35 +0200
+Subject: [PATCH] H3VC: Fixed pinmux for I2C5
+
+---
+ drivers/pinctrl/renesas/pfc-r8a7795.c | 29 +++++++++++++++++++++++++--
+ drivers/pinctrl/renesas/sh_pfc.h      |  4 ++++
+ 2 files changed, 31 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pinctrl/renesas/pfc-r8a7795.c b/drivers/pinctrl/renesas/pfc-r8a7795.c
+index b60134351c..beaf7a9c9f 100644
+--- a/drivers/pinctrl/renesas/pfc-r8a7795.c
++++ b/drivers/pinctrl/renesas/pfc-r8a7795.c
+@@ -552,6 +552,10 @@ MOD_SEL0_4_3		MOD_SEL1_4 \
+ 	FM(DU_DOTCLKIN0) FM(DU_DOTCLKIN1) FM(DU_DOTCLKIN2) FM(DU_DOTCLKIN3) \
+ 	FM(TMS) FM(TDO) FM(ASEBRK) FM(MLB_REF) FM(TDI) FM(TCK) FM(TRST) FM(EXTALR)
+ 
++
++#define PINMUX_PHYS \
++	FM(SCL0) FM(SDA0) FM(SCL3) FM(SDA3) FM(SCL5) FM(SDA5)
++
+ enum {
+ 	PINMUX_RESERVED = 0,
+ 
+@@ -577,6 +581,7 @@ enum {
+ 	PINMUX_IPSR
+ 	PINMUX_MOD_SELS
+ 	PINMUX_STATIC
++	PINMUX_PHYS
+ 	PINMUX_MARK_END,
+ #undef F_
+ #undef FM
+@@ -591,8 +596,8 @@ static const u16 pinmux_data[] = {
+ 	PINMUX_SINGLE(GP7_02),
+ 	PINMUX_SINGLE(GP7_03),
+ 	PINMUX_SINGLE(I2C_SEL_0_1),
+-	PINMUX_SINGLE(I2C_SEL_3_1),
+-	PINMUX_SINGLE(I2C_SEL_5_1),
++
++
+ 	PINMUX_SINGLE(MSIOF0_RXD),
+ 	PINMUX_SINGLE(MSIOF0_SCK),
+ 	PINMUX_SINGLE(MSIOF0_TXD),
+@@ -620,10 +625,12 @@ static const u16 pinmux_data[] = {
+ 	PINMUX_IPSR_MSEL(IP0_19_16,	MSIOF2_RXD_C,		SEL_MSIOF2_2),
+ 	PINMUX_IPSR_MSEL(IP0_19_16,	CTS4_N_A,		SEL_SCIF4_0),
+ 	PINMUX_IPSR_GPSR(IP0_19_16,	FSCLKST2_N_A),
++        PINMUX_IPSR_PHYS(IP0_19_16,     SCL5,                   I2C_SEL_5_1),
+ 
+ 	PINMUX_IPSR_MSEL(IP0_23_20,	AVB_AVTP_CAPTURE_A,	SEL_ETHERAVB_0),
+ 	PINMUX_IPSR_MSEL(IP0_23_20,	MSIOF2_TXD_C,		SEL_MSIOF2_2),
+ 	PINMUX_IPSR_MSEL(IP0_23_20,	RTS4_N_A,		SEL_SCIF4_0),
++	PINMUX_IPSR_PHYS(IP0_23_20,     SDA5,                   I2C_SEL_5_1),
+ 
+ 	PINMUX_IPSR_GPSR(IP0_27_24,	IRQ0),
+ 	PINMUX_IPSR_GPSR(IP0_27_24,	QPOLB),
+@@ -1489,6 +1496,11 @@ static const u16 pinmux_data[] = {
+ 	PINMUX_IPSR_MSEL(IP18_7_4,	FMIN_C,			SEL_FM_2),
+ 	PINMUX_IPSR_MSEL(IP18_7_4,	FMIN_D,			SEL_FM_3),
+ 
++	/* I2C */
++	PINMUX_IPSR_NOGP(0,		I2C_SEL_0_1),
++	PINMUX_IPSR_NOGP(0,		I2C_SEL_3_1),
++	PINMUX_IPSR_NOGP(0,		I2C_SEL_5_1),
++
+ /*
+  * Static pins can not be muxed between different functions but
+  * still needs a mark entry in the pinmux list. Add each static
+@@ -2380,6 +2392,13 @@ static const unsigned int i2c2_b_pins[] = {
+ static const unsigned int i2c2_b_mux[] = {
+ 	SDA2_B_MARK, SCL2_B_MARK,
+ };
++static const unsigned int i2c5_pins[] = {
++	/* SCL, SDA */
++	RCAR_GP_PIN(2, 13), RCAR_GP_PIN(2, 14),
++};
++static const unsigned int i2c5_mux[] = {
++	SCL5_MARK, SDA5_MARK,
++};
+ static const unsigned int i2c6_a_pins[] = {
+ 	/* SDA, SCL */
+ 	RCAR_GP_PIN(1, 8), RCAR_GP_PIN(1, 11),
+@@ -4266,6 +4285,7 @@ static const struct sh_pfc_pin_group pinmux_groups[] = {
+ 	SH_PFC_PIN_GROUP(i2c1_b),
+ 	SH_PFC_PIN_GROUP(i2c2_a),
+ 	SH_PFC_PIN_GROUP(i2c2_b),
++	SH_PFC_PIN_GROUP(i2c5),
+ 	SH_PFC_PIN_GROUP(i2c6_a),
+ 	SH_PFC_PIN_GROUP(i2c6_b),
+ 	SH_PFC_PIN_GROUP(i2c6_c),
+@@ -4676,6 +4696,10 @@ static const char * const i2c2_groups[] = {
+ 	"i2c2_b",
+ };
+ 
++static const char * const i2c5_groups[] = {
++	"i2c5",
++};
++
+ static const char * const i2c6_groups[] = {
+ 	"i2c6_a",
+ 	"i2c6_b",
+@@ -5038,6 +5062,7 @@ static const struct sh_pfc_function pinmux_functions[] = {
+ 	SH_PFC_FUNCTION(hscif4),
+ 	SH_PFC_FUNCTION(i2c1),
+ 	SH_PFC_FUNCTION(i2c2),
++	SH_PFC_FUNCTION(i2c5),
+ 	SH_PFC_FUNCTION(i2c6),
+ 	SH_PFC_FUNCTION(intc_ex),
+ 	SH_PFC_FUNCTION(msiof0),
+diff --git a/drivers/pinctrl/renesas/sh_pfc.h b/drivers/pinctrl/renesas/sh_pfc.h
+index b98c2f185d..6d29802325 100644
+--- a/drivers/pinctrl/renesas/sh_pfc.h
++++ b/drivers/pinctrl/renesas/sh_pfc.h
+@@ -349,6 +349,10 @@ extern const struct sh_pfc_soc_info r8a77995_pinmux_info;
+ #define PINMUX_SINGLE(fn)						\
+ 	PINMUX_DATA(fn##_MARK, FN_##fn)
+ 
++#define PINMUX_IPSR_PHYS(ipsr, fn, msel) \
++        PINMUX_DATA(fn##_MARK, FN_##msel)
++
++
+ /*
+  * GP port style (32 ports banks)
+  */
+-- 
+2.17.1
+

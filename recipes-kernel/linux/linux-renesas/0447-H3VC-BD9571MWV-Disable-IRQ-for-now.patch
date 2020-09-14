@@ -1,0 +1,31 @@
+From 6d724a8d7d602ff6b8539e7f8cf173d5cd93b7c9 Mon Sep 17 00:00:00 2001
+From: "dennis.ostermann" <dennis.ostermann@renesas.com>
+Date: Wed, 8 Jul 2020 14:53:32 +0200
+Subject: [PATCH] H3VC: BD9571MWV: Disable IRQ for now
+
+---
+ arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts b/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts
+index 8a2811dafb90..8185f897f7db 100644
+--- a/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts
++++ b/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts
+@@ -624,10 +624,10 @@
+ 
+ 		compatible = "rohm,bd9571mwv";
+ 		reg = <0x30>;
+-		interrupt-parent = <&intc_ex>;
+-		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
+-		interrupt-controller;
+-		#interrupt-cells = <2>;
++		/* interrupt-parent = <&intc_ex>; */
++		/* interrupts = <0 IRQ_TYPE_LEVEL_LOW>; */
++		/* interrupt-controller; */
++		/* #interrupt-cells = <2>; */
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+ 
+-- 
+2.17.1
+

@@ -1,0 +1,41 @@
+From d67907b441756020a557a770a477888d3a4b7985 Mon Sep 17 00:00:00 2001
+From: "dennis.ostermann" <dennis.ostermann@renesas.com>
+Date: Tue, 30 Jun 2020 15:05:37 +0200
+Subject: [PATCH] H3VC: Added MT25QU01 flash IC via SPI
+
+---
+ arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts b/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts
+index 7da76447685a..610aa6106267 100644
+--- a/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts
++++ b/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts
+@@ -369,7 +369,7 @@
+ &msiof0 {
+ 	pinctrl-0 = <&msiof0_pins>;
+ 	pinctrl-names = "default";
+-	cs-gpios = <&gpio5 8 0>;
++	cs-gpios = <&gpio5 8 0>, <&gpio1 12 0>;
+ 
+ 	status = "okay";
+ 
+@@ -381,6 +381,15 @@
+ 		interrupts = <9 IRQ_TYPE_LEVEL_HIGH>;
+ 		spi-max-frequency = <10000000>;
+ 	};
++        /* FPGA flash MT25QU01 */
++	spidev@1 {
++                compatible = "renesas,sh-msiof";
++                reg = <1>;
++                spi-max-frequency = <66666666>;
++                spi-cpha;
++                spi-cpol;
++        };
++
+ };
+ 
+ &msiof1 {
+-- 
+2.17.1
+

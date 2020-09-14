@@ -9,7 +9,7 @@ IMAGE_INSTALL_append = " gdb gdbserver openssh openssh-sftp openssh-sftp-server"
 IMAGE_INSTALL_append += " sllin phytool inic-flasher wl18xx-fw"
 
 # RSwitch 1 releated tools
-IMAGE_INSTALL_append += " vc-build-info rswitch1tool rswitch1-init snott rlatency ptp4lrswitch gptp-master rexecd vc-addon-script flash-fpga"
+IMAGE_INSTALL_append += " rswitch2tool rswitch1-init snott rlatency ptp4lrswitch gptp-master rexecd vc-addon-script flash-fpga"
 
 # Wifi Support
 IMAGE_INSTALL_append += " ti-bt-firmware wl18xx-calibrator wlconf wl18xx-target-scripts iw wireless-tools wpa-supplicant hostapd"

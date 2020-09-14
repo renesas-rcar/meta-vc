@@ -1,0 +1,41 @@
+From d887ee0a461203a517b9e82a25127166661f0cf4 Mon Sep 17 00:00:00 2001
+From: Vito Colagiacomo <vito.colagiacomo@renesas.com>
+Date: Fri, 5 Jun 2020 17:13:31 +0200
+Subject: [PATCH] plat: rcar: BL2: Set security settings of RPC-IF to
+ non-secure
+
+This is needed if we want to access the Hyperflash from Non-Secure
+World (Linux).
+---
+ plat/renesas/rcar/bl2_secure_setting.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/plat/renesas/rcar/bl2_secure_setting.c b/plat/renesas/rcar/bl2_secure_setting.c
+index 24697806..94775728 100644
+--- a/plat/renesas/rcar/bl2_secure_setting.c
++++ b/plat/renesas/rcar/bl2_secure_setting.c
+@@ -90,8 +90,8 @@ static const struct {
+ 
+ 	/** Security attribute setting for slave ports 13 */
+ 	/* Bit22: RPC slave ports. */
+-	/*        0: registers can be accessed from secure resource only. */
+-	{SEC_SEL13,		0xFFBFFFFFU},
++	/*        1: registers can be accessed from all resource. */
++	{SEC_SEL13,		0xFFFFFFFFU},
+ 
+ 	/** Security attribute setting for slave ports 14 */
+ 	/* Bit27: System Timer (SCMT) slave ports. */
+@@ -222,8 +222,8 @@ static const struct {
+ 	/** Security group 1 attribute setting for slave ports 13 */
+ 	/* Bit22: RPC slave ports. */
+ 	/*        SecurityGroup3 */
+-	{SEC_GRP0COND13,	0x00400000U},
+-	{SEC_GRP1COND13,	0x00400000U},
++	{SEC_GRP0COND13,	0x00000000U},
++	{SEC_GRP1COND13,	0x00000000U},
+ 
+ 	/** Security group 0 attribute setting for slave ports 14 */
+ 	/** Security group 1 attribute setting for slave ports 14 */
+-- 
+2.17.1
+

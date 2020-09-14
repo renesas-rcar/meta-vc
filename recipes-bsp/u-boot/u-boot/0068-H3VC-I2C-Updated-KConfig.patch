@@ -1,0 +1,29 @@
+From 4f77faa58bff0855e53b431a1e779414dfd71737 Mon Sep 17 00:00:00 2001
+From: "dennis.ostermann" <dennis.ostermann@renesas.com>
+Date: Wed, 1 Jul 2020 11:29:32 +0200
+Subject: [PATCH] H3VC: I2C: Updated KConfig
+
+---
+ drivers/i2c/Kconfig | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
+index ae3b501555..8b45932c8d 100644
+--- a/drivers/i2c/Kconfig
++++ b/drivers/i2c/Kconfig
+@@ -443,6 +443,12 @@ config SYS_I2C_BUS_MAX
+ 	help
+ 	  Define the maximum number of available I2C buses.
+ 
++config DM_I2C_RCAR
++        bool "Renesas RCar Gen3 I2C driver"
++        depends on RCAR_GEN3 && DM_I2C
++        help
++          Support for Renesas RCar Gen3 I2C controller.
++
+ config SYS_I2C_ZYNQ
+ 	bool "Xilinx I2C driver"
+ 	depends on ARCH_ZYNQMP || ARCH_ZYNQ
+-- 
+2.17.1
+
