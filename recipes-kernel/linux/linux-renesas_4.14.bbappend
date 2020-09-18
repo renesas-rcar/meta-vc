@@ -8,28 +8,11 @@ RENESAS_BSP_URL = " \
  git://github.com/renesas-rcar/linux-bsp-vc.git"
 BRANCH = "v4.14.75-ltsi/rcar-3.9.7-rswitch2"
 
-
 SRCREV = "13b4b9693539795dbebb779c8ab147f23179945e"
 SRC_URI = "${RENESAS_BSP_URL};protocol=git;nocheckout=1;branch=${BRANCH}"
 
-LINUX_VERSION ?= "4.14.75"
-PV = "${LINUX_VERSION}+git${SRCPV}"
-PR = "r1"
-
-
-SRC_URI_append = " \
-    file://defconfig \
-    file://touch.cfg \
-    file://h3vc.cfg \
-    file://rswitch2.cfg \
-    file://0446-H3VC-Added-MT25QU01-flash-IC-via-SPI.patch \
-    file://0447-H3VC-BD9571MWV-Disable-IRQ-for-now.patch \
-    file://0001-Add-cetibox-poweroff-driver.patch \ 
-    ${@base_conditional("USE_AVB", "1", " file://usb-video-class.cfg", "", d)} \
-"
-
 # Enable access to Hyperflash from Linux
-ENABLE_HYPERFLASH = " \
+HYPERFLASH_PATCHES = " \
     file://0012-mtd-Add-RPC-HyperFlash-driver.patch \
     file://0236-clk-renesas-r8a77970-Add-SD0H-SD0-clocks-for-SDHI.patch \
     file://0273-clk-renesas-rcar-gen3-Factor-out-cpg_reg_modify.patch \
@@ -46,12 +29,37 @@ ENABLE_HYPERFLASH = " \
     file://0442-arm64-dts-renesas-r8a7795-Add-RPC-device-node.patch \
     file://0443-arm64-dts-renesas-r8a7795-h3vc2-Add-Hyperflash-devic.patch \
     file://0444-mtd-spi-nor-renesas-rpc-Do-not-use-DMA-by-default.patch \
+"
+
+HYPERFLASH_CONFIG = " \
     file://hyperflash.cfg \
 "
 
+PATCHES = " \
+    file://0446-H3VC-Added-MT25QU01-flash-IC-via-SPI.patch \
+    file://0447-H3VC-BD9571MWV-Disable-IRQ-for-now.patch \
+    file://0001-Add-cetibox-poweroff-driver.patch \
+    ${@oe.utils.conditional("ENABLE_HYPERFLASH_LINUX", "1", "${HYPERFLASH_PATCHES}", "", d)} \
+"
 
-SRC_URI_append_h3vc = " \
-    ${@oe.utils.conditional("ENABLE_HYPERFLASH_LINUX", "1", "${ENABLE_HYPERFLASH}", "", d)} \
+CONFIG = " \
+    file://defconfig \
+    file://touch.cfg \
+    file://h3vc.cfg \
+    file://rswitch2.cfg \
+    ${@oe.utils.conditional("ENABLE_HYPERFLASH_LINUX", "1", "${HYPERFLASH_CONFIG}", "", d)} \
+"
+
+include linux-renesas-devel.inc
+
+LINUX_VERSION ?= "4.14.75"
+PV = "${LINUX_VERSION}+git${SRCPV}"
+PR = "r1"
+
+SRC_URI_append = " \
+    ${CONFIG} \
+    ${PATCHES} \
+    ${@base_conditional("USE_AVB", "1", " file://usb-video-class.cfg", "", d)} \
 "
 
 KERNEL_DEVICETREE_append_h3vc = " \
