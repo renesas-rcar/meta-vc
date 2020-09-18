@@ -1,6 +1,6 @@
-From b59a119b50ab2956eef61e6d653b6c63d3b203da Mon Sep 17 00:00:00 2001
+From a8cef7ce672e0a15ef594797ed23866cfa7d8658 Mon Sep 17 00:00:00 2001
 From: Vito Colagiacomo <vito.colagiacomo@renesas.com>
-Date: Tue, 23 Jun 2020 12:37:40 +0200
+Date: Thu, 17 Sep 2020 14:43:36 +0200
 Subject: [PATCH] Add cetibox-poweroff driver
 
 It sends an i2c command to the CPLD to poweroff the board.
@@ -8,22 +8,42 @@ It sends an i2c command to the CPLD to poweroff the board.
 Original driver developed by CETITEC:
 https://github.com/CETIBOX-Base/linux.git
 ---
- arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts |   7 +
+ arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts |   8 +-
+ arch/arm64/boot/dts/renesas/r8a7795-h3vc3.dts |   7 +
  drivers/i2c/busses/i2c-rcar.c                 |  79 ++++++++
  drivers/power/reset/Kconfig                   |   6 +
  drivers/power/reset/Makefile                  |   1 +
  drivers/power/reset/cetibox-poweroff.c        | 191 ++++++++++++++++++
- 5 files changed, 284 insertions(+)
+ 6 files changed, 291 insertions(+), 1 deletion(-)
  create mode 100644 drivers/power/reset/cetibox-poweroff.c
 
 diff --git a/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts b/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts
-index ca46e7b7745c..7da76447685a 100644
+index c486b1b6..6c431ae2 100644
 --- a/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts
 +++ b/arch/arm64/boot/dts/renesas/r8a7795-h3vc2.dts
-@@ -253,6 +253,13 @@
+@@ -316,7 +316,13 @@
+        rswitch_bcast_fixup: rswitch_bcast_fixup {
+ 				    fixup-registers = <0x1f 0x43 0x18 0x98 0x1f 0x42>;
+        };
+-             
++
++	cetibox-power {
++		status = "okay";
++		compatible = "cetitec,cetibox-poweroff";
++		wakecpld = <&i2c5 0x3C>; /* i2c bus, i2c addr */
++		//wakecpld-config = <&i2c1 0x60>; /* i2c bus, i2c addr */
++	};
+ };
  
- 		status = "okay";
- 	};
+ &audio_clk_a {
+diff --git a/arch/arm64/boot/dts/renesas/r8a7795-h3vc3.dts b/arch/arm64/boot/dts/renesas/r8a7795-h3vc3.dts
+index 4f9fd0a4..2e447c29 100644
+--- a/arch/arm64/boot/dts/renesas/r8a7795-h3vc3.dts
++++ b/arch/arm64/boot/dts/renesas/r8a7795-h3vc3.dts
+@@ -290,6 +290,13 @@
+ 			};
+ 		};
+         };
 +
 +	cetibox-power {
 +		status = "okay";
@@ -35,7 +55,7 @@ index ca46e7b7745c..7da76447685a 100644
  
  &audio_clk_a {
 diff --git a/drivers/i2c/busses/i2c-rcar.c b/drivers/i2c/busses/i2c-rcar.c
-index da205bd98d8c..9b085dc60831 100644
+index da205bd9..9b085dc6 100644
 --- a/drivers/i2c/busses/i2c-rcar.c
 +++ b/drivers/i2c/busses/i2c-rcar.c
 @@ -912,6 +912,85 @@ static const struct i2c_algorithm rcar_i2c_algo = {
@@ -125,7 +145,7 @@ index da205bd98d8c..9b085dc60831 100644
  	{ .compatible = "renesas,i2c-r8a7778", .data = (void *)I2C_RCAR_GEN1 },
  	{ .compatible = "renesas,i2c-r8a7779", .data = (void *)I2C_RCAR_GEN1 },
 diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-index ca0de1a78e85..7de99928b353 100644
+index ca0de1a7..7de99928 100644
 --- a/drivers/power/reset/Kconfig
 +++ b/drivers/power/reset/Kconfig
 @@ -92,6 +92,12 @@ config POWER_RESET_GPIO_RESTART
@@ -142,7 +162,7 @@ index ca0de1a78e85..7de99928b353 100644
  	bool "Hisilicon power-off driver"
  	depends on ARCH_HISI
 diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-index aeb65edb17b7..58a84ade9d91 100644
+index aeb65edb..58a84ade 100644
 --- a/drivers/power/reset/Makefile
 +++ b/drivers/power/reset/Makefile
 @@ -7,6 +7,7 @@ obj-$(CONFIG_POWER_RESET_AXXIA) += axxia-reset.o
@@ -155,7 +175,7 @@ index aeb65edb17b7..58a84ade9d91 100644
  obj-$(CONFIG_POWER_RESET_HISI) += hisi-reboot.o
 diff --git a/drivers/power/reset/cetibox-poweroff.c b/drivers/power/reset/cetibox-poweroff.c
 new file mode 100644
-index 000000000000..8c7878cd7d11
+index 00000000..8c7878cd
 --- /dev/null
 +++ b/drivers/power/reset/cetibox-poweroff.c
 @@ -0,0 +1,191 @@
