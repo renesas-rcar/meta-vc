@@ -50,6 +50,9 @@ CONFIG = " \
     ${@oe.utils.conditional("ENABLE_HYPERFLASH_LINUX", "1", "${HYPERFLASH_CONFIG}", "", d)} \
 "
 
+# Uncomment if you want to compile USB Gadget drivers
+#CONFIG += "file://usb_device.cfg"
+
 include linux-renesas-devel.inc
 
 LINUX_VERSION ?= "4.14.75"
