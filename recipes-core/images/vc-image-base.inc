@@ -30,3 +30,5 @@ CORE_IMAGE_EXTRA_INSTALL += " kernel-modules"
 # Install kernel and DTB
 IMAGE_INSTALL_append += " kernel-image kernel-devicetree"
 
+# Install default u-boot environment file
+IMAGE_INSTALL_append = " u-boot-env"
