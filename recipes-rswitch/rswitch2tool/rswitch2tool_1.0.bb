@@ -9,6 +9,8 @@ inherit autotools
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
+DEPENDS = "linux-renesas"
+
 SRC_URI = "file://rswitchtool-v1.0.1.tar.gz"
 #SRC_URI = "file://rswitch2tool-${PV}.tar.gz"
 
