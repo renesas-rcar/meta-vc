@@ -16,7 +16,8 @@ IMAGE_INSTALL_append = " \
     gptp-master \
     rexecd \
     vc-addon-script \
-    flash-fpga\
+    flash-fpga \
+    fpga-programmer \
 "
 
 # Wifi Support
