@@ -15,7 +15,7 @@ S = "${WORKDIR}/vc-addon-script"
 
 include vc-addon-script-devel.inc
 
-FILES_${PN} = "/home/root/vc3/* \
+FILES_${PN} = "/home/root/vc/* \
 "
 
 
@@ -25,12 +25,12 @@ do_compile[noexec] = "1"
 
 # Just install the scripte onto the target
 do_install() {
-    install -d ${D}/home/root/vc3/booting
-    cp --preserve=mode,timestamps -R ${S}/booting/* ${D}/home/root/vc3/booting   
-    install -d ${D}/home/root/vc3/configuration
-    cp --preserve=mode,timestamps -R ${S}/configuration/* ${D}/home/root/vc3/configuration   
-    install -d ${D}/home/root/vc3/FPGA_bitfile
-    cp --preserve=mode,timestamps -R ${S}/FPGA_bitfile/* ${D}/home/root/vc3/FPGA_bitfile   
-    install -d ${D}/home/root/vc3/misc
-    cp --preserve=mode,timestamps -R ${S}/misc/* ${D}/home/root/vc3/misc  
+    install -d ${D}/home/root/vc/booting
+    cp --preserve=mode,timestamps -R ${S}/booting/* ${D}/home/root/vc/booting   
+    install -d ${D}/home/root/vc/configuration
+    cp --preserve=mode,timestamps -R ${S}/configuration/* ${D}/home/root/vc/configuration   
+    install -d ${D}/home/root/vc/FPGA_bitfile
+    cp --preserve=mode,timestamps -R ${S}/FPGA_bitfile/* ${D}/home/root/vc/FPGA_bitfile   
+    install -d ${D}/home/root/vc/misc
+    cp --preserve=mode,timestamps -R ${S}/misc/* ${D}/home/root/vc/misc  
 }
