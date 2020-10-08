@@ -4,9 +4,10 @@ This is a delivery image, please perform final installation steps befor usage.
        'vcXX' - XX being preferred board number; it is used to derive MAC and IP addresses
   echo 'vcXX' > /etc/hostname
 
-2. Replace this startup message by either
+2. Replace this startup message according to your image. For example
   echo 'RSwitch1 image -- VC2 mainboard' > /etc/motd
   echo 'RSwitch1 image -- VC3 mainboard' > /etc/motd
+  echo 'RSwitch2 image -- VC3 mainboard' > /etc/motd
 
 3. Restart the box
   sync
