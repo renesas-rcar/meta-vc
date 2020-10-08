@@ -9,7 +9,6 @@ IMAGE_INSTALL_append = " sllin phytool inic-flasher wl18xx-fw "
 IMAGE_INSTALL_append = " \
     vc-build-info \
     rswitch2tool \
-    rswitch1-init \
     snott \
     rlatency \
     ptp4lrswitch \
