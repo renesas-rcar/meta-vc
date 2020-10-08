@@ -66,6 +66,8 @@ SRC_URI_append = " \
 "
 
 KERNEL_DEVICETREE_append_h3vc = " \
+    renesas/r8a7795-h3vc3_mode1.dtb \
+    renesas/r8a7795-h3vc3_mode2.dtb \
     renesas/r8a7795-h3vc2.dtb \
 "
 
