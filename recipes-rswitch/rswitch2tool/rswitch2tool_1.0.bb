@@ -11,10 +11,9 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 DEPENDS = "linux-renesas"
 
-SRC_URI = "file://rswitchtool-v1.0.1.tar.gz"
-#SRC_URI = "file://rswitch2tool-${PV}.tar.gz"
+SRC_URI = "file://rswitch2tool-1.1.0.tar.gz"
 
-S = "${WORKDIR}/rswitchtool"
+S = "${WORKDIR}/rswitch2tool"
 
 # Only used for REE local development
 include rswitch2tool-devel.inc
