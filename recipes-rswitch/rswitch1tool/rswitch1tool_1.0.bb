@@ -11,7 +11,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 DEPENDS = "linux-renesas"
 
-SRC_URI = "file://rswitch1tool-1.1.0.tar.gz"
+SRC_URI = "file://rswitch1tool-v1.0.0.tar.gz"
 
 S = "${WORKDIR}/rswitch1tool"
 
