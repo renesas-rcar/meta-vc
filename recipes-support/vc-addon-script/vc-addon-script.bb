@@ -5,7 +5,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 #PV = "1.0.1+git${SRCPV}"
 #SRCREV = "3149bfdb4f513e2f0da0a7d0bc5d0873578696f2"
-SRC_URI = "file://vc-addon-script-v1.0.0.tar.gz"
+SRC_URI = "file://vc-addon-script-1.1.0.tar.gz"
 
 RDEPENDS_${PN} =+ "bash tcl"
 #SRC_URI_append = "file://FPGA_bitfile/rsw1_rtlid_0x20032708_sysid_0x20070749_MT25QU01G_VC3.bin"
