@@ -14,6 +14,16 @@ SRCREV = "${AUTOREV}"
 
 SRC_URI = "${RENESAS_FPGA_PROGRAMMER_URL};protocol=ssh;branch=${BRANCH}"
 S = "${WORKDIR}/git/"
+
+
+SRC_URI = "file://fpga-programmer-1.0.0.tar.gz"
+
+S = "${WORKDIR}/fpga-programmer"
+
+include fpga-programmer-devel.inc
+
+
+
 CFLAGS[unexport] = "1"
 LDFLAGS[unexport] = "1"
 AS[unexport] = "1"
