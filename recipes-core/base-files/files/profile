@@ -70,6 +70,8 @@ alias psu='ps -u$USER f'
 alias nst='netstat -pan | grep tcp'
 alias nsu='netstat -pan | grep udp'
 
+export HISTCONTROL=ignoreboth
+
 #Variables for wayland to start gui programs from console and ssh
 #prevent when executed during weston startup
 #if [ "`tty`" != "not a tty" ]; then

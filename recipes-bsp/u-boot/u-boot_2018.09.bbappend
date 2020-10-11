@@ -9,4 +9,5 @@ SRC_URI_append_h3vc = " \
     file://0067-H3VC-I2C-Updated-Makefile.patch \
     file://0068-H3VC-I2C-Updated-KConfig.patch \
     file://0069-H3VC-Fixed-pinmux-for-I2C5.patch \
+    file://0070-H3VC-Export-board-name-to-default-environment.patch \
 "

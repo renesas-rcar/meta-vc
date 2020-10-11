@@ -1,0 +1,86 @@
+From fd4b6bc1ab3bff3a1984b0c62d256c41b0d328e7 Mon Sep 17 00:00:00 2001
+From: Vito Colagiacomo <vito.colagiacomo@renesas.com>
+Date: Mon, 20 Jul 2020 14:57:40 +0200
+Subject: [PATCH] H3VC: Export board name to default environment
+
+---
+ board/renesas/h3vc/Kconfig | 17 +++++++++++++++++
+ configs/h3vc2_defconfig    |  1 +
+ configs/h3vc3_defconfig    |  1 +
+ include/configs/h3vc.h     |  3 ++-
+ 4 files changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/board/renesas/h3vc/Kconfig b/board/renesas/h3vc/Kconfig
+index f90b718db1..31f3dc9146 100644
+--- a/board/renesas/h3vc/Kconfig
++++ b/board/renesas/h3vc/Kconfig
+@@ -1,11 +1,28 @@
+ if TARGET_H3VC
+ 
++choice
++	prompt "H3VC Board Version"
++
++config H3VC_VER_3
++	bool "Ver.3"
++
++config H3VC_VER_2
++	bool "Ver.2"
++
++endchoice
++
++
+ config SYS_SOC
+ 	default "rcar_gen3"
+ 
+ config SYS_BOARD
+ 	default "h3vc"
+ 
++config SYS_BOARD_VERSION
++	int
++	default 2 if H3VC_VER_2
++	default 3 if H3VC_VER_3
++
+ config SYS_VENDOR
+ 	default "renesas"
+ 
+diff --git a/configs/h3vc2_defconfig b/configs/h3vc2_defconfig
+index 016ebfb368..bd2d631f60 100644
+--- a/configs/h3vc2_defconfig
++++ b/configs/h3vc2_defconfig
+@@ -5,6 +5,7 @@ CONFIG_SYS_MALLOC_F_LEN=0x2000
+ CONFIG_RCAR_GEN3=y
+ CONFIG_R8A7795=y
+ CONFIG_TARGET_H3VC=y
++CONFIG_H3VC_VER_2=y
+ CONFIG_SMBIOS_PRODUCT_NAME=""
+ CONFIG_FIT=y
+ # CONFIG_ARCH_FIXUP_FDT_MEMORY is not set
+diff --git a/configs/h3vc3_defconfig b/configs/h3vc3_defconfig
+index 1d8956b8be..48a6c99f34 100644
+--- a/configs/h3vc3_defconfig
++++ b/configs/h3vc3_defconfig
+@@ -5,6 +5,7 @@ CONFIG_SYS_MALLOC_F_LEN=0x2000
+ CONFIG_RCAR_GEN3=y
+ CONFIG_R8A7795=y
+ CONFIG_TARGET_H3VC=y
++CONFIG_H3VC_VER_3=y
+ CONFIG_SMBIOS_PRODUCT_NAME=""
+ CONFIG_FIT=y
+ # CONFIG_ARCH_FIXUP_FDT_MEMORY is not set
+diff --git a/include/configs/h3vc.h b/include/configs/h3vc.h
+index 017db6fa61..6dfb36dd25 100644
+--- a/include/configs/h3vc.h
++++ b/include/configs/h3vc.h
+@@ -44,7 +44,8 @@
+        "load_tftp_env=setenv load_env_cmd \"echo \\\"Trying to import envorionment via TFTP...\\\" ; usb start ; tftp 0x48080000 ${nfsroot}/boot/u-boot.env\"\0" \
+        "load_usb_port0_env=setenv load_env_cmd \"echo \\\"Trying to import envorionment from USB port 0...\\\" ; usb start ; ext4load usb 0 0x48080000 /boot/u-boot.env\"\0" \
+        "load_usb_port1_env=setenv load_env_cmd \"echo \\\"Trying to import envorionment from USB port 1...\\\" ; usb start ; ext4load usb 1 0x48080000 /boot/u-boot.env\"\0" \
+-       "check_import_env=if test \"${env_imported}\" != \"true\"; then run load_env && run do_import_env; fi\0"
++       "check_import_env=if test \"${env_imported}\" != \"true\"; then run load_env && run do_import_env; fi\0" \
++       "board=" CONFIG_SYS_BOARD __stringify(CONFIG_SYS_BOARD_VERSION) "\0"
+ 
+ #ifdef CONFIG_BOOTARGS
+ #undef CONFIG_BOOTARGS
+-- 
+2.17.1
+
