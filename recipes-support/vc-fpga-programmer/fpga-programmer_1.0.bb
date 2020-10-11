@@ -16,7 +16,7 @@ SRC_URI = "${RENESAS_FPGA_PROGRAMMER_URL};protocol=ssh;branch=${BRANCH}"
 S = "${WORKDIR}/git/"
 
 
-SRC_URI = "file://fpga-programmer-1.0.0.tar.gz"
+SRC_URI = "file://vcxfpgaprogrammer-1.0.0.tar.gz"
 
 S = "${WORKDIR}/fpga-programmer"
 
