@@ -18,7 +18,7 @@ S = "${WORKDIR}/git/"
 
 SRC_URI = "file://vcxfpgaprogrammer-1.0.0.tar.gz"
 
-S = "${WORKDIR}/fpga-programmer"
+S = "${WORKDIR}/vcxfpgaprogrammer"
 
 include fpga-programmer-devel.inc
 
