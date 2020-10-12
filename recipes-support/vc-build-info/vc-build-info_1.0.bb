@@ -78,6 +78,9 @@ do_install() {
     echo "${@get_layers(bb, d)}" >> ${D}/etc/build-info.txt
 }
 
+# the task is always rerun to ensure an up to date copy of build-info.txt in the rootfs
+do_install[nostamp] = "1"
+
 # package it as it is not installed in a standard location
 FILES_${PN} = "/etc/build-info.txt"
 
