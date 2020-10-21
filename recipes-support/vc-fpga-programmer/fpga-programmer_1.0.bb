@@ -6,15 +6,6 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 DEPENDS = "linux-renesas"
 
-RENESAS_FPGA_PROGRAMMER_URL = "git://git@ree-dusgitlab.ree.adwin.renesas.com/rswitch2-utils/vcxfpgaprogrammer.git"
-BRANCH = "master"
-
-# Use latest version
-SRCREV = "${AUTOREV}"
-
-SRC_URI = "${RENESAS_FPGA_PROGRAMMER_URL};protocol=ssh;branch=${BRANCH}"
-S = "${WORKDIR}/git/"
-
 
 SRC_URI = "file://vcxfpgaprogrammer-1.0.0.tar.gz"
 
