@@ -1,4 +1,4 @@
-RENESAS_FPGA_PROGRAMMER_URL = "git://git@ree-dusgitlab.ree.adwin.renesas.com/rswitch2-utils/vcxfpgaprogrammer.git"
+RENESAS_FPGA_PROGRAMMER_URL = "git://git@ree-dusgitlab.ree.adwin.renesas.com/r-car-gen3-yocto/vc-tools/vcxfpgaprogrammer.git"
 BRANCH = "master"
 
 # Use latest version
