@@ -39,6 +39,7 @@ IMAGE_INSTALL_append = " \
     netcat \
     tcpdump \
     net-tools \
+    iputils \
     eth-avb-conf \
 "
 
