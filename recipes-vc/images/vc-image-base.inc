@@ -32,7 +32,15 @@ IMAGE_INSTALL_append= " \
 "
 
 # Networking tools
-IMAGE_INSTALL_append = " ethtool bridge-utils vlan netcat tcpdump net-tools "
+IMAGE_INSTALL_append = " \
+    ethtool \
+    bridge-utils \
+    vlan \
+    netcat \
+    tcpdump \
+    net-tools \
+    eth-avb-conf \
+"
 
 # Development tools
 IMAGE_INSTALL_append = " \
