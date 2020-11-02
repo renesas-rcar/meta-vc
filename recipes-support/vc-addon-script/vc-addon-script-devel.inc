@@ -1,4 +1,4 @@
-SRC_BRANCH = "develop"
+SRC_BRANCH = "master"
 
 SRC_URI = "git://git@ree-dusgitlab.ree.adwin.renesas.com/r-car-gen3-yocto/vc-tools/vc-addon-script.git;protocol=ssh;branch=${SRC_BRANCH}"
 
