@@ -41,6 +41,7 @@ IMAGE_INSTALL_append = " \
     net-tools \
     iputils \
     eth-avb-conf \
+    iproute2 \
 "
 
 # Development tools
@@ -61,6 +62,12 @@ IMAGE_INSTALL_append = " \
     procps \
     pciutils \
     dosfstools \
+    can-utils \
+"
+
+# Test tools
+IMAGE_INSTALL_append = " \
+    fb-test \
 "
 
 # Flash tool
