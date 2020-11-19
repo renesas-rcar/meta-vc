@@ -31,7 +31,7 @@ do_compile() {
 do_install() {
 
         install -d ${D}${bindir}
-        install -m 0755 ${S}/Release/rswitchtool ${D}${bindir}
+        install -m 0755 ${S}/Release/rswitchtool ${D}${bindir}/rswitch1tool
 }
 
 INSANE_SKIP_${PN} = "ldflags"
