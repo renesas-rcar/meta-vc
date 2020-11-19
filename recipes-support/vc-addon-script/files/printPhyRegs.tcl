@@ -1,10 +1,11 @@
 #!/usr/bin/tclsh
 
 #of Realtec 9010AA
-set ADDR {0 1 2 3 9 10 13 14 0x10 0x18 0x1f}
-set PHYS {0 1 2 3 4 5}
-set PHYNAME  "PHY0  PHY1  PHY2  PHY3  PHY4  PHY5"
-set LINKNAME "T1-4  T1-5  T1-6  T1-7  ETH1  ETH2"
+set ADDR {0 1 2 3 9 10 13 14 0x10 0x18 0x1a 0x1f}
+set PHYS {0 1 3 2 4 5}
+set DEVNAME  "tsn4  tsn5  tsn7  ---tsn6---  eth0"
+set PHYNAME  "PHY0  PHY1  PHY3  PHY2  PHY4  PHY5"
+set LINKNAME "T1-4  T1-5  T1-7  T1-6  ETH1  ETH2"
 
 foreach phy $PHYS {
          foreach a $ADDR {
@@ -18,8 +19,9 @@ foreach phy $PHYS {
         #puts $regs($phy)
         #break
 }
-parray regs
+#parray regs
 
+puts "     $DEVNAME"
 puts "     $PHYNAME"
 puts "Addr $LINKNAME"
 set idx 0
@@ -48,4 +50,3 @@ foreach a $ADDR {
         puts "[format "%02x" $a] $s  $c"
         incr idx
 }
-
