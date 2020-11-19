@@ -21,6 +21,11 @@ IMAGE_INSTALL_append = " \
     fpga-programmer \
 "
 
+# RSwitch Docs and Application Notes
+IMAGE_INSTALL_append= " \
+    rswitch2-appnote \
+"
+
 # Wifi Support
 IMAGE_INSTALL_append= " \
     ti-bt-firmware \
