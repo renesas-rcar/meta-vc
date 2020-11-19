@@ -5,8 +5,9 @@ IMAGE_INSTALL_append = " gdb gdbserver openssh openssh-sftp openssh-sftp-server 
 
 IMAGE_INSTALL_append = " sllin phytool inic-flasher wl18xx-fw "
 
-# RSwitch releated tools
+# RSwitch releated packages
 IMAGE_INSTALL_append = " \
+    rswitch2-startup \
     vc-build-info \
     rswitch1tool \
     rswitch2tool \
