@@ -24,7 +24,7 @@ TSN6_ROLE=master
 TSN7_ROLE=master
 
 TSN_IP_AND_MAC_FROM_HOTSTNAME=yes
-FWD_ENGINE_CONFIG_FILE=/etc/rswitch2/L2-default.xml
+FWD_ENGINE_CONFIG_FILE=/etc/rswitch2/fwd-default.xml
 
 
 # Load user config

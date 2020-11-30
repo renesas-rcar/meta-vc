@@ -148,7 +148,7 @@
                     <Src-Src-Lock-Port>tsn6</Src-Src-Lock-Port>
                     <Src-Src-Lock-Port>tsn7</Src-Src-Lock-Port>
                     <Src-Src-Lock-CPU>Yes</Src-Src-Lock-CPU>
-                    <Dest-CPU>0</Dest-CPU>
+                    <Dest-CPU>2</Dest-CPU>
                     <CPU-Mirror>No</CPU-Mirror>
                     <Eth-Mirror>No</Eth-Mirror>
                 </MAC-Entry>

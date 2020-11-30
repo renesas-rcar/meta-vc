@@ -8,7 +8,7 @@ SRC_URI = " \
     file://rswitch2-startup.service \
     file://rswitch2-startup.sh \
     file://rswitch2.conf \
-    file://L2-default.xml \
+    file://fwd-default.xml \
 "
 
 SYSTEMD_SERVICE_${PN} = "rswitch2-startup.service"
@@ -19,7 +19,7 @@ FILES_${PN} = " \
     ${systemd_unitdir}/system/rswitch2-startup.service \
     ${sbindir}/rswitch2-startup.sh \
     ${sysconfdir}/rswitch2/rswitch2.conf \
-    ${sysconfdir}/rswitch2/L2-default.xml \
+    ${sysconfdir}/rswitch2/fwd-default.xml \
 "
 
 do_install() {
@@ -31,5 +31,5 @@ do_install() {
 
     install -d ${D}${sysconfdir}/rswitch2
     install -m 0644 ${WORKDIR}/rswitch2.conf ${D}${sysconfdir}/rswitch2
-    install -m 0644 ${WORKDIR}/L2-default.xml ${D}${sysconfdir}/rswitch2
+    install -m 0644 ${WORKDIR}/fwd-default.xml ${D}${sysconfdir}/rswitch2
 }
