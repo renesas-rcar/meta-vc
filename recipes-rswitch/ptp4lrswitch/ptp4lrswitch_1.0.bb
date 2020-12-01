@@ -27,6 +27,7 @@ SRC_URI += " \
 "
 
 # for ptp4l deamon
+inherit systemd
 SYSTEMD_SERVICE_${PN} = "ptp4l.service"
 
 RDEPENDS_${PN} += "bash"
