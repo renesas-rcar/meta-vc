@@ -5,13 +5,16 @@
 #
 
 RENESAS_RSWITCHTOOL_URL = "git://git@ree-dusgitlab.ree.adwin.renesas.com/r-car-gen3-yocto/vc-tools/rexecd.git"
+SRC_URI = "${RENESAS_RSWITCHTOOL_URL};protocol=ssh;branch=${BRANCH}"
 BRANCH = "master"
 
 # Use latest version
 SRCREV = "${AUTOREV}"
 
+# PV needs to be updated with ${SRCPV}, otherwise no upstream changes are detected
+PV .= "+git${SRCPV}"
 
-SRC_URI = "${RENESAS_RSWITCHTOOL_URL};protocol=ssh;branch=${BRANCH}"
+
 S = "${WORKDIR}/git/"
 
 

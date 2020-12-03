@@ -6,6 +6,7 @@ SRCREV = "ec05111f40e432dc3dba6bfa959615857554c9d7"
 # Always use latest version
 #SRCREV = "${AUTOREV}"
 
-S = "${WORKDIR}/git/Gen3_MiniMonitor"
+# PV needs to be updated with ${SRCPV}, otherwise no upstream changes are detected
+PV .= "+git${SRCPV}"
 
-PV = "+git${SRCPV}"
+S = "${WORKDIR}/git/Gen3_MiniMonitor"

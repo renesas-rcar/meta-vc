@@ -94,19 +94,19 @@ start)
     ##   Interface tsn7 is only allowed with 100 Mbps, can be switched to Eth1 and MCU
     ifconfig tsn4 hw ether $TSN4_MAC
     ifconfig tsn4 up || exit 1
-    ethtool -s tsn4 speed $TSN4_SPEED
     ethtool --set-priv-flags tsn4 master-phy $(phyRoleToOnOff $TSN4_ROLE)
+    ethtool -s tsn4 speed $TSN4_SPEED
 
     ifconfig tsn5 hw ether $TSN5_MAC
     ifconfig tsn5 up || exit 1
-    ethtool -s tsn5 speed $TSN5_SPEED
     ethtool --set-priv-flags tsn5 master-phy $(phyRoleToOnOff $TSN5_ROLE)
+    ethtool -s tsn5 speed $TSN5_SPEED
 
     if [ -d /sys/class/net/tsn6 ]; then
         ifconfig tsn6 hw ether $TSN6_MAC
         ifconfig tsn6 up || exit 1
-        ethtool -s tsn6 speed $TSN6_SPEED
         ethtool --set-priv-flags tsn6 master-phy $(phyRoleToOnOff $TSN6_ROLE)
+        ethtool -s tsn6 speed $TSN6_SPEED
     elif [ -d /sys/class/net/eth1 ]; then
         ifconfig eth1 hw ether $ETH1_MAC
         ifconfig eth1 up || exit 1
@@ -119,8 +119,8 @@ start)
 
     ifconfig tsn7 hw ether $TSN7_MAC
     ifconfig tsn7 up || exit 1
-    ethtool -s tsn7 speed $TSN7_SPEED
     ethtool --set-priv-flags tsn7 master-phy $(phyRoleToOnOff $TSN7_ROLE)
+    ethtool -s tsn7 speed $TSN7_SPEED
 
 
     ## switch status led (LED8) to green

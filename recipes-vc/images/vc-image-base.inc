@@ -5,12 +5,9 @@ IMAGE_INSTALL_append = " gdb gdbserver openssh openssh-sftp openssh-sftp-server 
 
 IMAGE_INSTALL_append = " sllin phytool inic-flasher wl18xx-fw "
 
-# RSwitch releated packages
+# Vehicle Computer releated packages
 IMAGE_INSTALL_append = " \
-    rswitch2-startup \
     vc-build-info \
-    rswitch1tool \
-    rswitch2tool \
     snott \
     rlatency \
     ptp4lrswitch \
@@ -21,9 +18,21 @@ IMAGE_INSTALL_append = " \
     fpga-programmer \
 "
 
-# RSwitch Docs and Application Notes
-IMAGE_INSTALL_append= " \
+# R-Switch1 releated packages
+RSWITCH1_PKGS = " \
+    rswitch1-startup \
+    rswitch1tool \
+"
+
+# R-Switch1 releated packages
+RSWITCH2_PKGS = " \
+    rswitch2-startup \
+    rswitch2tool \
     rswitch2-appnote \
+"
+
+IMAGE_INSTALL_append= " \
+    ${@bb.utils.contains('DISTRO_FEATURES','rswitch1','${RSWITCH1_PKGS}','${RSWITCH2_PKGS}',d)} \
 "
 
 # Wifi Support

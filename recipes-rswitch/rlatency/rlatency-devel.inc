@@ -5,6 +5,7 @@ SRC_URI = "git://git@ree-dusgitlab.ree.adwin.renesas.com/r-car-gen3-yocto/vc-too
 # Always use latest version
 SRCREV = "${AUTOREV}"
 
-S = "${WORKDIR}/git"
+# PV needs to be updated with ${SRCPV}, otherwise no upstream changes are detected
+PV .= "+git${SRCPV}"
 
-PV = "+git${SRCPV}"
+S = "${WORKDIR}/git"
