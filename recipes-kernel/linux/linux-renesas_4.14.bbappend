@@ -17,13 +17,20 @@ HYPERFLASH_CONFIG = " \
     file://hyperflash.cfg \
 "
 
+RSWITCH1_CONFIG = " \
+    file://rswitch1.cfg \
+"
+
+RSWITCH2_CONFIG = " \
+    file://rswitch2.cfg \
+"
 
 CONFIG = " \
     file://defconfig \
     file://touch.cfg \
     file://h3vc.cfg \
-    file://rswitch2.cfg \
     ${@oe.utils.conditional("ENABLE_HYPERFLASH_LINUX", "1", "${HYPERFLASH_CONFIG}", "", d)} \
+    ${@bb.utils.contains('DISTRO_FEATURES','rswitch1','${RSWITCH1_CONFIG}','${RSWITCH2_CONFIG}',d)} \
 "
 
 # Uncomment if you want to compile USB Gadget drivers
