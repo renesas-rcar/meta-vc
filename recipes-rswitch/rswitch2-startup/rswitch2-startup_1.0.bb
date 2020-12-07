@@ -9,6 +9,7 @@ SRC_URI = " \
     file://rswitch2-startup.sh \
     file://rswitch2.conf \
     file://fwd-default.xml \
+    file://rswitch-init.target \
 "
 
 SYSTEMD_SERVICE_${PN} = "rswitch2-startup.service"
@@ -17,6 +18,7 @@ RDEPENDS_${PN} += "bash rswitch2tool"
 
 FILES_${PN} = " \
     ${systemd_unitdir}/system/rswitch2-startup.service \
+    ${systemd_unitdir}/system/rswitch-init.target \
     ${sbindir}/rswitch2-startup.sh \
     ${sysconfdir}/rswitch2/rswitch2.conf \
     ${sysconfdir}/rswitch2/fwd-default.xml \
@@ -25,6 +27,7 @@ FILES_${PN} = " \
 do_install() {
     install -d ${D}${systemd_unitdir}/system
     install -m 0644 ${WORKDIR}/rswitch2-startup.service ${D}${systemd_unitdir}/system
+    install -m 0644 ${WORKDIR}/rswitch-init.target ${D}${systemd_unitdir}/system
 
     install -d ${D}${sbindir}
     install -m 0755 ${WORKDIR}/rswitch2-startup.sh ${D}${sbindir}

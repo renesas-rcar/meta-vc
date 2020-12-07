@@ -1,7 +1,7 @@
 [Unit]
 Description=Startup Script for ptp4l
-Requires=rswitch2-startup.service
-After=rswitch2-startup.service
+Requires=rswitch-init.target
+After=rswitch-init.target
 
 [Service]
 ExecStart=/usr/sbin/ptp4l.sh start
