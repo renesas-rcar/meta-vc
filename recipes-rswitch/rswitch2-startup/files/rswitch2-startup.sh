@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## Observe errors by this scripts with
-##   systemctl status vcstartup.service
+##   systemctl status rswitch2-startup.service
 
 # Get the board number from the hostname. It will be used to derive IP
 # and MAC addresses
@@ -24,7 +24,7 @@ TSN6_ROLE=master
 TSN7_ROLE=master
 
 TSN_IP_AND_MAC_FROM_HOTSTNAME=yes
-FWD_ENGINE_CONFIG_FILE=/etc/rswitch2/L2-default.xml
+FWD_ENGINE_CONFIG_FILE=/etc/rswitch2/fwd-default.xml
 
 
 # Load user config
@@ -75,11 +75,7 @@ function phyRoleToOnOff {
 
 case "$1" in
 start)
-    ##----- Section 1: General settings for the VC Box -----
-    
-    ## LED initialization now handled by kernel
-
-    ##----- Section 2: Setup RSwitch -----
+    ##----- Section 1: Setup RSwitch -----
 
     ## load kernel module for the RSwitch
     modprobe rswitch2 || exit 1
@@ -123,14 +119,17 @@ start)
     ethtool -s tsn7 speed $TSN7_SPEED
 
 
-    ## switch status led (LED8) to green
-    echo "0" > /sys/class/leds/led8\:orange/brightness
-    echo "255" > /sys/class/leds/led8\:green/brightness
-
-    ##----- Section 3: Load the switch configuration  -----
+    ##----- Section 2: Load the switch configuration  -----
 
     ## Example: L2 switch broadcast routing and learning
     rswitch2tool -c fwd -f "$FWD_ENGINE_CONFIG_FILE" || exit 1
+
+
+    ##----- Section 3: Update the LED  -----
+
+    ## switch status led (LED8) to green
+    echo "0" > /sys/class/leds/led8\:orange/brightness
+    echo "255" > /sys/class/leds/led8\:green/brightness
 
     ;;
 

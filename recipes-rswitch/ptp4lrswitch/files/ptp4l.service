@@ -1,0 +1,13 @@
+[Unit]
+Description=Startup Script for ptp4l
+Requires=rswitch-init.target
+After=rswitch-init.target
+
+[Service]
+ExecStart=/usr/sbin/ptp4l.sh start
+ExecStop=/usr/sbin/ptp4l.sh stop
+Type=oneshot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
