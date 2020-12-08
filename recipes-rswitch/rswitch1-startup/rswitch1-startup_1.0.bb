@@ -13,6 +13,7 @@ SRC_URI = " \
     file://tsn2ToEth1.sh \
     file://l2_gptp_default.xml \
     file://tsngw_static_entry.template \
+    file://rswitch-init.target \
 "
 
 SYSTEMD_SERVICE_${PN} = "rswitch1-startup.service"
@@ -21,6 +22,7 @@ RDEPENDS_${PN} += "bash sed phytool rswitch1tool"
 
 FILES_${PN} = " \
     ${systemd_unitdir}/system/rswitch1-startup.service \
+    ${systemd_unitdir}/system/rswitch-init.target \
     ${sbindir}/rswitch1-startup.sh \
     ${sysconfdir}/rswitch1/rswitch1.conf \
     ${sysconfdir}/rswitch1/phyinit.sh \
@@ -33,6 +35,7 @@ FILES_${PN} = " \
 do_install() {
     install -d ${D}${systemd_unitdir}/system
     install -m 0644 ${WORKDIR}/rswitch1-startup.service ${D}${systemd_unitdir}/system
+    install -m 0644 ${WORKDIR}/rswitch-init.target ${D}${systemd_unitdir}/system
 
     install -d ${D}${sbindir}
     install -m 0755 ${WORKDIR}/rswitch1-startup.sh ${D}${sbindir}
