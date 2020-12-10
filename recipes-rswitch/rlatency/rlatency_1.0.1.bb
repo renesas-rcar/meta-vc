@@ -10,10 +10,11 @@ LICENSE = "MIT"
 
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
-SRC_URI="file://rlatency-v1.0.0.tar.gz"
+SRC_URI = " \
+    file://rlatency_${PV}.tar.gz \
+"
 
 S = "${WORKDIR}/rlatency"
-
 
 
 include rlatency-devel.inc
