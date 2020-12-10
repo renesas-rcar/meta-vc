@@ -7,9 +7,9 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 inherit deploy
 
-#SRC_URI = "file://mini-monitor-${PV}.tar.gz"
-SRC_URI = "file://mini-monitor-5.12.tar.gz"
-
+SRC_URI = " \
+    file://mini-monitor_${PV}.tar.gz \
+"
 
 SRC_URI_append = " \
     file://flash-all.sh \

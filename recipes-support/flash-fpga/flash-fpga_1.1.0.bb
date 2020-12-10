@@ -7,7 +7,10 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 RDEPENDS_${PN} =+ "bash"
 
-SRC_URI = "file://flash-fpga-v1.0.0.tar.gz"
+SRC_URI = " \
+    file://flash-fpga_${PV}.tar.gz \
+"
+
 S = "${WORKDIR}/flash-fpga"
 
 

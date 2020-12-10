@@ -11,8 +11,9 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 inherit pkgconfig cmake
 
-
-SRC_URI = "file://gptp-master-v1.0.0.tar.gz"
+SRC_URI = " \
+    file://gptp-master_${PV}.tar.gz \
+"
 
 S = "${WORKDIR}/gptp-master"
 

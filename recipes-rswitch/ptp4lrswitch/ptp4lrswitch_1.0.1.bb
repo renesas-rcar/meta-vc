@@ -11,7 +11,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 
 SRC_URI = " \
-    file://ptp4lrswitch-v1.0.0.tar.gz \
+    file://ptp4lrswitch_${PV}.tar.gz \
 "
 
 S = "${WORKDIR}/ptp4lrswitch"
