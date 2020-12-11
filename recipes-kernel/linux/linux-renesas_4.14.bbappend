@@ -8,7 +8,7 @@ RENESAS_BSP_URL = " \
  git://github.com/renesas-rcar/linux-bsp-vc.git"
 BRANCH = "v4.14.75-ltsi/rcar-3.9.7-rswitch2"
 
-SRCREV = "496f59d1797677e3c4ac9db879902447ff4ec31c"
+SRCREV = "6de26a9646c904299a3e4d6261bede91b8ab1f95"
 SRC_URI = "${RENESAS_BSP_URL};protocol=git;nocheckout=1;branch=${BRANCH}"
 
 PATCHES = ""
@@ -17,13 +17,20 @@ HYPERFLASH_CONFIG = " \
     file://hyperflash.cfg \
 "
 
+RSWITCH1_CONFIG = " \
+    file://rswitch1.cfg \
+"
+
+RSWITCH2_CONFIG = " \
+    file://rswitch2.cfg \
+"
 
 CONFIG = " \
     file://defconfig \
     file://touch.cfg \
     file://h3vc.cfg \
-    file://rswitch2.cfg \
     ${@oe.utils.conditional("ENABLE_HYPERFLASH_LINUX", "1", "${HYPERFLASH_CONFIG}", "", d)} \
+    ${@bb.utils.contains('DISTRO_FEATURES','rswitch1','${RSWITCH1_CONFIG}','${RSWITCH2_CONFIG}',d)} \
 "
 
 # Uncomment if you want to compile USB Gadget drivers

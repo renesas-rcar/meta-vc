@@ -64,11 +64,11 @@ unset color_prompt force_color_prompt
 alias ..='cd ..'
 alias lll='ls -la'
 alias ll='ls -l'
-alias psu='ps -u 1000 f'
 alias sst='svn stat | grep -v "?"'
 alias psu='ps -u$USER f'
 alias nst='netstat -pan | grep tcp'
 alias nsu='netstat -pan | grep udp'
+alias e0='ifconfig eth0 | grep inet'
 
 export HISTCONTROL=ignoreboth
 

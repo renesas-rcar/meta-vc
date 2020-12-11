@@ -5,10 +5,9 @@ IMAGE_INSTALL_append = " gdb gdbserver openssh openssh-sftp openssh-sftp-server 
 
 IMAGE_INSTALL_append = " sllin phytool inic-flasher wl18xx-fw "
 
-# RSwitch 2 releated tools
+# Vehicle Computer releated packages
 IMAGE_INSTALL_append = " \
     vc-build-info \
-    rswitch2tool \
     snott \
     rlatency \
     ptp4lrswitch \
@@ -17,6 +16,23 @@ IMAGE_INSTALL_append = " \
     vc-addon-script \
     flash-fpga \
     fpga-programmer \
+"
+
+# R-Switch1 releated packages
+RSWITCH1_PKGS = " \
+    rswitch1-startup \
+    rswitch1tool \
+"
+
+# R-Switch1 releated packages
+RSWITCH2_PKGS = " \
+    rswitch2-startup \
+    rswitch2tool \
+    rswitch2-appnote \
+"
+
+IMAGE_INSTALL_append= " \
+    ${@bb.utils.contains('DISTRO_FEATURES','rswitch1','${RSWITCH1_PKGS}','${RSWITCH2_PKGS}',d)} \
 "
 
 # Wifi Support
@@ -32,7 +48,17 @@ IMAGE_INSTALL_append= " \
 "
 
 # Networking tools
-IMAGE_INSTALL_append = " ethtool bridge-utils vlan netcat tcpdump net-tools "
+IMAGE_INSTALL_append = " \
+    ethtool \
+    bridge-utils \
+    vlan \
+    netcat \
+    tcpdump \
+    net-tools \
+    iputils \
+    eth-avb-conf \
+    iproute2 \
+"
 
 # Development tools
 IMAGE_INSTALL_append = " \
@@ -52,6 +78,12 @@ IMAGE_INSTALL_append = " \
     procps \
     pciutils \
     dosfstools \
+    can-utils \
+"
+
+# Test tools
+IMAGE_INSTALL_append = " \
+    fb-test \
 "
 
 # Flash tool

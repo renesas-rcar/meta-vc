@@ -1,0 +1,92 @@
+<?xml version="1.0"?>
+<R-SWITCH2>
+    <Forwarding>
+        <General-Configuration>
+            <VLAN-Mode>NO-VLAN</VLAN-Mode>
+            <Port-Specific>
+                <PortNumber>tsn4</PortNumber>
+                <VLAN-Reject-Unknown>Disable</VLAN-Reject-Unknown>
+                <MAC-Hardware-Migration-Active>Enable</MAC-Hardware-Migration-Active>
+                <MAC-Hardware-Learning-Active>Enable</MAC-Hardware-Learning-Active>
+                <Port-Forwarding>
+                    <Broadcast>
+                        <PortNumber>tsn5</PortNumber>
+                        <PortNumber>tsn6</PortNumber>
+                        <PortNumber>tsn7</PortNumber>
+                        <CPU>0</CPU>
+                    </Broadcast>
+                </Port-Forwarding>
+            </Port-Specific>
+
+            <Port-Specific>
+                <PortNumber>tsn5</PortNumber>
+                <VLAN-Reject-Unknown>Disable</VLAN-Reject-Unknown>
+                <MAC-Hardware-Migration-Active>Enable</MAC-Hardware-Migration-Active>
+                <MAC-Hardware-Learning-Active>Enable</MAC-Hardware-Learning-Active>
+                <Port-Forwarding>
+                    <Broadcast>
+                        <PortNumber>tsn4</PortNumber>
+                        <PortNumber>tsn6</PortNumber>
+                        <PortNumber>tsn7</PortNumber>
+                        <CPU>0</CPU>
+                    </Broadcast>
+                </Port-Forwarding>
+            </Port-Specific>
+
+            <Port-Specific>
+                <PortNumber>tsn6</PortNumber>
+                <VLAN-Reject-Unknown>Disable</VLAN-Reject-Unknown>
+                <MAC-Hardware-Migration-Active>Enable</MAC-Hardware-Migration-Active>
+                <MAC-Hardware-Learning-Active>Enable</MAC-Hardware-Learning-Active>
+                <Port-Forwarding>
+                    <Broadcast>
+                        <PortNumber>tsn4</PortNumber>
+                        <PortNumber>tsn5</PortNumber>
+                        <PortNumber>tsn7</PortNumber>
+                        <CPU>0</CPU>
+                    </Broadcast>
+                </Port-Forwarding>
+            </Port-Specific>
+
+            <Port-Specific>
+                <PortNumber>tsn7</PortNumber>
+                <VLAN-Reject-Unknown>Disable</VLAN-Reject-Unknown>
+                <MAC-Hardware-Migration-Active>Enable</MAC-Hardware-Migration-Active>
+                <MAC-Hardware-Learning-Active>Enable</MAC-Hardware-Learning-Active>
+                <Port-Forwarding>
+                    <Broadcast>
+                        <PortNumber>tsn4</PortNumber>
+                        <PortNumber>tsn5</PortNumber>
+                        <PortNumber>tsn6</PortNumber>
+                        <CPU>0</CPU>
+                    </Broadcast>
+                </Port-Forwarding>
+            </Port-Specific>
+
+            <Port-Specific>
+                <CPU>Yes</CPU>
+                <VLAN-Reject-Unknown>Disable</VLAN-Reject-Unknown>
+                <MAC-Hardware-Migration-Active>Enable</MAC-Hardware-Migration-Active>
+                <MAC-Hardware-Learning-Active>Enable</MAC-Hardware-Learning-Active>
+                <Port-Forwarding>
+                    <Broadcast>
+                        <PortNumber>tsn4</PortNumber>
+                        <PortNumber>tsn5</PortNumber>
+                        <PortNumber>tsn6</PortNumber>
+                        <PortNumber>tsn7</PortNumber>
+                    </Broadcast>
+                </Port-Forwarding>
+            </Port-Specific>
+        </General-Configuration>
+
+        <Layer2-Forwarding>
+            <MAC-AGING></MAC-AGING>
+            <MAC-Table>
+                <MAC-Entry>
+                    <MAC>01:80:C2:00:00:0E</MAC> <!-- Entry for gPTP frames -->
+                    <Dest-CPU>2</Dest-CPU>
+                </MAC-Entry>
+            </MAC-Table>
+        </Layer2-Forwarding>
+    </Forwarding>
+</R-SWITCH2>

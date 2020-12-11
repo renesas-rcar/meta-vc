@@ -1,0 +1,4 @@
+[Unit]
+Description=Renesas R-Switch Initialization
+Requires=network.target
+After=network.target

@@ -9,7 +9,7 @@ PN = "sllin"
 PE = "1"
 PV = "0.1"
 
-SRC_URI = "git://rtime.felk.cvut.cz/linux-lin.git \
+SRC_URI = "git://github.com/ppisa/linux-lin.git \
            file://0001-update-to-4.14-compatibility.patch \
 "
 SRCREV = "fdb6110ae3fa0f14137ffbec4af1bc124945a076"
