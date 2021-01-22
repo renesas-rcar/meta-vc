@@ -82,6 +82,7 @@ sysoff.c "
 
 SRC_FILES_phc2sys := "clockadj.c \
 clockcheck.c \
+config.c \
 msg.c \
 phc.c \
 phc2sys.c \
@@ -133,6 +134,7 @@ version.c \
 
 SRC_FILES_pmc := "msg.c \
 print.c \
+config.c \
 raw.c \
 servo.c \
 sk.c \
