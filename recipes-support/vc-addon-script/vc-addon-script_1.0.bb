@@ -6,11 +6,12 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 RSWITCH1_FW = " \
     file://rsw1_VC2_EP_rtlid_0x20032706_sysid_0x20050741.bin \
     file://rsw1_VC2_MT_rtlid_0x20032706_sysid_0x20050741.bin \
+    file://rsw1_VC3_48_rtlid_0x20032708_sysid_0x20121641.bin \
     file://rsw1_VC3_66_rtlid_0x20032708_sysid_0x20082549.bin \
 "
 
 RSWITCH2_FW = " \
-    file://rsw2_VC3_66_rtlid_0x20120744_sysid_0x20120749.bin \
+    file://rsw2_VC3_66_rtlid_0x21010644_sysid_0x2101184A.bin \
 "
 
 SRC_URI = " \
@@ -36,8 +37,9 @@ do_install() {
     if ${@bb.utils.contains('DISTRO_FEATURES','rswitch1','true','false',d)}; then
         install -m 644 ${WORKDIR}/rsw1_VC2_EP_rtlid_0x20032706_sysid_0x20050741.bin ${D}${libdir}/firmware/vehicle-computer
         install -m 644 ${WORKDIR}/rsw1_VC2_MT_rtlid_0x20032706_sysid_0x20050741.bin ${D}${libdir}/firmware/vehicle-computer
+        install -m 644 ${WORKDIR}/rsw1_VC3_48_rtlid_0x20032708_sysid_0x20121641.bin ${D}${libdir}/firmware/vehicle-computer
         install -m 644 ${WORKDIR}/rsw1_VC3_66_rtlid_0x20032708_sysid_0x20082549.bin ${D}${libdir}/firmware/vehicle-computer
     else
-        install -m 644 ${WORKDIR}/rsw2_VC3_66_rtlid_0x20120744_sysid_0x20120749.bin ${D}${libdir}/firmware/vehicle-computer
+        install -m 644 ${WORKDIR}/rsw2_VC3_66_rtlid_0x21010644_sysid_0x2101184A.bin ${D}${libdir}/firmware/vehicle-computer
     fi
 }
