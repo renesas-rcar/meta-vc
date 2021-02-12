@@ -64,6 +64,7 @@ else
     exit -1
 fi
 
+stty -F ${TTY} 115200
 sleep ${DELAY}
 
 echo "Downloading Mini Monitor..."
