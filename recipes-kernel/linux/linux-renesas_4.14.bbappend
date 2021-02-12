@@ -8,7 +8,7 @@ RENESAS_BSP_URL = " \
  git://github.com/renesas-rcar/linux-bsp-vc.git"
 BRANCH = "v4.14.75-ltsi/rcar-3.9.7-rswitch2"
 
-SRCREV = "6de26a9646c904299a3e4d6261bede91b8ab1f95"
+SRCREV = "7be42d9a05fe4afa1d2689ed15375d887edbf610"
 SRC_URI = "${RENESAS_BSP_URL};protocol=git;nocheckout=1;branch=${BRANCH}"
 
 PATCHES = ""
