@@ -1,0 +1,39 @@
+From e4d20709e4d5780d5b9725ccc0e9d5d31972b668 Mon Sep 17 00:00:00 2001
+From: OstermannD <dennis.ostermann@renesas.com>
+Date: Wed, 24 Feb 2021 10:57:05 +0100
+Subject: [PATCH] H3VC: Set reset signal of FPGA
+
+---
+ board/renesas/h3vc/h3vc.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/board/renesas/h3vc/h3vc.c b/board/renesas/h3vc/h3vc.c
+index e61d30252f..f955d22757 100644
+--- a/board/renesas/h3vc/h3vc.c
++++ b/board/renesas/h3vc/h3vc.c
+@@ -55,6 +55,9 @@ int board_early_init_f(void)
+ #define HSUSB_REG_UGCTRL2_USB0SEL	0x30
+ #define HSUSB_REG_UGCTRL2_USB0SEL_EHCI	0x10
+ 
++/* GPIO to signal FPGA it should reset */
++#define FPGA_RESET_RESET	43	/* GPIO 1 27 */
++
+ int board_init(void)
+ {
+ 	/* adress of boot parameters */
+@@ -74,6 +77,12 @@ int board_init(void)
+ 	setbits_le16(HSUSB_REG_LPSTS, HSUSB_REG_LPSTS_SUSPM_NORMAL);
+ 
+ 
++	/* Reset FPGA */
++	gpio_request(FPGA_RESET_RESET, "fpga_reset");
++	gpio_direction_output(FPGA_RESET_RESET, 0);
++	mdelay(10);
++	gpio_direction_output(FPGA_RESET_RESET, 1);
++
+ 	return 0;
+ }
+ 
+-- 
+2.25.1
+
