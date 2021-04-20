@@ -11,18 +11,19 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 inherit pkgconfig cmake
 
-SRC_URI = " \
-    file://gptp-master_${PV}.tar.gz \
-"
+BRANCH = "master"
+SRC_URI = "git://github.com/Avnu/gptp.git;branch=${BRANCH}"
 
-S = "${WORKDIR}/gptp-master"
+# Use latest version
+SRCREV = "0baef8a36a13105112862919aac0f1eed21a44ea"
 
+# PV needs to be updated with ${SRCPV}, otherwise no upstream changes are detected
+PV = "${BRANCH}+git${SRCPV}"
 
-include gptp-master-devel.inc
+S = "${WORKDIR}/git/"
 
 do_install() {
     install -d ${D}${bindir}
     install -m 0755 gptp ${D}${bindir}
 }
-
 
