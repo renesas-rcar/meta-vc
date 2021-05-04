@@ -82,6 +82,9 @@ export HISTCONTROL=ignoreboth
 #  export XDG_RUNTIME_DIR="/run/user/0"
 #fi
 
+#Provide path to fonts for wayland applications
+export QT_QPA_FONTDIR=/usr/share/fonts/ttf/
+
 export PATH PS1 OPIEDIR QPEDIR QTDIR EDITOR TERM
 
 umask 022
