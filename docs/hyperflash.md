@@ -17,7 +17,7 @@ How to access the hyperflash
 ----------------------------
 
 Linux exposes the hyperflash as an MTD device and will create a
-`/dev/mtdblock*` file for each partition in the flash. The number of
+`/dev/mtd*` file for each partition in the flash. The number of
 partitions and their mapping to the hyperflash memory is configurable
 via device-tree:
 
@@ -73,8 +73,8 @@ mtd4: 000c0000 00040000 "uboot"
 root@h3vc2:~# 
 ```
 
-It is possible to access the hyperflash partitions simply by
-reading/writing the `/dev/mtdblock*` files.
+It is possible to access the hyperflash partitions using the tools
+provided with mtd-utils.
 
 
 Example: How to flash a new version of u-boot from Linux
@@ -153,14 +153,13 @@ mtd4: 000c0000 00040000 "uboot"
 root@h3vc2:~#  
 ```
 
-`/proc/mtd` shows that "uboot" corresponds to mtd4 so we need to write
-our binary file to `/dev/mtdblock4`:
+`/proc/mtd` shows that "uboot" corresponds to mtd4:
 
 ```
-root@h3vc2:~# dd if=/home/root/u-boot-elf-h3vc2-v2018.09.bin of=/dev/mtdblock4
+root@h3vc2:~# flashcp u-boot-elf-h3vc2-v2018.09.bin /dev/mtd4
 ```
 
-After the `dd` command returns, the target can be rebooted and the new
+After the `flashcp` command returns, the target can be rebooted and the new
 version of u-boot will be loaded from the hyperflash.
 
 
