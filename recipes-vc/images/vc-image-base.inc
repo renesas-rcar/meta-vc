@@ -79,6 +79,7 @@ IMAGE_INSTALL_append = " \
     pciutils \
     dosfstools \
     can-utils \
+    mtd-utils \
 "
 
 # Test tools
