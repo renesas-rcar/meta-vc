@@ -1,0 +1,35 @@
+From 0500980d384acfa6c03b2a066c39c5f07ae72131 Mon Sep 17 00:00:00 2001
+From: Vito Colagiacomo <vito.colagiacomo@renesas.com>
+Date: Mon, 30 Aug 2021 17:07:27 +0200
+Subject: rswitch2: Add the new revision of RTL9010AA (L3DQ3E2) to the list of
+ supported PHYs
+
+---
+ drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c b/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
+index e4608544d..f7561f304 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
++++ b/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
+@@ -2745,12 +2745,14 @@ static int phydev_disable_bcast_seterrata(struct net_device *ndev, u32 speed, u3
+ 			 */
+ 			read_val = phy_read(ndev->phydev, 0x02);
+ 			if (read_val != 0x001C) {
+-				pr_err("Incorrect Phy ID 1= %x expected = 0x001C\n", read_val);
++				pr_err("Incorrect PhyID1 = 0x%X, expected = 0x001C\n",
++					read_val);
+ 				return -1;
+ 			}
+ 			read_val = phy_read(ndev->phydev, 0x03);
+-			if (read_val != 0xC800) {
+-				pr_err("Incorrect Phy ID 2= %x expected = 0xC800\n", read_val);
++			if (read_val != 0xC800 && read_val != 0xCB30) {
++				pr_err("Incorrect PhyID2 = 0x%X, supported = (0xC800, 0xCB30)\n",
++					read_val);
+ 				return -1;
+ 			}
+ 			phy_write(ndev->phydev, 0x1F, 0x0A42);
+-- 
+2.17.1
+
