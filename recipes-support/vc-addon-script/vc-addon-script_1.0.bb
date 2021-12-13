@@ -11,7 +11,7 @@ RSWITCH1_FW = " \
 "
 
 RSWITCH2_FW = " \
-    file://rsw2_VC3_66_rtlid_0x21031644_sysid_0x21041649.bin \
+    file://rsw2_VC3_66_rtlid_0x21031647_sysid_0x21120949.bin \
 "
 
 SRC_URI = " \
@@ -40,6 +40,6 @@ do_install() {
         install -m 644 ${WORKDIR}/rsw1_VC3_48_rtlid_0x20032708_sysid_0x20121641.bin ${D}${libdir}/firmware/vehicle-computer
         install -m 644 ${WORKDIR}/rsw1_VC3_66_rtlid_0x20032708_sysid_0x20082549.bin ${D}${libdir}/firmware/vehicle-computer
     else
-        install -m 644 ${WORKDIR}/rsw2_VC3_66_rtlid_0x21031644_sysid_0x21041649.bin ${D}${libdir}/firmware/vehicle-computer
+        install -m 644 ${WORKDIR}/rsw2_VC3_66_rtlid_0x21031647_sysid_0x21120949.bin ${D}${libdir}/firmware/vehicle-computer
     fi
 }
