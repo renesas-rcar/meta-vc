@@ -11,7 +11,9 @@ BRANCH = "v4.14.75-ltsi/rcar-3.9.7-rswitch2"
 SRCREV = "01fc25f5120a1cb9ca70450eebb48a22f98dc601"
 SRC_URI = "${RENESAS_BSP_URL};protocol=git;nocheckout=1;branch=${BRANCH}"
 
-PATCHES = ""
+PATCHES = " \
+    file://0001-rswitch2-Add-the-new-revision-of-RTL9010AA-L3DQ3E2-t.patch \
+"
 
 HYPERFLASH_CONFIG = " \
     file://hyperflash.cfg \
