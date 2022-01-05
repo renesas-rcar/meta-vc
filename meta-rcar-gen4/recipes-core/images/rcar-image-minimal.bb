@@ -1,6 +1,7 @@
 SUMMARY = "A small image just capable of allowing a device to boot."
 
 require recipes-core/images/core-image-minimal.bb
+require rcar-image-minimal.inc
 
 COMPATIBLE_MACHINE = "(vc4)"
 
