@@ -16,6 +16,7 @@ IMAGE_INSTALL_append = " \
 
 # Development tools
 IMAGE_INSTALL_append = " \
+    devmem2 \
     devdump \
     nano \
     git \
