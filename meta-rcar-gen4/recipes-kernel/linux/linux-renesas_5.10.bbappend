@@ -26,6 +26,8 @@ CONFIG = " \
     file://vc4.cfg \
 "
 
+include linux-renesas-devel.inc
+
 SRC_URI_append = " \
     ${CONFIG} \
     ${PATCHES} \
