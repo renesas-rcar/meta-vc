@@ -34,5 +34,6 @@ IMAGE_INSTALL_append = " \
     dosfstools \
     can-utils \
     mtd-utils \
+    tcl \
 "
 
