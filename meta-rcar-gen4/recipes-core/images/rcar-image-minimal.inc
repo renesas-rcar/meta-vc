@@ -37,3 +37,5 @@ IMAGE_INSTALL_append = " \
     tcl \
 "
 
+# Install kernel and DTB
+IMAGE_INSTALL_append = " kernel-image kernel-devicetree "
