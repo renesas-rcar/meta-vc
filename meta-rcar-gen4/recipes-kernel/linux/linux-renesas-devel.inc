@@ -7,6 +7,3 @@ SRCREV = "${AUTOREV}"
 
 PATCHES = ""
 
-CONFIG = " \
-    file://vc4.cfg \
-"

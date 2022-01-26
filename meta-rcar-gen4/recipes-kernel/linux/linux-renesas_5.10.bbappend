@@ -23,8 +23,11 @@ PATCHES = " \
 "
 
 CONFIG = " \
-    file://vc4.cfg \
+    file://defconfig \
 "
+
+# Use defconfig provided with this recipe
+unset KBUILD_DEFCONFIG
 
 include linux-renesas-devel.inc
 
@@ -33,9 +36,7 @@ SRC_URI_append = " \
     ${PATCHES} \
 "
 
-# For generating defconfig
-KCONFIG_MODE = "--alldefconfig"
-KBUILD_DEFCONFIG = "defconfig"
+
 
 
 
