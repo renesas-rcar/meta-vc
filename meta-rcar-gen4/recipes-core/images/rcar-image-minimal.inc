@@ -36,5 +36,8 @@ IMAGE_INSTALL_append = " \
     mtd-utils \
     lrzsz \
     rpm \
+    tcl \
 "
 
+# Install kernel and DTB
+IMAGE_INSTALL_append = " kernel-image kernel-devicetree "
