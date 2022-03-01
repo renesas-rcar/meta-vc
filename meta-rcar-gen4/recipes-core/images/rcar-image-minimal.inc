@@ -35,6 +35,7 @@ IMAGE_INSTALL_append = " \
     can-utils \
     mtd-utils \
     tcl \
+    python3-scapy \
 "
 
 # Install kernel and DTB
