@@ -36,7 +36,6 @@ SRC_URI_append = " \
     ${PATCHES} \
 "
 
-
-
-
-
+KERNEL_DEVICETREE_append_vc4 = " \
+    renesas/r8a779f0-vc4-ctrl-domain.dtb \
+"
