@@ -2401,6 +2401,7 @@ CONFIG_MFD_SYSCON=y
 # CONFIG_MFD_STMFX is not set
 # CONFIG_RAVE_SP_CORE is not set
 # CONFIG_MFD_INTEL_M10_BMC is not set
+CONFIG_MFD_RENESAS_VC4_FPGA4000=y
 # end of Multifunction device drivers
 
 CONFIG_REGULATOR=y
