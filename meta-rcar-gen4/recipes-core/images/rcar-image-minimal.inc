@@ -37,6 +37,8 @@ IMAGE_INSTALL_append = " \
     tcl \
     python3-scapy \
 "
+# Install modules into RFS
+CORE_IMAGE_EXTRA_INSTALL += " kernel-modules "
 
 # Install kernel and DTB
 IMAGE_INSTALL_append = " kernel-image kernel-devicetree "
