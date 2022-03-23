@@ -36,6 +36,8 @@ IMAGE_INSTALL_append = " \
     dosfstools \
     can-utils \
     mtd-utils \
+    lrzsz \
+    rpm \
     tcl \
     python3-scapy \
 "
