@@ -18,6 +18,7 @@ IMAGE_INSTALL_append = " \
 IMAGE_INSTALL_append = " \
     devmem2 \
     devdump \
+    rsw2dump \
     nano \
     git \
     subversion \
