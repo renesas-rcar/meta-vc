@@ -12,6 +12,7 @@ IMAGE_INSTALL_append = " \
     net-tools \
     iputils \
     iproute2 \
+    snott \
 "
 
 # Development tools
