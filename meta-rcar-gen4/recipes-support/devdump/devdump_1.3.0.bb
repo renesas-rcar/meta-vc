@@ -17,7 +17,7 @@ S = "${WORKDIR}/devdump"
 
 include devdump-devel.inc 
 
-SRC_FILES := "dump.c "
+SRC_FILES := "dump.c mem.c"
 
 
 INC_DIR = "${TOPDIR}/../meta-renesas/meta-rcar-gen3/recipes-rswitch/devdump/files"
@@ -32,13 +32,15 @@ LFLAGS	+= "-lc"
 LDFLAGS = "${LFLAGS}"
 
 do_compile() {
-	${CC} ${SRC_FILES}  ${LDFLAGS} ${INCLUDEFLAGS} -o devdump
+	${CC} dump.c  ${LDFLAGS} ${INCLUDEFLAGS} -o devdump
+	${CC} mem.c  ${LDFLAGS} ${INCLUDEFLAGS} -o devmem
 }
 do_install() {
        
 	install -d ${D}${bindir}
 	install -m 0755 devdump ${D}${bindir}
-       
+	install -m 0755 devmem ${D}${bindir}
+
 }
 
 
