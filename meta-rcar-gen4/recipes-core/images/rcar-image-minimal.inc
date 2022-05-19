@@ -41,6 +41,12 @@ IMAGE_INSTALL_append = " \
     tcl \
     python3-scapy \
 "
+
+# Configuration and addons
+IMAGE_INSTALL_append = " \
+    u-boot-vc4env \
+"
+
 # Install modules into RFS
 CORE_IMAGE_EXTRA_INSTALL += " kernel-modules "
 
