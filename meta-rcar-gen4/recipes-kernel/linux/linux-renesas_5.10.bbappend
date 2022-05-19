@@ -36,8 +36,17 @@ SRC_URI_append = " \
     ${PATCHES} \
 "
 
+#The base device tree including all control domain functions
 KERNEL_DEVICETREE_append_vc4 = " \
     renesas/r8a779f0-vc4-ctrl-domain.dtb \
-    renesas/r8a779f0-vc4-rsw-rel.dtb \
-    renesas/r8a779f0-vc4-ctrl-domain-rsw-rel.dtb \
+"
+
+#Install the DT overlays for phy selection
+KERNEL_DEVICETREE_append_vc4 = " \
+    renesas/r8a779f0-vc4-tsn0-phy-1g.dtbo \
+    renesas/r8a779f0-vc4-tsn0-phy-2g5.dtbo \
+    renesas/r8a779f0-vc4-tsn1-phy-1g.dtbo \
+    renesas/r8a779f0-vc4-tsn1-phy-2g5.dtbo \
+    renesas/r8a779f0-vc4-tsn2-phy-1g.dtbo \
+    renesas/r8a779f0-vc4-tsn2-phy-1g-rh.dtbo \
 "
