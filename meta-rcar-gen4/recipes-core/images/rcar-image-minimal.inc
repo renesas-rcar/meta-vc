@@ -45,6 +45,7 @@ IMAGE_INSTALL_append = " \
 # Configuration and addons
 IMAGE_INSTALL_append = " \
     u-boot-vc4env \
+    vc-addon-script \
 "
 
 # Install modules into RFS
