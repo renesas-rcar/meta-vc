@@ -50,3 +50,12 @@ KERNEL_DEVICETREE_append_vc4 = " \
     renesas/r8a779f0-vc4-tsn2-phy-1g.dtbo \
     renesas/r8a779f0-vc4-tsn2-phy-1g-rh.dtbo \
 "
+
+KERNEL_DEVICETREE_append_vc4 = " \
+    renesas/r8a779f0-vc4V1.dtb \
+    renesas/r8a779f0-vc4-ctrl-domainV1.dtb \
+    renesas/r8a779f0-vc4-tsn0-phy-1gV1.dtbo \
+    renesas/r8a779f0-vc4-tsn0-phy-2g5V1.dtbo \
+    renesas/r8a779f0-vc4-tsn1-phy-1gV1.dtbo \
+    renesas/r8a779f0-vc4-tsn1-phy-2g5V1.dtbo \
+"
