@@ -1,0 +1,81 @@
+From 33764e074a1e933785e7c9c1ca249d25e39bd305 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Wed, 7 Sep 2022 08:09:20 +0200
+Subject: [PATCH 1/2] Add generic IP checksum function
+
+---
+ cli/cli_send.c | 43 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 42 insertions(+), 1 deletion(-)
+
+diff --git a/cli/cli_send.c b/cli/cli_send.c
+index 3d70e60..6fbe2ce 100644
+--- a/cli/cli_send.c
++++ b/cli/cli_send.c
+@@ -140,7 +140,9 @@ extern char **g_content;
+ extern char *null_payload;
+ uint16_t TCPChecksum(uint16_t* buf1, int buf1len, uint16_t* buf2, int buf2len);
+ uint32_t MyRandom(uint64_t *seed);
+-__sum16 ip_fast_csum(const void *iph, unsigned int ihl);
++__sum16 ip_fast_sum(const void *iph, unsigned int ihl);
++uint16_t ip_checksum(void* vdata,size_t length);
++
+ char *build_packet(char *buffer, int pktsize, int tot_rules, int *rule_idx, uint64_t *seed, int attack);
+ int readSnortRules(const char *filename);
+ void cleanupRules(int);
+@@ -1759,6 +1761,40 @@ ip_fast_csum(const void *iph, unsigned int ihl)
+         : "memory");
+     return (__sum16)sum;
+ }
++
++
++/*------------------------------------------------------------------------------*/
++uint16_t ip_checksum(void* vdata,size_t length) {
++    // Cast the data pointer to one that can be indexed.
++    char* data=(char*)vdata;
++
++    // Initialise the accumulator.
++    uint32_t acc=0xffff;
++
++    // Handle complete 16-bit blocks.
++    for (size_t i=0;i+1<length;i+=2) {
++        uint16_t word;
++        memcpy(&word,data+i,2);
++        acc+=ntohs(word);
++        if (acc>0xffff) {
++            acc-=0xffff;
++        }
++    }
++
++    // Handle any partial block at the end of the data.
++    if (length&1) {
++        uint16_t word=0;
++        memcpy(&word,data+length-1,1);
++        acc+=ntohs(word);
++        if (acc>0xffff) {
++            acc-=0xffff;
++        }
++    }
++
++    // Return the checksum in network byte order.
++    return htons(~acc);
++}
++
+ /*------------------------------------------------------------------------------*/
+ uint16_t
+ TCPChecksum(uint16_t* buf1, int buf1len, uint16_t* buf2, int buf2len)
+@@ -1850,7 +1886,12 @@ build_packet(char *buffer, int pktsize, int tot_rules, int *rule_idx, uint64_t *
+     iph->saddr = IP_SRC_ADDR;
+     iph->daddr = IP_DST_ADDR;
+     iph->tot_len = htons(tot_len);
++
++#ifdef __x86_64
+     iph->check = ip_fast_csum(iph, iph->ihl);
++#else
++    iph->check = ip_checksum(iph, iph->ihl);
++#endif
+ 
+     /* build tcp header (20B) */
+     tcph = (struct tcphdr *)((char *)buffer + sizeof(struct ether_header) +
+-- 
+2.17.1
+

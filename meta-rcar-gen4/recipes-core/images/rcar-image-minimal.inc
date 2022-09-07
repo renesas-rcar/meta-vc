@@ -13,6 +13,10 @@ IMAGE_INSTALL_append = " \
     iputils \
     iproute2 \
     snott \
+    packeth \
+    iperf2 \
+    iperf3 \
+    linuxptp \
 "
 
 # Development tools
