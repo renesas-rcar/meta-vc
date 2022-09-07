@@ -1,0 +1,42 @@
+From de7a56c338eee3c26d70597d168606383c26c9cd Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Wed, 7 Sep 2022 08:10:03 +0200
+Subject: [PATCH 2/2] Allow to pass environment variables to Makefile
+
+---
+ cli/Makefile | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/cli/Makefile b/cli/Makefile
+index a5bac42..0acc863 100644
+--- a/cli/Makefile
++++ b/cli/Makefile
+@@ -26,11 +26,13 @@ INSTALL = /usr/bin/install -c
+ INSTALL_DATA = ${INSTALL} -m 644
+ INSTALL_PREFIX = /usr
+ 
++ifeq ($(CC),)
+ CC = gcc
+-CPPFLAGS =  
++endif
++CPPFLAGS +=  
+ 
+-LDFLAGS = 
+-CFLAGS = -g -Wall -Wunused -Wmissing-prototypes -Wmissing-declarations -Werror
++LDFLAGS += 
++CFLAGS += -g -Wall -Wunused -Wmissing-prototypes -Wmissing-declarations -Werror
+ CFLAGS += -O3
+ LIBS =  -lm  -lpthread
+ 
+@@ -52,8 +54,6 @@ $(PROGRAM): $(OBJECTS)
+ 
+ install: $(PROGRAM)
+ 	$(INSTALL) $(PROGRAM) $(DESTDIR)/$(INSTALL_PREFIX)/bin/$(PROGRAM)
+-	if [ ! -d $(DESTDIR)/$(INSTALL_PREFIX)/share/pixmaps/$(PROGRAM) ]; then mkdir -p $(DESTDIR)/$(INSTALL_PREFIX)/share/pixmaps/$(PROGRAM); fi
+-	$(INSTALL_DATA) pixmaps/* $(DESTDIR)/$(INSTALL_PREFIX)/share/pixmaps/$(PROGRAM)
+ 
+ test:
+ 	$(CC) $(CFLAGS) $(LDFLAGS) -DTEST_SNORT_RULE_PARSING parse_snort_rules.c -o parse_snort_rules
+-- 
+2.17.1
+
