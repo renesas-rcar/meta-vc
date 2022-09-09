@@ -44,6 +44,7 @@ IMAGE_INSTALL_append = " \
     rpm \
     tcl \
     python3-scapy \
+    stress \
 "
 
 # Configuration and addons
