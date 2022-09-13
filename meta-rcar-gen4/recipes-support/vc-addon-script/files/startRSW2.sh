@@ -1,17 +1,16 @@
 #!/bin/bash
 
-lsmod | grep rswitch2 
-if [ $? == "0" ]; then
-  echo "rswitch2 driver still loaded. Unload the driver module and try agian."
-  exit 1
-fi
-
-
 echo "Current switch port configuration:"
 echo -n " etha0: "; cat /proc/device-tree/soc/ethernet\@e68c0000/ports/port\@0/phy-mode ;echo
 echo -n " etha1: "; cat /proc/device-tree/soc/ethernet\@e68c0000/ports/port\@1/phy-mode ;echo
 echo -n " etha2: "; cat /proc/device-tree/soc/ethernet\@e68c0000/ports/port\@2/phy-mode ;echo
 
+
+lsmod | grep rswitch2 
+if [ $? == "0" ]; then
+  echo "rswitch2 driver still loaded. Unload the driver module and try agian."
+  exit 1
+fi
 
 load=no
 load0=no
@@ -50,8 +49,8 @@ done
 
 if [ $load == "yes" ]; then
   #Start the RSW2 driver
-  if [ -f ./rswitch2.ko ]; then
-    insmod ./rswitch2.ko || exit 1
+  if [ -f /home/root/rswitch2.ko ]; then
+    insmod /home/root/rswitch2.ko || exit 1
   else
     modprobe rswitch2 || exit 1
   fi
