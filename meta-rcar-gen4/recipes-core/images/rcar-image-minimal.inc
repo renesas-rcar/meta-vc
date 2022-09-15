@@ -17,6 +17,7 @@ IMAGE_INSTALL_append = " \
     iperf2 \
     iperf3 \
     linuxptp \
+    gptp-avnu \
     sshfs-fuse \
 "
 
