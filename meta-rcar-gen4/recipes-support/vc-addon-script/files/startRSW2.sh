@@ -6,7 +6,7 @@ echo -n " etha1: "; cat /proc/device-tree/soc/ethernet\@e68c0000/ports/port\@1/p
 echo -n " etha2: "; cat /proc/device-tree/soc/ethernet\@e68c0000/ports/port\@2/phy-mode ;echo
 
 
-lsmod | grep rswitch2 
+lsmod | grep rswitch2
 if [ $? == "0" ]; then
   echo "rswitch2 driver still loaded. Unload the driver module and try agian."
   exit 1
@@ -57,16 +57,20 @@ if [ $load == "yes" ]; then
 
   ifconfig sw0 192.168.0.7 up
   sleep 1
+
   if [ $load0 == "yes" ]; then
     echo "------- ETHA 0 --------"
+    sysctl -w net.ipv6.conf.sw0p0.disable_ipv6=1
     ifconfig sw0p0 up
   fi
   if [ $load1 == "yes" ]; then
     echo "------- ETHA 1 --------"
+    sysctl -w net.ipv6.conf.sw0p1.disable_ipv6=1
     ifconfig sw0p1 up
   fi
   if [ $load2 == "yes" ]; then
     echo "------- ETHA 2 --------"
+    sysctl -w net.ipv6.conf.sw0p2.disable_ipv6=1
     ifconfig sw0p2 up
   fi
 else
