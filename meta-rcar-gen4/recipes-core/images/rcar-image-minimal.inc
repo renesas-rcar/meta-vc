@@ -37,6 +37,7 @@ IMAGE_INSTALL_append = " \
     e2fsprogs-mke2fs \
     i2c-tools \
     util-linux \
+    hexedit \
     procps \
     pciutils \
     dosfstools \
