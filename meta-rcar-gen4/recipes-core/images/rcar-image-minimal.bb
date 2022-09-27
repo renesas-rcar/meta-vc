@@ -8,6 +8,8 @@ COMPATIBLE_MACHINE = "(vc4)"
 # Enable package manager
 EXTRA_IMAGE_FEATURES += "package-management"
 
+PREFERRED_VERSION_ethtool ?= "5.12"
+
 # Basic packages
 IMAGE_INSTALL_append = " \
     bash \
