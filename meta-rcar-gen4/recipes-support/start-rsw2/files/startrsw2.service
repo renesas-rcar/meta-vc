@@ -1,0 +1,14 @@
+[Unit]
+Description=rswitch2 start service
+Wants=nework.target
+After=network.target
+
+[Service]
+ExecStart=/bin/bash /usr/bin/startRSW2.sh all
+ExecStop=/usr/bin/killall -s KILL startRSW2.sh
+Type=oneshot
+RemainAfterExit=yes
+StandardOutput=inherit
+
+[Install]
+WantedBy=multi-user.target

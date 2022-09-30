@@ -1,0 +1,25 @@
+From 9b49b50c4e425d46b354295569642cb7539e9bee Mon Sep 17 00:00:00 2001
+From: "dennis.ostermann" <dennis.ostermann@renesas.com>
+Date: Thu, 29 Sep 2022 09:38:59 +0000
+Subject: [PATCH 11/11] Reset the board after environment import for auto boot
+
+---
+ include/configs/vc4.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/configs/vc4.h b/include/configs/vc4.h
+index 8839f55f50..5e1f1dd441 100644
+--- a/include/configs/vc4.h
++++ b/include/configs/vc4.h
+@@ -30,7 +30,7 @@
+        "netmask=255.255.255.0\0" \
+        "serverip=192.168.0.1\0" \
+        "nfsroot=/var/lib/tftpboot/rootfs\0" \
+-       "do_import_env=echo \"Found environment file!\" ; env import -t 0x48080000  ${filesize}; setenv env_imported true; saveenv && echo \"Stored new environment.\"\0" \
++       "do_import_env=echo \"Found environment file!\" ; env import -t 0x48080000  ${filesize}; setenv env_imported true; saveenv && echo \"Stored new environment.\" ; reset\0" \
+        "load_env=run load_mmc_env && run load_env_cmd || run load_tftp_env && run load_env_cmd\0" \
+        "load_mmc_env=setenv load_env_cmd \"echo \\\"Trying to import environment from MMC...\\\" ; ext4load mmc 0 0x48080000 /boot/u-boot.env\"\0" \
+        "load_tftp_env=setenv load_env_cmd \"echo \\\"Trying to import environment via TFTP...\\\" ; tftp 0x48080000 ${nfsroot}/boot/u-boot.env\"\0" \
+-- 
+2.17.1
+

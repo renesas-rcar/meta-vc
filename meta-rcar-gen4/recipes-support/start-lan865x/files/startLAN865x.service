@@ -1,0 +1,15 @@
+[Unit]
+Description=LAN865x driver start service
+Wants=nework.target
+After=network.target
+
+[Service]
+ExecStart=/bin/bash /usr/bin/startLAN865x.sh
+ExecStop=/usr/bin/killall -s KILL startLAN865x.sh
+Type=oneshot
+RemainAfterExit=yes
+StandardOutput=inherit
+
+[Install]
+WantedBy=multi-user.target
+

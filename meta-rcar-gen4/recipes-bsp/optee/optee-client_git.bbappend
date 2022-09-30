@@ -1,0 +1,4 @@
+DESCRIPTION = "OP-TEE Client"
+
+COMPATIBLE_MACHINE = "vc4"
+

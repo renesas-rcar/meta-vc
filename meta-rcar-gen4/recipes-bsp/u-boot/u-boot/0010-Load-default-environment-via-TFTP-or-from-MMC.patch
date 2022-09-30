@@ -1,0 +1,58 @@
+From 77483b223fb1b59b123c355b96526829de3100cb Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Thu, 8 Sep 2022 16:20:05 +0200
+Subject: [PATCH 10/11] Load default environment via TFTP or from MMC
+
+---
+ include/configs/vc4.h | 35 +++++++++++++++++++++++++++++++----
+ 1 file changed, 31 insertions(+), 4 deletions(-)
+
+diff --git a/include/configs/vc4.h b/include/configs/vc4.h
+index e678069dc9..8839f55f50 100644
+--- a/include/configs/vc4.h
++++ b/include/configs/vc4.h
+@@ -18,10 +18,37 @@
+ /* Generic Timer Definitions (use in assembler source) */
+ #define COUNTER_FREQUENCY	0x1312D00	/* 20.00MHz from CPclk */
+ 
++#ifdef CONFIG_EXTRA_ENV_SETTINGS
++#undef CONFIG_EXTRA_ENV_SETTINGS
++#endif /* CONFIG_EXTRA_ENV_SETTINGS */
++
++
++/* ENV setting */
++#define CONFIG_EXTRA_ENV_SETTINGS \
++       "ethrotate=no\0" \
++       "ipaddr=192.168.0.20\0" \
++       "netmask=255.255.255.0\0" \
++       "serverip=192.168.0.1\0" \
++       "nfsroot=/var/lib/tftpboot/rootfs\0" \
++       "do_import_env=echo \"Found environment file!\" ; env import -t 0x48080000  ${filesize}; setenv env_imported true; saveenv && echo \"Stored new environment.\"\0" \
++       "load_env=run load_mmc_env && run load_env_cmd || run load_tftp_env && run load_env_cmd\0" \
++       "load_mmc_env=setenv load_env_cmd \"echo \\\"Trying to import environment from MMC...\\\" ; ext4load mmc 0 0x48080000 /boot/u-boot.env\"\0" \
++       "load_tftp_env=setenv load_env_cmd \"echo \\\"Trying to import environment via TFTP...\\\" ; tftp 0x48080000 ${nfsroot}/boot/u-boot.env\"\0" \
++       "check_import_env=if test \"${env_imported}\" != \"true\"; then run load_env && run do_import_env; fi\0"
++
++#ifdef CONFIG_BOOTARGS
++#undef CONFIG_BOOTARGS
++#endif /* CONFIG_BOOTARGS */
++
++#define CONFIG_BOOTARGS \
++       ""
++
++#ifdef CONFIG_BOOTCOMMAND
+ #undef CONFIG_BOOTCOMMAND
+-#define CONFIG_BOOTCOMMAND	  \
+-	"ext4load mmc 0:1 0x48080000 /boot/Image; " \
+-	"ext4load mmc 0:1 0x48000000 /boot/"CONFIG_DEFAULT_FDT_FILE"; " \
+-	"booti 0x48080000 - 0x48000000"
++#endif /* CONFIG_BOOTCOMMAND */
++
++#define CONFIG_BOOTCOMMAND \
++       "run check_import_env"
++
+ 
+ #endif /* __VC4_H */
+-- 
+2.17.1
+

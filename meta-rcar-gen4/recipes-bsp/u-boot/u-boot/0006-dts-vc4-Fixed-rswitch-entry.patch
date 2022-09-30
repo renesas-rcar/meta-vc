@@ -1,0 +1,66 @@
+From 85405c2226832483e819504e1d0d3171d301741e Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Wed, 23 Mar 2022 12:19:38 +0100
+Subject: [PATCH 06/11] dts: vc4: Fixed rswitch entry
+
+---
+ arch/arm/dts/r8a779f0-vc4.dts | 40 ++++++-----------------------------
+ 1 file changed, 7 insertions(+), 33 deletions(-)
+
+diff --git a/arch/arm/dts/r8a779f0-vc4.dts b/arch/arm/dts/r8a779f0-vc4.dts
+index 9b86ce111d..2bbac4fea5 100644
+--- a/arch/arm/dts/r8a779f0-vc4.dts
++++ b/arch/arm/dts/r8a779f0-vc4.dts
+@@ -236,42 +236,16 @@
+ 	status = "okay";
+ 	pinctrl-0 = <&tsn0_pins &tsn1_pins &tsn2_pins>;
+ 	pinctrl-names = "default";
++	phy-mode = "sgmii";
++	phy-handle = <&etha0>;
+ 	#address-cells = <1>;
+ 	#size-cells = <0>;
+ 
+-	ports {
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+-		port@0 {
+-			reg = <0>;
+-			phy-handle = <&etha0>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha0: ethernet-phy@0 {
+-				reg = <1>;
+-				compatible = "ethernet-phy-ieee802.3-c45";
+-			};
+-		};
+-		port@1 {
+-			reg = <1>;
+-			phy-handle = <&etha1>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha1: ethernet-phy@1 {
+-				reg = <2>;
+-				compatible = "ethernet-phy-ieee802.3-c45";
+-			};
+-		};
+-		port@2 {
+-			reg = <2>;
+-			phy-handle = <&etha2>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha2: ethernet-phy@2 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-ieee802.3-c45";
+-			};
+-		};
++	etha0: ethernet-phy@0 {
++		phy-connection-type = "sgmii";
++		device_type = "ethernet-phy";
++		compatible = "marvell,88q2110";
++		reg = <1>;
+ 	};
+ };
+ 
+-- 
+2.17.1
+
