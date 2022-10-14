@@ -55,7 +55,10 @@ if [ $load == "yes" ]; then
     modprobe rswitch2 || exit 1
   fi
 
-  ifconfig sw0 192.168.0.7 up
+  VC_NUM=`dd if=/sys/bus/nvmem/devices/board-data/nvmem bs=1 count=2 skip=1812 status=none | hexdump -e '"%d"'`
+
+  ifconfig sw0 192.168.0.$VC_NUM up
+
   sleep 1
 
   if [ $load0 == "yes" ]; then
