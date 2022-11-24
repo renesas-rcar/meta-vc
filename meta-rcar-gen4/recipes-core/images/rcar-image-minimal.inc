@@ -33,6 +33,7 @@ IMAGE_INSTALL_append = " \
     python3-numpy \
     iftop \
     htop \
+    tmux \
     strace \
     e2fsprogs-mke2fs \
     i2c-tools \
