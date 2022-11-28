@@ -1,0 +1,330 @@
+From 89b7c2c3c8fa5ed0ed05f4b8ab90210c1679b896 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Thu, 24 Nov 2022 14:20:11 +0100
+Subject: [PATCH] ethtool: Add support for master/slave link setting
+
+---
+ man/systemd.link.xml                        | 11 ++++
+ src/libsystemd/sd-netlink/generic-netlink.c |  1 +
+ src/libsystemd/sd-netlink/netlink-types.c   | 40 ++++++++++++++
+ src/shared/ethtool-util.c                   | 60 +++++++++++++++++++++
+ src/shared/ethtool-util.h                   | 14 +++++
+ src/systemd/sd-netlink.h                    |  1 +
+ src/udev/net/link-config-gperf.gperf        |  1 +
+ src/udev/net/link-config.c                  |  8 +++
+ src/udev/net/link-config.h                  |  1 +
+ 9 files changed, 137 insertions(+)
+
+diff --git a/man/systemd.link.xml b/man/systemd.link.xml
+index 63bb31d6e8..f496b914db 100644
+--- a/man/systemd.link.xml
++++ b/man/systemd.link.xml
+@@ -392,6 +392,17 @@
+           if the driver supports multiple link modes.</para>
+         </listitem>
+       </varlistentry>
++      <varlistentry>
++        <term><varname>MasterSlave=</varname></term>
++        <listitem>
++          <para>Takes a one of <option>preferred-master</option>, <option>preferred-slave</option>,
++          <option>forced-master</option> and <option>forced-slave</option> options.
++          These are identical to ethtool syntax</para>
++          
++          <para>The settting is only applied if autonegotation is disabled and the driver supports it. 
++          This setting is currently used by xBASE-T1-drivers</para>
++        </listitem>
++      </varlistentry>
+       <varlistentry>
+         <term><varname>WakeOnLan=</varname></term>
+         <listitem>
+diff --git a/src/libsystemd/sd-netlink/generic-netlink.c b/src/libsystemd/sd-netlink/generic-netlink.c
+index b4971da323..bb50cba134 100644
+--- a/src/libsystemd/sd-netlink/generic-netlink.c
++++ b/src/libsystemd/sd-netlink/generic-netlink.c
+@@ -20,6 +20,7 @@ static const genl_family genl_families[] = {
+         [SD_GENL_L2TP]      = { .name = "l2tp",      .version = 1 },
+         [SD_GENL_MACSEC]    = { .name = "macsec",    .version = 1 },
+         [SD_GENL_NL80211]   = { .name = "nl80211",   .version = 1 },
++        [SD_GENL_ETHTOOL]   = { .name = "ethtool",   .version = 1 },
+ };
+ 
+ int sd_genl_socket_open(sd_netlink **ret) {
+diff --git a/src/libsystemd/sd-netlink/netlink-types.c b/src/libsystemd/sd-netlink/netlink-types.c
+index a55460f034..a84dc645a3 100644
+--- a/src/libsystemd/sd-netlink/netlink-types.c
++++ b/src/libsystemd/sd-netlink/netlink-types.c
+@@ -21,6 +21,7 @@
+ #include <linux/l2tp.h>
+ #include <linux/nexthop.h>
+ #include <linux/nl80211.h>
++#include <linux/ethtool_netlink.h>
+ #include <linux/pkt_sched.h>
+ #include <linux/veth.h>
+ #include <linux/wireguard.h>
+@@ -1036,6 +1037,42 @@ static const NLTypeSystem genl_nl80211_cmds_type_system = {
+         .types = genl_nl80211_cmds,
+ };
+ 
++static const NLType genl_ethtool_dev_types[] = {
++        [ETHTOOL_A_HEADER_DEV_INDEX] = { .type = NETLINK_TYPE_U32 },
++        [ETHTOOL_A_HEADER_DEV_NAME]  = { .type = NETLINK_TYPE_STRING },
++        [ETHTOOL_A_HEADER_FLAGS]     = { .type = NETLINK_TYPE_U32 },
++};
++
++static const NLTypeSystem genl_ethtool_dev_type_system = {
++        .count = ELEMENTSOF(genl_ethtool_dev_types),
++        .types = genl_ethtool_dev_types,
++};
++
++
++
++static const NLType genl_ethtool_linkmode_types[] = {
++        [ETHTOOL_A_LINKMODES_HEADER]             = { .type = NETLINK_TYPE_NESTED, .type_system = &genl_ethtool_dev_type_system  },
++		[ETHTOOL_A_LINKMODES_AUTONEG]            = { .type = NETLINK_TYPE_U8 },
++		[ETHTOOL_A_LINKMODES_SPEED]              = { .type = NETLINK_TYPE_U32 },
++		[ETHTOOL_A_LINKMODES_DUPLEX]             = { .type = NETLINK_TYPE_U8 },
++		[ETHTOOL_A_LINKMODES_MASTER_SLAVE_CFG]   = { .type = NETLINK_TYPE_U8 },
++		[ETHTOOL_A_LINKMODES_MASTER_SLAVE_STATE] = { .type = NETLINK_TYPE_U8 },
++};
++
++static const NLTypeSystem genl_ethtool_linkmode_type_system = {
++        .count = ELEMENTSOF(genl_ethtool_linkmode_types),
++        .types = genl_ethtool_linkmode_types,
++};
++
++static const NLType genl_ethtool_cmds[] = {
++        [ETHTOOL_MSG_LINKMODES_SET]     = { .type = NETLINK_TYPE_NESTED, .type_system = &genl_ethtool_linkmode_type_system },
++};
++
++static const NLTypeSystem genl_ethtool_cmds_type_system = {
++       .count = ELEMENTSOF(genl_ethtool_cmds),
++       .types = genl_ethtool_cmds,
++};
++
+ static const NLType genl_families[] = {
+         [SD_GENL_ID_CTRL]   = { .type = NETLINK_TYPE_NESTED, .type_system = &genl_ctrl_id_ctrl_type_system },
+         [SD_GENL_WIREGUARD] = { .type = NETLINK_TYPE_NESTED, .type_system = &genl_wireguard_type_system },
+@@ -1043,6 +1080,7 @@ static const NLType genl_families[] = {
+         [SD_GENL_L2TP]      = { .type = NETLINK_TYPE_NESTED, .type_system = &genl_l2tp_tunnel_session_type_system },
+         [SD_GENL_MACSEC]    = { .type = NETLINK_TYPE_NESTED, .type_system = &genl_macsec_device_type_system },
+         [SD_GENL_NL80211]   = { .type = NETLINK_TYPE_NESTED, .type_system = &genl_nl80211_cmds_type_system },
++        [SD_GENL_ETHTOOL]   = { .type = NETLINK_TYPE_NESTED, .type_system = &genl_ethtool_cmds_type_system },
+ };
+ 
+ /* Mainly used when sending message */
+@@ -1056,6 +1094,8 @@ static const NLType genl_types[] = {
+         [SD_GENL_DONE]    = { .type = NETLINK_TYPE_NESTED, .type_system = &empty_type_system },
+         [SD_GENL_ID_CTRL] = { .type = NETLINK_TYPE_NESTED, .type_system = &genl_get_family_type_system, .size = sizeof(struct genlmsghdr) },
+         [SD_GENL_NL80211] = { .type = NETLINK_TYPE_NESTED, .type_system = &genl_nl80211_type_system, .size = sizeof(struct genlmsghdr) },
++        [SD_GENL_ETHTOOL] = { .type = NETLINK_TYPE_NESTED, .type_system = &genl_ethtool_linkmode_type_system, .size = sizeof(struct genlmsghdr) },
++
+ };
+ 
+ /* Mainly used when message received */
+diff --git a/src/shared/ethtool-util.c b/src/shared/ethtool-util.c
+index 3119b2b92e..7511afb71f 100644
+--- a/src/shared/ethtool-util.c
++++ b/src/shared/ethtool-util.c
+@@ -3,6 +3,8 @@
+ #include <net/if.h>
+ #include <sys/ioctl.h>
+ #include <linux/ethtool.h>
++#include <linux/genetlink.h>
++#include <linux/ethtool_netlink.h>
+ #include <linux/sockios.h>
+ 
+ #include "conf-parser.h"
+@@ -11,6 +13,7 @@
+ #include "log.h"
+ #include "memory-util.h"
+ #include "socket-util.h"
++#include "sd-netlink.h"
+ #include "string-table.h"
+ #include "strxcpyx.h"
+ 
+@@ -22,6 +25,16 @@ static const char* const duplex_table[_DUP_MAX] = {
+ DEFINE_STRING_TABLE_LOOKUP(duplex, Duplex);
+ DEFINE_CONFIG_PARSE_ENUM(config_parse_duplex, duplex, Duplex, "Failed to parse duplex setting");
+ 
++static const char* const master_slave_table[_MASTER_SLAVE_MAX] = {
++        [MASTER_PREFERRED]= "master-preferred",
++        [SLAVE_PREFERRED]= "slave-preferred",
++        [MASTER_FORCE]= "master-force",
++        [SLAVE_FORCE]= "slave-force",
++};
++
++DEFINE_STRING_TABLE_LOOKUP(master_slave, MasterSlave);
++DEFINE_CONFIG_PARSE_ENUM(config_parse_master_slave, master_slave, MasterSlave, "Failed to parse master-slave setting");
++
+ static const char* const wol_table[_WOL_MAX] = {
+         [WOL_PHY]         = "phy",
+         [WOL_UCAST]       = "unicast",
+@@ -275,6 +288,53 @@ int ethtool_set_speed(int *fd, const char *ifname, unsigned speed, Duplex duplex
+         return 0;
+ }
+ 
++int ethtool_set_master_slave(const char *ifname, int autonegotiation, MasterSlave master_slave) {
++	_cleanup_(sd_netlink_unrefp) sd_netlink *genl = NULL;
++	_cleanup_(sd_netlink_message_unrefp) sd_netlink_message *m = NULL, *reply = NULL;
++        sd_genl_family family;
++        int r;
++
++        uint16_t nl_ethtool_id;
++        uint8_t master_slave_mode = (uint8_t) master_slave;
++        uint8_t autoneg = (uint8_t)autonegotiation;
++		sd_genl_socket_open(&genl);
++			if (r < 0)
++				return r;
++
++        r = sd_genl_message_new(genl, SD_GENL_ETHTOOL, ETHTOOL_MSG_LINKMODES_SET, &m);
++ 		if (r < 0)
++ 			return log_debug_errno(r, "Failed to create ethtool netlink message: %m");
++ 		r = sd_netlink_message_open_container(m, ETHTOOL_A_LINKMODES_HEADER);
++ 		if (r < 0)
++ 		 	return log_debug_errno(r, "Failed to add ethtool netlink link mode header message: %m");
++
++		r = sd_netlink_message_append_string(m, ETHTOOL_A_HEADER_DEV_NAME, ifname);
++	    if (r < 0)
++		   return log_debug_errno(r, "Could not append ETHTOOL_A_HEADER_DEV_NAME(%s) attribute: %m", ifname);
++
++	    r = sd_netlink_message_close_container(m);
++	    if (r < 0)
++			return log_debug_errno(r, "Failed to close message: %m");
++
++	    r = sd_netlink_message_append_u8(m, ETHTOOL_A_LINKMODES_AUTONEG, autoneg);
++	    if (r < 0)
++		   return log_debug_errno(r, "Could not append ETHTOOL_A_LINKMODES_AUTONEG attribute: %m");
++
++	    r = sd_netlink_message_append_u8(m, ETHTOOL_A_LINKMODES_MASTER_SLAVE_CFG, master_slave_mode);
++	    if (r < 0)
++		   return log_debug_errno(r, "Could not append ETHTOOL_A_LINKMODES_MASTER_SLAVE_CFG attribute: %m");
++	    r = sd_netlink_call(genl, m, 0, &reply);
++        if (r < 0)
++                return log_debug_errno(r, "Failed to request information about ethtool master/slave interface %m");
++        if (!reply) {
++            log_warning("Ethtool nl message: no reply");
++
++        		return 0;
++        }
++		
++        return 0;
++
++}
+ int ethtool_set_wol(int *fd, const char *ifname, WakeOnLan wol) {
+         struct ethtool_wolinfo ecmd = {
+                 .cmd = ETHTOOL_GWOL
+diff --git a/src/shared/ethtool-util.h b/src/shared/ethtool-util.h
+index d408bcd90a..594c10624c 100644
+--- a/src/shared/ethtool-util.h
++++ b/src/shared/ethtool-util.h
+@@ -5,6 +5,7 @@
+ #include <linux/ethtool.h>
+ 
+ #include "conf-parser.h"
++#include "sd-netlink.h"
+ 
+ #define N_ADVERTISE 3
+ 
+@@ -16,6 +17,14 @@ typedef enum Duplex {
+         _DUP_MAX,
+         _DUP_INVALID = -1
+ } Duplex;
++typedef enum MasterSlave {
++        MASTER_PREFERRED  = 2,
++        SLAVE_PREFERRED,
++        MASTER_FORCE,
++        SLAVE_FORCE,
++        _MASTER_SLAVE_MAX,
++		_MASTER_SLAVE_INVALID = -1
++} MasterSlave;
+ 
+ typedef enum WakeOnLan {
+         WOL_PHY,
+@@ -99,10 +108,14 @@ int ethtool_set_glinksettings(int *fd, const char *ifname,
+                               int autonegotiation, uint32_t advertise[static N_ADVERTISE],
+                               size_t speed, Duplex duplex, NetDevPort port);
+ int ethtool_set_channels(int *fd, const char *ifname, netdev_channels *channels);
++int ethtool_set_master_slave(const char *ifname, int autonegotiation, MasterSlave master_slave);
+ 
+ const char *duplex_to_string(Duplex d) _const_;
+ Duplex duplex_from_string(const char *d) _pure_;
+ 
++const char *master_slave_to_string(MasterSlave ms) _const_;
++MasterSlave master_slave_from_string(const char *d) _pure_;
++
+ const char *wol_to_string(WakeOnLan wol) _const_;
+ WakeOnLan wol_from_string(const char *wol) _pure_;
+ 
+@@ -113,6 +126,7 @@ const char *ethtool_link_mode_bit_to_string(enum ethtool_link_mode_bit_indices v
+ enum ethtool_link_mode_bit_indices ethtool_link_mode_bit_from_string(const char *str) _pure_;
+ 
+ CONFIG_PARSER_PROTOTYPE(config_parse_duplex);
++CONFIG_PARSER_PROTOTYPE(config_parse_master_slave);
+ CONFIG_PARSER_PROTOTYPE(config_parse_wol);
+ CONFIG_PARSER_PROTOTYPE(config_parse_port);
+ CONFIG_PARSER_PROTOTYPE(config_parse_channel);
+diff --git a/src/systemd/sd-netlink.h b/src/systemd/sd-netlink.h
+index b34befebc8..0288d0f7a2 100644
+--- a/src/systemd/sd-netlink.h
++++ b/src/systemd/sd-netlink.h
+@@ -43,6 +43,7 @@ typedef enum sd_gen_family {
+         SD_GENL_L2TP,
+         SD_GENL_MACSEC,
+         SD_GENL_NL80211,
++        SD_GENL_ETHTOOL,
+ } sd_genl_family;
+ 
+ /* callback */
+diff --git a/src/udev/net/link-config-gperf.gperf b/src/udev/net/link-config-gperf.gperf
+index c6ff796efc..96b4e27d11 100644
+--- a/src/udev/net/link-config-gperf.gperf
++++ b/src/udev/net/link-config-gperf.gperf
+@@ -39,6 +39,7 @@ Link.Alias,                      config_parse_ifalias,            0,
+ Link.MTUBytes,                   config_parse_mtu,                AF_UNSPEC,                     offsetof(link_config, mtu)
+ Link.BitsPerSecond,              config_parse_si_size,            0,                             offsetof(link_config, speed)
+ Link.Duplex,                     config_parse_duplex,             0,                             offsetof(link_config, duplex)
++Link.MasterSlave,                config_parse_master_slave,       0,                             offsetof(link_config, master_slave)
+ Link.AutoNegotiation,            config_parse_tristate,           0,                             offsetof(link_config, autonegotiation)
+ Link.WakeOnLan,                  config_parse_wol,                0,                             offsetof(link_config, wol)
+ Link.Port,                       config_parse_port,               0,                             offsetof(link_config, port)
+diff --git a/src/udev/net/link-config.c b/src/udev/net/link-config.c
+index 7b07e2f38f..df9d9b2104 100644
+--- a/src/udev/net/link-config.c
++++ b/src/udev/net/link-config.c
+@@ -143,6 +143,7 @@ int link_load_one(link_config_ctx *ctx, const char *filename) {
+                 .mac_address_policy = _MAC_ADDRESS_POLICY_INVALID,
+                 .wol = _WOL_INVALID,
+                 .duplex = _DUP_INVALID,
++				.master_slave = _MASTER_SLAVE_INVALID,
+                 .port = _NET_DEV_PORT_INVALID,
+                 .autonegotiation = -1,
+         };
+@@ -387,6 +388,13 @@ int link_config_apply(link_config_ctx *ctx, link_config *config,
+                         log_warning_errno(r, "Could not set ring buffer of %s: %m", old_name);
+         }
+ 
++        if ((config->master_slave != _MASTER_SLAVE_INVALID) && (config->master_slave < _MASTER_SLAVE_MAX)) {
++
++            r = ethtool_set_master_slave(old_name, config->autonegotiation, config->master_slave);
++            if (r < 0)
++                    log_warning_errno(r, "Could not set master_slave config %d of %s: %m", config->master_slave, old_name);
++        }
++
+         r = sd_device_get_ifindex(device, &ifindex);
+         if (r < 0)
+                 return log_device_warning_errno(device, r, "Could not find ifindex: %m");
+diff --git a/src/udev/net/link-config.h b/src/udev/net/link-config.h
+index 52a02b9b09..4673d324f4 100644
+--- a/src/udev/net/link-config.h
++++ b/src/udev/net/link-config.h
+@@ -53,6 +53,7 @@ struct link_config {
+         size_t speed;
+         Duplex duplex;
+         int autonegotiation;
++        MasterSlave master_slave;
+         uint32_t advertise[N_ADVERTISE];
+         WakeOnLan wol;
+         NetDevPort port;
+-- 
+2.17.1
+
