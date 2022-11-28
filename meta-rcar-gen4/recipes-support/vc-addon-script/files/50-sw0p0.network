@@ -1,0 +1,6 @@
+[Match]
+Name=sw0p0
+
+[Network]
+LinkLocalAddressing=no
+IPv6AcceptRA=no
