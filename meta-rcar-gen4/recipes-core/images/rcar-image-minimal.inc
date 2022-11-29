@@ -2,6 +2,10 @@ IMAGE_INSTALL_append = " gdb gdbserver openssh openssh-sftp openssh-sftp-server 
 
 IMAGE_INSTALL_append = " phytool "
 
+GLIBC_GENERATE_LOCALES="en_US.UTF-8"
+IMAGE_LINGUAS="en-us"
+
+
 # Networking tools
 IMAGE_INSTALL_append = " \
     ethtool \
