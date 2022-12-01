@@ -11,6 +11,7 @@ SRC_URI = " \
     file://mrvl-ms \
     file://mrvl-counters \
     file://50-sw0* \
+    file://t1s0.dtso \
 "
 
 RDEPENDS_${PN} =+ "bash"
@@ -32,6 +33,7 @@ do_install() {
     install -m 755 ${WORKDIR}/startRSW2.sh ${D}/home/root
     install -m 755 ${WORKDIR}/startCAN.sh ${D}/home/root/examples
     install -m 755 ${WORKDIR}/startT1S.sh ${D}/home/root/examples
+    install -m 755 ${WORKDIR}/t1s0.dtso ${D}/home/root/examples
     install -m 644 ${WORKDIR}/ptp4l.cfg ${D}/home/root/examples
     install -m 755 ${WORKDIR}/mrvl-ms ${D}/usr/bin
     install -m 755 ${WORKDIR}/mrvl-counters ${D}/usr/bin
