@@ -53,6 +53,7 @@ IMAGE_INSTALL_append = " \
     tcl \
     python3-scapy \
     stress \
+    dtc \
 "
 
 # Configuration and addons
