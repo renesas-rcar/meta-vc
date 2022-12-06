@@ -1,7 +1,7 @@
 RENESAS_BSP_URL = "git://git@ree-dusgitlab.ree.adwin.renesas.com/r-car-gen3-yocto/renesas-linux.git"
 
 BRANCH = "vc4"
-#BRANCH = "172-t1s-cannot-send-frames-above-300-bytes"
+#BRANCH = "205-add-dedicated-phy-for-marvell-m88q3344-engineering-sample"
 SRC_URI = "${RENESAS_BSP_URL};protocol=ssh;nocheckout=1;branch=${BRANCH}"
 
 

@@ -1,6 +1,6 @@
 [Match]
 OriginalName=sw0p0
-Property=INTERFACE=sw0p0
+Property=INTERFACE=sw0p0 RSW2_PORT0_PHY_MODE=sgmii
 
 [Link]
 NamePolicy=keep kernel database onboard slot path

@@ -1,0 +1,146 @@
+.\" generated with Ronn/v0.7.3
+.\" http://github.com/rtomayko/ronn/tree/0.7.3
+.
+.TH "VC4\-NETWORK\-CONFIGURATION" "" "December 2022" "" ""
+.
+.SH "NAME"
+VC4 Network configuration
+.
+.SH "SYNOPSIS"
+vc4\-network
+.
+.SH "DESCRIPTION"
+The vehicle computer 4 (VC4) allows to change the connected PHYs via device tree (DT) file\. In order to ease selection of configured PHYs, the VC4\'s bootloader allows to add the PHY\'s device tree nodes on\-the\-fly before booting the Linux kernel\. To do edit one of the pre\-configured u\-boot environment variables:
+.
+.IP "" 4
+.
+.nf
+
+printenv
+[\.\.\.]
+tsn0phy=2g5
+tsn1phy=2g5
+tsn2phy=1g
+.
+.fi
+.
+.IP "" 0
+.
+.P
+By selecting \fI1g\fR or \fI2g5\fR the corresponding device tree node will be add\.
+.
+.P
+Network configuration is done with systemd \fIhttps://www\.freedesktop\.org/wiki/Software/systemd/\fR as most desktop distributions also do Thus configuration of IP address, gateway etc\. is done in \fI*\.network"\fR files as described in systemd\.network \fIhttps://www\.freedesktop\.org/software/systemd/man/systemd\.network\.html\fR
+.
+.P
+The default configuration for the switch internal__ gateway port looks like below:
+.
+.IP "" 4
+.
+.nf
+
+[Match]
+Name=sw0
+
+[Network]
+DHCP=v4
+
+# static IP
+#Address=192\.168\.0\.4/24
+#Gateway=192\.168\.0\.1
+#DNS=192\.168\.0\.1
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Link parameters for each port are configured by systemd \fI\.link files\. The syntax of these files are described in systemd\.link \fIhttps://www\.freedesktop\.org/software/systemd/man/systemd\.link\.html\fR In order to also configure the master/slave configuration of the Base\-T1 automotive PHYs, the version of systemd provided with the VC4 has been enhanced to support an additional parameter for _\fR\.link_ files\.
+.
+.IP "" 4
+.
+.nf
+
+MasterSlave=
+
+      Takes a one of preferred\-master, preferred\-slave,
+      forced\-master and forced\-slave_options\.
+      These are identical to ethtool syntax
+
+      The setting is only applied if auto\-negotation is
+      disabled and the driver supports it\. This setting is
+      currently used by xBASE\-T1\-drivers
+.
+.fi
+.
+.IP "" 0
+.
+.P
+An additional properties are provided to be used in the \fI*\.link\fR files [Match] section\. These are called \fIRSW2_PORT0_PHY_MODE\fR, \fIRSW2_PORT1_PHY_MODE\fR and \fIRSW2_PORT2_PHY_MODE\fR and their value reflects the configured PHY mode in the device tree, namely sgmii and usxgmii\. Thus different link configuration can be applied by different depending on the chosen PHY\. See /etc/systemd/network/45\-sw0p0\-2g5\.link es example:
+.
+.IP "" 4
+.
+.nf
+
+[Match]
+OriginalName=sw0p0
+Property=INTERFACE=sw0p0 RSW2_PORT0_PHY_MODE=usxgmii
+
+[Link]
+NamePolicy=keep kernel database onboard slot path
+
+
+BitsPerSecond=2500M
+AutoNegotiation=off
+Duplex=full
+MasterSlave=slave\-preferred
+#MasterSlave=master\-preferred`
+.
+.fi
+.
+.IP "" 0
+.
+.P
+The configuration of this link files will only be applied, if the PHY connected to port 0 is connected via USXGMII
+.
+.SH "FILES"
+/etc/systemd/network/40\-sw0\.network
+.
+.br
+/etc/systemd/network/45\-sw0p0\-2g5\.link
+.
+.br
+/etc/systemd/network/50\-sw0p0\-1g\.link
+.
+.br
+/etc/systemd/network/50\-sw0p0\.network
+.
+.br
+/etc/systemd/network/50\-sw0p1\-1g\.link
+.
+.br
+/etc/systemd/network/50\-sw0p1\-2g5\.link
+.
+.br
+/etc/systemd/network/50\-sw0p1\.network
+.
+.br
+/etc/systemd/network/50\-sw0p2\-1g\.link
+.
+.br
+/etc/systemd/network/50\-sw0p2\-2g5\.link
+.
+.br
+/etc/systemd/network/50\-sw0p2\.network
+.
+.SH "ENVIRONMENT"
+.
+.SH "DIAGNOSTICS"
+.
+.SH "BUGS"
+.
+.SH "AUTHOR"
+Renesas Electronnis Europe GmbH
+.
+.SH "SEE ALSO"
+https://www\.renesas\.com/in/en/application/automotive/gateway\-domain\-control/vehicle\-computer\-generation\-4
