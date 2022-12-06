@@ -1,6 +1,6 @@
 IMAGE_INSTALL_append = " gdb gdbserver openssh openssh-sftp openssh-sftp-server "
 
-IMAGE_INSTALL_append = " phytool "
+IMAGE_INSTALL_append = " man man-pages"
 
 GLIBC_GENERATE_LOCALES="en_US.UTF-8"
 IMAGE_LINGUAS="en-us"
@@ -9,6 +9,7 @@ IMAGE_LINGUAS="en-us"
 # Networking tools
 IMAGE_INSTALL_append = " \
     ethtool \
+    phytool \
     bridge-utils \
     vlan \
     netcat \
@@ -60,6 +61,7 @@ IMAGE_INSTALL_append = " \
 IMAGE_INSTALL_append = " \
     u-boot-vc4env \
     vc-addon-script \
+    vc-addon-script-doc \
 "
 
 # Install modules into RFS

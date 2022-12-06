@@ -1,0 +1,5 @@
+# Pass the PHY configured in device tree as property to systemd network 
+
+SUBSYSTEM=="net", DEVPATH=="/devices/platform/soc/e68c0000.ethernet/net/sw0p0", PROGRAM=="/bin/cat '/proc/device-tree/soc/ethernet@e68c0000/ports/port@0/phy-mode'", ENV{RSW2_PORT0_PHY_MODE}="%c{1}"
+SUBSYSTEM=="net", DEVPATH=="/devices/platform/soc/e68c0000.ethernet/net/sw0p1", PROGRAM=="/bin/cat '/proc/device-tree/soc/ethernet@e68c0000/ports/port@1/phy-mode'", ENV{RSW2_PORT1_PHY_MODE}="%c{1}"
+SUBSYSTEM=="net", DEVPATH=="/devices/platform/soc/e68c0000.ethernet/net/sw0p2", PROGRAM=="/bin/cat '/proc/device-tree/soc/ethernet@e68c0000/ports/port@2/phy-mode'", ENV{RSW2_PORT2_PHY_MODE}="%c{1}"
