@@ -48,7 +48,7 @@ do_install() {
     install -d ${D}/etc/systemd/network
     install -d ${D}/etc/udev/rules.d
     install -d ${D}/${mandir}/man5
-    install -m 755 ${WORKDIR}/startRSW2.sh ${D}/home/root
+    install -m 755 ${WORKDIR}/startRSW2.sh ${D}/home/root/examples
     install -m 755 ${WORKDIR}/startCAN.sh ${D}/home/root/examples
     install -m 755 ${WORKDIR}/startT1S.sh ${D}/home/root/examples
     install -m 755 ${WORKDIR}/t1s0.dtso ${D}/home/root/examples
