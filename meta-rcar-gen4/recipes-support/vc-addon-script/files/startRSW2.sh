@@ -55,22 +55,24 @@ if [ $load == "yes" ]; then
     modprobe rswitch2 || exit 1
   fi
 
-  ifconfig sw0 192.168.0.7 up
+  #VC_NUM=`dd if=/sys/bus/nvmem/devices/board-data/nvmem bs=1 count=2 skip=1812 status=none | hexdump -e '"%d"'`
+  ifconfig sw0 up
   sleep 1
+
+  #GW_TO_REE=192.168.178.61
+  #route add -net  10.0.0.0 netmask 255.0.0.0 gw $GW_TO_REE
+  #route add -net 172.0.0.0 netmask 255.0.0.0 gw $GW_TO_REE
 
   if [ $load0 == "yes" ]; then
     echo "------- ETHA 0 --------"
-    sysctl -w net.ipv6.conf.sw0p0.disable_ipv6=1
     ifconfig sw0p0 up
   fi
   if [ $load1 == "yes" ]; then
     echo "------- ETHA 1 --------"
-    sysctl -w net.ipv6.conf.sw0p1.disable_ipv6=1
     ifconfig sw0p1 up
   fi
   if [ $load2 == "yes" ]; then
     echo "------- ETHA 2 --------"
-    sysctl -w net.ipv6.conf.sw0p2.disable_ipv6=1
     ifconfig sw0p2 up
   fi
 else

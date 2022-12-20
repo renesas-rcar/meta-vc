@@ -1,7 +1,7 @@
-From c03f56c2a27186e845441996986396c33083730b Mon Sep 17 00:00:00 2001
+From 1335fb469daea702407c69993693e8e313c50da2 Mon Sep 17 00:00:00 2001
 From: Vito Colagiacomo <vito.colagiacomo@renesas.com>
 Date: Thu, 23 Dec 2021 14:15:45 +0100
-Subject: [PATCH 01/11] Add VC4 board
+Subject: [PATCH] Add VC4 board
 
 ---
  arch/arm/dts/Makefile                   |   3 +-

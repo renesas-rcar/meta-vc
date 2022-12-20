@@ -1,0 +1,14 @@
+[Match]
+OriginalName=sw0p0
+#MACAddress=74:50:90:00:13:42
+Property=INTERFACE=sw0p0 RSW2_PORT0_PHY_MODE=usxgmii
+
+[Link]
+NamePolicy=keep kernel database onboard slot path
+AutoNegotiation=off
+Duplex=full
+
+BitsPerSecond=2500M
+
+#MasterSlave=slave-preferred
+MasterSlave=master-preferred

@@ -1,4 +1,4 @@
-DESCRIPTION = "Marvell 88Q211X Phy driver"
+DESCRIPTION = "Marvell 88Q3344 ES Phy driver"
 SECTION = "applications"
 LICENSE = "CLOSED"
 PR = "r0"
@@ -15,7 +15,7 @@ KERNEL_VERSION = "${@get_kernelversion_headers('${B}')}"
 
 
 SRC_URI = " \
-    file://marvell_88q211x.ko \
+    file://marvell_88q3344_es.ko \
 "
 
 S = "${WORKDIR}"
@@ -27,13 +27,13 @@ do_compile[noexec] = "1"
 do_install() {
     MODULE_DIR=${D}${nonarch_base_libdir}/modules/${KERNEL_VERSION}/kernel/drivers/net/phy
     install -d $MODULE_DIR
-    install -m 755 ${S}/marvell_88q211x.ko $MODULE_DIR
+    install -m 755 ${S}/marvell_88q3344_es.ko $MODULE_DIR
 }
 
 
 FILES_${PN} += " \
-    /lib/modules/${KERNEL_VERSION}/kernel/drivers/net/phy/marvell_88q211x.ko \
+    /lib/modules/${KERNEL_VERSION}/kernel/drivers/net/phy/marvell_88q3344_es.ko \
 "
 
 
-KERNEL_MODULE_AUTOLOAD = "marvell_88q211x"
+KERNEL_MODULE_AUTOLOAD = "marvell_88q3344_es"

@@ -1,10 +1,15 @@
 IMAGE_INSTALL_append = " gdb gdbserver openssh openssh-sftp openssh-sftp-server "
 
-IMAGE_INSTALL_append = " phytool "
+IMAGE_INSTALL_append = " man man-pages"
+
+GLIBC_GENERATE_LOCALES="en_US.UTF-8"
+IMAGE_LINGUAS="en-us"
+
 
 # Networking tools
 IMAGE_INSTALL_append = " \
     ethtool \
+    phytool \
     bridge-utils \
     vlan \
     netcat \
@@ -33,6 +38,7 @@ IMAGE_INSTALL_append = " \
     python3-numpy \
     iftop \
     htop \
+    tmux \
     strace \
     e2fsprogs-mke2fs \
     i2c-tools \
@@ -48,18 +54,22 @@ IMAGE_INSTALL_append = " \
     tcl \
     python3-scapy \
     stress \
-    marvell-88q211x \
-    lan865x \
-    start-lan865x \
-    start-lan865x-service \
-    start-rsw2 \
-    start-rsw2-service \	
+    dtc \
 "
+
+# Prebuild binary packages
+IMAGE_INSTALL_append = " \
+     marvell-88q211x \
+     marvell-88q3344-es \
+     lan865x \
+"
+
 
 # Configuration and addons
 IMAGE_INSTALL_append = " \
     u-boot-vc4env \
     vc-addon-script \
+    vc-addon-script-doc \
 "
 
 # Install modules into RFS

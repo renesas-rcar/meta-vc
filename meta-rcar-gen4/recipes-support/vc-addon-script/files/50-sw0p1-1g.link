@@ -1,0 +1,14 @@
+[Match]
+OriginalName=sw0p1
+Property=INTERFACE=sw0p1 RSW2_PORT1_PHY_MODE=sgmii
+
+[Link]
+NamePolicy=keep kernel database onboard slot path
+AutoNegotiation=off
+Duplex=full
+
+#BitsPerSecond=100M
+BitsPerSecond=1G
+
+#MasterSlave=slave-preferred
+MasterSlave=master-preferred
