@@ -1,3 +1,6 @@
+#This files overwites the configuration for Rnesas internal build
+#It includes the proprietary drivers and generates the device tree files for VC4 v1.0 (green PCB)
+
 RENESAS_BSP_URL = "git://git@ree-dusgitlab.ree.adwin.renesas.com/r-car-gen3-yocto/renesas-linux.git"
 
 BRANCH = "vc4"
@@ -11,5 +14,15 @@ SRC_URI = "${RENESAS_BSP_URL};protocol=ssh;nocheckout=1;branch=${BRANCH}"
 # Always use the latest version
 SRCREV = "${AUTOREV}"
 
-PATCHES = ""
+CONFIG_append = " \
+    file://proprietary.cfg \
+"
 
+KERNEL_DEVICETREE_append_vc4 = " \
+    renesas/r8a779f0-vc4V1.dtb \
+    renesas/r8a779f0-vc4-ctrl-domainV1.dtb \
+    renesas/r8a779f0-vc4-tsn0-phy-1gV1.dtbo \
+    renesas/r8a779f0-vc4-tsn0-phy-2g5V1.dtbo \
+    renesas/r8a779f0-vc4-tsn1-phy-1gV1.dtbo \
+    renesas/r8a779f0-vc4-tsn1-phy-2g5V1.dtbo \
+"

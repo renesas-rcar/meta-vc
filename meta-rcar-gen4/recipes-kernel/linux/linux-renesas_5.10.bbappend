@@ -6,8 +6,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/${BPN}:"
 
 COMPATIBLE_MACHINE = "vc4"
 
-RENESAS_BSP_URL = " \
-    git://github.com/renesas-rcar/linux-bsp.git"
+RENESAS_BSP_URL = "git://github.com/renesas-rcar/linux-bsp.git"
 BRANCH = "v5.10.41/rcar-5.1.3.rc6"
 SRCREV = "d7c1bffd3925e10da139037fa723fbf09f8d26f0"
 
@@ -18,9 +17,7 @@ PV = "${LINUX_VERSION}+git${SRCPV}"
 PR = "r1"
 
 
-PATCHES = " \
-    file://0001-VC4-Added-initial-device-tree-base-on-spider-board.patch \
-"
+PATCHES = ""
 
 CONFIG = " \
     file://defconfig \
@@ -49,13 +46,4 @@ KERNEL_DEVICETREE_append_vc4 = " \
     renesas/r8a779f0-vc4-tsn1-phy-2g5.dtbo \
     renesas/r8a779f0-vc4-tsn2-phy-1g.dtbo \
     renesas/r8a779f0-vc4-tsn2-phy-1g-rh.dtbo \
-"
-
-KERNEL_DEVICETREE_append_vc4 = " \
-    renesas/r8a779f0-vc4V1.dtb \
-    renesas/r8a779f0-vc4-ctrl-domainV1.dtb \
-    renesas/r8a779f0-vc4-tsn0-phy-1gV1.dtbo \
-    renesas/r8a779f0-vc4-tsn0-phy-2g5V1.dtbo \
-    renesas/r8a779f0-vc4-tsn1-phy-1gV1.dtbo \
-    renesas/r8a779f0-vc4-tsn1-phy-2g5V1.dtbo \
 "
