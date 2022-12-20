@@ -57,6 +57,14 @@ IMAGE_INSTALL_append = " \
     dtc \
 "
 
+# Prebuild binary packages
+#IMAGE_INSTALL_append = " \
+#     marvell-88q211x \
+#     marvell-88q3344-es \
+#     lan865x \
+#"
+
+
 # Configuration and addons
 IMAGE_INSTALL_append = " \
     u-boot-vc4env \
