@@ -25,9 +25,6 @@
 &mspi0 {
 	status = "okay";
 
-	pinctrl-0 = <&mspi0_pins>;
-	pinctrl-names = "default";
-
 	t1s0 {
 		plca-enable = /bits/ 8 <1>;
 		plca-node-id = /bits/ 8 <0>; /* PLCA node id range: 0 to 254 */

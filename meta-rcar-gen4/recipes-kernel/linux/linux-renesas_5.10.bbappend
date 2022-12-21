@@ -6,7 +6,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/${BPN}:"
 
 COMPATIBLE_MACHINE = "vc4"
 
-RENESAS_BSP_URL = "git://github.com/renesas-rcar/linux-bsp.git"
+RENESAS_BSP_URL = " git://github.com/renesas-rcar/linux-bsp-vc.git"
 BRANCH = "v5.10.41/rcar-5.1.3.vc4"
 SRCREV = "d3cfd1b90730dc2c96cbfc46255f53fa3c8706a2"
 
