@@ -1,6 +1,6 @@
 SRC_BRANCH = "master"
            
-SRC_URI = "git://git@ree-dusgitlab.ree.adwin.renesas.com/r-car-gen3-yocto/vc-tools/rlatency.git;protocol=ssh;branch=${SRC_BRANCH}"
+SRC_URI = "git://git@gitlab.eur.eng.idt.com:2222/automotive-network-section-ans/vehicle-computer-vc/vc-tools/rlatency.git;protocol=ssh;branch=${SRC_BRANCH}"
 
 # Always use latest version
 SRCREV = "${AUTOREV}"

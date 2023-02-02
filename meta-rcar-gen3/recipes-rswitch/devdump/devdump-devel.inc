@@ -4,7 +4,7 @@
 # Do not distribute.
 #
 
-RENESAS_DEVDUMP_URL = "git://git@ree-dusgitlab.ree.adwin.renesas.com/r-car-gen3-yocto/vc-tools/devdump.git"
+RENESAS_DEVDUMP_URL = "git://git@gitlab.eur.eng.idt.com:2222/automotive-network-section-ans/vehicle-computer-vc/vc-tools/devdump.git"
 SRC_URI = "${RENESAS_DEVDUMP_URL};protocol=ssh;branch=${BRANCH}"
 BRANCH = "master"
 
