@@ -1,4 +1,4 @@
-From 1335fb469daea702407c69993693e8e313c50da2 Mon Sep 17 00:00:00 2001
+From de48131d73c57173d3127b7f66e8350c109ade06 Mon Sep 17 00:00:00 2001
 From: Vito Colagiacomo <vito.colagiacomo@renesas.com>
 Date: Thu, 23 Dec 2021 14:15:45 +0100
 Subject: [PATCH] Add VC4 board
@@ -9,13 +9,13 @@ Subject: [PATCH] Add VC4 board
  arch/arm/dts/r8a779f0-vc4-ethernet.dtsi |  40 ++++++
  arch/arm/dts/r8a779f0-vc4-u-boot.dts    |  42 +++++++
  arch/arm/dts/r8a779f0-vc4.dts           |  24 ++++
- arch/arm/mach-rmobile/Kconfig.64        |   7 ++
+ arch/arm/mach-rmobile/Kconfig.64        |   6 +
  board/renesas/vc4/Kconfig               |  15 +++
  board/renesas/vc4/Makefile              |   9 ++
  board/renesas/vc4/vc4.c                 |  80 ++++++++++++
  configs/r8a779f0_vc4_defconfig          |  63 ++++++++++
  include/configs/vc4.h                   |  21 ++++
- 11 files changed, 464 insertions(+), 1 deletion(-)
+ 11 files changed, 463 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm/dts/r8a779f0-vc4-cpu.dtsi
  create mode 100644 arch/arm/dts/r8a779f0-vc4-ethernet.dtsi
  create mode 100644 arch/arm/dts/r8a779f0-vc4-u-boot.dts
@@ -27,15 +27,15 @@ Subject: [PATCH] Add VC4 board
  create mode 100644 include/configs/vc4.h
 
 diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
-index 993d13adcc..ccd99c4105 100644
+index 4934824673..a6522a830d 100644
 --- a/arch/arm/dts/Makefile
 +++ b/arch/arm/dts/Makefile
-@@ -805,7 +805,8 @@ DTC_FLAGS += -R 4 -p 0x1000
- endif
+@@ -809,7 +809,8 @@ endif
  
  dtb-$(CONFIG_RCAR_GEN4) += \
--	r8a779f0-spider-u-boot.dtb
-+	r8a779f0-spider-u-boot.dtb \
+ 	r8a779f0-spider-u-boot.dtb \
+-	r8a779g0-whitehawk-u-boot.dtb
++	r8a779g0-whitehawk-u-boot.dtb \
 +	r8a779f0-vc4-u-boot.dtb
  
  ifdef CONFIG_RCAR_GEN4
@@ -332,25 +332,25 @@ index 0000000000..7cd2b27abe
 +	};
 +};
 diff --git a/arch/arm/mach-rmobile/Kconfig.64 b/arch/arm/mach-rmobile/Kconfig.64
-index 24bfbf64ef..42236308e1 100644
+index d7ebd8146c..3f78e61e2a 100644
 --- a/arch/arm/mach-rmobile/Kconfig.64
 +++ b/arch/arm/mach-rmobile/Kconfig.64
-@@ -158,12 +158,19 @@ config TARGET_SPIDER
+@@ -181,6 +181,11 @@ config TARGET_WHITEHAWK
  	help
- 	  Support for Renesas R-Car Gen4 Spider platform
+ 	  Support for Renesas R-Car Gen4 White Hawk platform
  
 +config TARGET_VC4
 +	bool "Vehicle Computer 4 board"
 +	imply R8A779F0
 +	help
 +	  Support for Renesas R-Car Gen4 Vehicle Computer 4 platform
-+
  endchoice
  
  config SYS_SOC
- 	default "rmobile"
+@@ -188,6 +193,7 @@ config SYS_SOC
  
  source "board/renesas/spider/Kconfig"
+ source "board/renesas/whitehawk/Kconfig"
 +source "board/renesas/vc4/Kconfig"
  
  config SYS_MALLOC_F_LEN
