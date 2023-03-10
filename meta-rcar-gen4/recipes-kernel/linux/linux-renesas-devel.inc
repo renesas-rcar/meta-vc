@@ -3,7 +3,7 @@
 
 RENESAS_BSP_URL = "git://git@gitlab.eur.eng.renesas.com:2222/automotive-network-section-ans/vehicle-computer-vc/renesas-linux.git"
 
-BRANCH = "vc4"
+BRANCH = "master"
 #BRANCH = "210-add-support-for-level-handling-to-intswcd-driver"
 #BRANCH = "205-add-dedicated-phy-for-marvell-m88q3344-engineering-sample"
 SRC_URI = "${RENESAS_BSP_URL};protocol=ssh;nocheckout=1;branch=${BRANCH}"
