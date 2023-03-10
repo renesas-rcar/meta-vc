@@ -1,0 +1,24 @@
+From e872feacab71a400cb2392fdbd4903fbb574fde6 Mon Sep 17 00:00:00 2001
+From: "dennis.ostermann" <dennis.ostermann@renesas.com>
+Date: Thu, 29 Sep 2022 07:53:01 +0000
+Subject: [PATCH 114/151] Quick fix
+
+---
+ drivers/net/phy/marvell_88q211x.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/phy/marvell_88q211x.c b/drivers/net/phy/marvell_88q211x.c
+index 16a0206c4ee6..776addb4ecef 100644
+--- a/drivers/net/phy/marvell_88q211x.c
++++ b/drivers/net/phy/marvell_88q211x.c
+@@ -1055,6 +1055,6 @@ static struct mdio_device_id __maybe_unused mv88q211x_tbl[] = {
+ 		{MARVELL_PHY_ID_88Q2112, MARVELL_PHY_ID_MASK},
+ 		{},
+ };
+-MODULE_DEVICE_TABLE(mdio, mv3310_tbl);
++MODULE_DEVICE_TABLE(mdio, mv88q211x_tbl);
+ MODULE_DESCRIPTION("Marvell Base-T1 Ethernet PHY driver (MV88Q221x)");
+ MODULE_LICENSE("GPL");
+-- 
+2.17.1
+

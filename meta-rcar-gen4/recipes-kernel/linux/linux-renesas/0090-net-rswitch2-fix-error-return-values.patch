@@ -1,0 +1,33 @@
+From c10394c54c01b2806b5521efceb72c020f75a33e Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Mon, 29 Aug 2022 10:44:27 +0300
+Subject: [PATCH 090/151] net: rswitch2: fix error return values
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/net/ethernet/renesas/rswitch2/rswitch2_platf.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/renesas/rswitch2/rswitch2_platf.c b/drivers/net/ethernet/renesas/rswitch2/rswitch2_platf.c
+index 165e20f88ffa..a16c85d5577d 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/rswitch2_platf.c
++++ b/drivers/net/ethernet/renesas/rswitch2/rswitch2_platf.c
+@@ -327,13 +327,13 @@ static int rswitch2_platf_probe(struct platform_device *pdev)
+ 	drv_priv->rsw_clk = devm_clk_get(&pdev->dev, "rsw2");
+ 	if (IS_ERR(drv_priv->rsw_clk)) {
+ 		dev_err(&pdev->dev, "Failed to get rsw2 clock: %ld\n", PTR_ERR(drv_priv->rsw_clk));
+-		return -PTR_ERR(drv_priv->rsw_clk);
++		return PTR_ERR(drv_priv->rsw_clk);
+ 	}
+ 
+ 	drv_priv->phy_clk = devm_clk_get(&pdev->dev, "eth-phy");
+ 	if (IS_ERR(drv_priv->phy_clk)) {
+ 		dev_err(&pdev->dev, "Failed to get eth-phy clock: %ld\n", PTR_ERR(drv_priv->phy_clk));
+-		return -PTR_ERR(drv_priv->phy_clk);
++		return PTR_ERR(drv_priv->phy_clk);
+ 	}
+ 
+ 	/* Allocate memory for the common rswitch2 data */
+-- 
+2.17.1
+

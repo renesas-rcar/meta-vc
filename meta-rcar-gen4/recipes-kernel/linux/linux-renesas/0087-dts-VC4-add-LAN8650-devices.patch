@@ -1,0 +1,104 @@
+From e3670de5ba81e3af913a985a0e3dc0f5cbf90d9c Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Fri, 19 Aug 2022 15:22:46 +0300
+Subject: [PATCH 087/151] dts: VC4: add LAN8650 devices
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ .../dts/renesas/r8a779f0-vc4-ctrl-domain.dts  | 75 +++++++++++++++++++
+ 1 file changed, 75 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+index 91575ac0c329..f80917f73026 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+@@ -166,6 +166,66 @@
+ 	};
+ };
+ 
++&mspi0 {
++	status = "okay";
++
++	pinctrl-0 = <&mspi0_pins>;
++	pinctrl-names = "default";
++
++	t1s@0 {
++		compatible = "microchip,lan865x";
++		reg = <0>;
++
++		spi-max-frequency = <10000000>;
++
++		interrupt-parent = <&gpio6>;
++		interrupts = <18 IRQ_TYPE_LEVEL_LOW>;
++
++		plca-enable = /bits/ 8 <0>;
++		tx-cut-through-mode = /bits/ 8 <1>;
++	};
++};
++
++&mspi1 {
++	status = "okay";
++
++	pinctrl-0 = <&mspi1_pins>;
++	pinctrl-names = "default";
++
++	t1s@0 {
++		compatible = "microchip,lan865x";
++		reg = <0>;
++
++		spi-max-frequency = <10000000>;
++
++		interrupt-parent = <&gpio6>;
++		interrupts = <19 IRQ_TYPE_LEVEL_LOW>;
++
++		plca-enable = /bits/ 8 <0>;
++		tx-cut-through-mode = /bits/ 8 <1>;
++	};
++};
++
++&mspi4 {
++	status = "okay";
++
++	pinctrl-0 = <&mspi4_pins>;
++	pinctrl-names = "default";
++
++	t1s@0 {
++		compatible = "microchip,lan865x";
++		reg = <0>;
++
++		spi-max-frequency = <10000000>;
++
++		interrupt-parent = <&gpio6>;
++		interrupts = <20 IRQ_TYPE_LEVEL_LOW>;
++
++		plca-enable = /bits/ 8 <0>;
++		tx-cut-through-mode = /bits/ 8 <1>;
++	};
++};
++
+ &pfc {
+ 	canfd0_pins: canfd0 {
+ 		channel0 {
+@@ -241,4 +301,19 @@
+ 		groups = "etnb0_rmii", "etnb0_mdio", "etnb0_link";
+ 		function = "etnb0";
+ 	};
++
++	mspi0_pins: mpsi0 {
++		groups = "mspi0_sck", "mspi0_din", "mspi0_dout", "mspi0_cs0";
++		function = "mspi0";
++	};
++
++	mspi1_pins: mpsi1 {
++		groups = "mspi1_sck", "mspi1_din", "mspi1_dout", "mspi1_cs0";
++		function = "mspi1";
++	};
++
++	mspi4_pins: mpsi4 {
++		groups = "mspi4_sck", "mspi4_din", "mspi4_dout", "mspi4_cs0";
++		function = "mspi4";
++	};
+ };
+-- 
+2.17.1
+

@@ -1,0 +1,98 @@
+From 673227045c9090e9681e5c61dcca4541db9cda73 Mon Sep 17 00:00:00 2001
+From: "Christian@p620" <Christian@p620>
+Date: Wed, 28 Sep 2022 10:19:25 +0200
+Subject: [PATCH 112/151] Increase SPI speed to 20 MHz and correct printk
+
+---
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts   | 6 +++---
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domainV1.dts | 6 +++---
+ drivers/spi/spi-renesas-mspi.c                             | 4 ++--
+ 3 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+index 96ab53454e66..0f22e1ca5ea2 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+@@ -176,7 +176,7 @@
+ 		compatible = "microchip,lan865x";
+ 		reg = <0>;
+ 
+-		spi-max-frequency = <15000000>;
++		spi-max-frequency = <20000000>;
+ 
+ 		interrupt-parent = <&gpio6>;
+ 		interrupts = <18 IRQ_TYPE_LEVEL_LOW>;
+@@ -196,7 +196,7 @@
+ 		compatible = "microchip,lan865x";
+ 		reg = <0>;
+ 
+-		spi-max-frequency = <15000000>;
++		spi-max-frequency = <20000000>;
+ 
+ 		interrupt-parent = <&gpio6>;
+ 		interrupts = <19 IRQ_TYPE_LEVEL_LOW>;
+@@ -216,7 +216,7 @@
+ 		compatible = "microchip,lan865x";
+ 		reg = <0>;
+ 
+-		spi-max-frequency = <15000000>;
++		spi-max-frequency = <20000000>;
+ 
+ 		interrupt-parent = <&gpio6>;
+ 		interrupts = <20 IRQ_TYPE_LEVEL_LOW>;
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domainV1.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domainV1.dts
+index ef0115da243f..bc3a9ec46b49 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domainV1.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domainV1.dts
+@@ -176,7 +176,7 @@
+ 		compatible = "microchip,lan865x";
+ 		reg = <0>;
+ 
+-		spi-max-frequency = <15000000>;
++		spi-max-frequency = <20000000>;
+ 
+ 		interrupt-parent = <&gpio6>;
+ 		interrupts = <18 IRQ_TYPE_LEVEL_LOW>;
+@@ -196,7 +196,7 @@
+ 		compatible = "microchip,lan865x";
+ 		reg = <0>;
+ 
+-		spi-max-frequency = <15000000>;
++		spi-max-frequency = <20000000>;
+ 
+ 		interrupt-parent = <&gpio6>;
+ 		interrupts = <19 IRQ_TYPE_LEVEL_LOW>;
+@@ -216,7 +216,7 @@
+ 		compatible = "microchip,lan865x";
+ 		reg = <0>;
+ 
+-		spi-max-frequency = <15000000>;
++		spi-max-frequency = <20000000>;
+ 
+ 		interrupt-parent = <&gpio6>;
+ 		interrupts = <20 IRQ_TYPE_LEVEL_LOW>;
+diff --git a/drivers/spi/spi-renesas-mspi.c b/drivers/spi/spi-renesas-mspi.c
+index 717667831c04..b7fbc5eae150 100644
+--- a/drivers/spi/spi-renesas-mspi.c
++++ b/drivers/spi/spi-renesas-mspi.c
+@@ -228,7 +228,7 @@ static int mspi_update_dividers(struct mspi *mspi, unsigned long rate)
+ 	mspi->last_update_dividers_rate = rate;
+ 	mspi->cfg3 = (prcs << CFGm3_PRCS_SHIFT) | (cdiv << CFGm3_CDIV_SHIFT);
+ 	mspi->clk_ticks_per_bit = 2 * prcs_div * cdiv;
+-	//printk(&pdev->dev, "SPI cfg3=%x  max-rate=%ld kHz  new-rate=%ld kHz  (%lx)\n",
++	//printk("SPI cfg3=%x  max-rate=%ld kHz  new-rate=%ld kHz  (%lx)\n",
+ 	//	mspi->cfg3, rate/1000, mspi->clk_rate/mspi->clk_ticks_per_bit/1000, (long int)mspi->regs);
+ 	return 0;
+ }
+@@ -609,7 +609,7 @@ static int mspi_probe(struct platform_device *pdev)
+ 	ctlr->unprepare_transfer_hardware = mspi_unprepare_transfer_hardware;
+ 	ctlr->prepare_message = mspi_prepare_message;
+ 	ctlr->transfer_one = mspi_transfer_one;
+-	dev_info(&pdev->dev, "MSPI @%08x ref clock is %ldkHz\n", pdev->resource->start, rate/1000);
++	dev_info(&pdev->dev, "MSPI @%08llx ref clock is %ldkHz\n", pdev->resource->start, rate/1000);
+ 
+ 	pm_runtime_enable(&pdev->dev);
+ 
+-- 
+2.17.1
+

@@ -1,0 +1,29 @@
+From 96ae1628042a1eef997819e95358702fd1d9127f Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Wed, 18 May 2022 00:30:29 +0300
+Subject: [PATCH 064/151] clk: renesas: r8a779f0: add mssr clocks for CANFD
+
+For now, set CLK_HSB as parent. This corresponds to using CANFD
+internal stable clock (and not 'clk_xincan' bypass).
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/clk/renesas/r8a779f0-cpg-mssr.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/clk/renesas/r8a779f0-cpg-mssr.c b/drivers/clk/renesas/r8a779f0-cpg-mssr.c
+index 4e66f128b55b..1d7390817e3d 100644
+--- a/drivers/clk/renesas/r8a779f0-cpg-mssr.c
++++ b/drivers/clk/renesas/r8a779f0-cpg-mssr.c
+@@ -239,6 +239,8 @@ static const u16 r8a779f0_cd_mod_control_regs[] = {
+ };
+ 
+ static const struct mssr_mod_clk r8a779f0_cd_mod_clks[] __initconst = {
++	DEF_CD_MOD("rscfd0",	0,	CD_CLK_HSB),
++	DEF_CD_MOD("rscfd1",	1,	CD_CLK_HSB),
+ 	DEF_CD_MOD("etnb0",	200,	CD_CLK_HSB),
+ 	DEF_CD_MOD("riic0",	600,	CD_CLK_LSB),
+ 	DEF_CD_MOD("ostm0",	900,	CD_CLK_HSB),
+-- 
+2.17.1
+

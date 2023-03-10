@@ -1,0 +1,526 @@
+From 17dfd21a7d8ace9293599f3f20ab15b96f4a5199 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Thu, 8 Sep 2022 09:49:26 +0200
+Subject: [PATCH 094/151] Add forwarding rules for PTP link local address
+
+---
+ .../net/ethernet/renesas/rswitch2/rswitch2.h  |   2 +
+ .../ethernet/renesas/rswitch2/rswitch2_fwd.c  | 309 +++++++++++++++++-
+ .../ethernet/renesas/rswitch2/rswitch2_fwd.h  |  73 ++++-
+ 3 files changed, 372 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/net/ethernet/renesas/rswitch2/rswitch2.h b/drivers/net/ethernet/renesas/rswitch2/rswitch2.h
+index cca11cd3ffe8..eda33723f1bf 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/rswitch2.h
++++ b/drivers/net/ethernet/renesas/rswitch2/rswitch2.h
+@@ -36,6 +36,8 @@ static const u8 rsw2_base_mac[ETH_ALEN] __aligned(2) = {
+ static const u8 rsw2_ptp_multicast_mac[ETH_ALEN] __aligned(2) = {
+ 		0x01, 0x80, 0xc2, 0x00, 0x00, 0x0E };
+ 
++static const u8 rsw2_own_multicast_mac[ETH_ALEN] __aligned(2) = {
++		0x74, 0x90, 0x50, 0x00, 0xcc, 0x00};
+ struct rswitch2_port_data {
+ 	char phy_id[MII_BUS_ID_SIZE + 3];
+ 	phy_interface_t phy_iface;
+diff --git a/drivers/net/ethernet/renesas/rswitch2/rswitch2_fwd.c b/drivers/net/ethernet/renesas/rswitch2/rswitch2_fwd.c
+index aec3e687a83e..5f0a0863b6cd 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/rswitch2_fwd.c
++++ b/drivers/net/ethernet/renesas/rswitch2/rswitch2_fwd.c
+@@ -7,11 +7,212 @@
+ #include <linux/err.h>
+ #include <linux/kernel.h>
+ #include <linux/iopoll.h>
+-
++#include <linux/etherdevice.h>
+ #include "rswitch2.h"
+ #include "rswitch2_fwd.h"
+ 
++static int rsw2_fwd_find_free_cascade_filter_slot(struct rswitch2_drv *rsw2) {
++
++	u32 filter_conf;
++	uint slot_num;
++
++	for(slot_num = 0; slot_num < RSW2_FWD_THBF_N; slot_num++) {
++		filter_conf = ioread32(rsw2->fwd_base_addr + RSW2_FWD_FWCFC(slot_num));
++
++		if(filter_conf == 0) {
++			printk("Cascade filter slot %d is unused\n", slot_num);
++
++			break;
++		}
++	}
++
++	if(slot_num >= RSW2_FWD_THBF_N) {
++		return -EFILTER_LIST_FULL;
++	}
++
++	return (int) slot_num;
++}
++
++
++static int rsw2_fwd_find_free_3byte_filter_slot(struct rswitch2_drv *rsw2) {
++	u32 filter_conf;
++	u32 filter_val0;
++	u32 filter_val1;
++	uint slot_num;
++
++	for(slot_num = 0; slot_num < RSW2_FWD_THBF_N; slot_num++) {
++		filter_conf = ioread32(rsw2->fwd_base_addr + RSW2_FWD_FWTHBFC(slot_num));
++		filter_val0 = ioread32(rsw2->fwd_base_addr + RSW2_FWD_FWTHBFV0C(slot_num));
++		filter_val1 = ioread32(rsw2->fwd_base_addr + RSW2_FWD_FWTHBFV1C(slot_num));
++
++		if((filter_conf == 0) && (filter_val0 == 0) && (filter_val1 == 0)) {
++			printk("3byte filter slot %d is unused\n", slot_num);
++
++			break;
++		}
++	}
++
++	if(slot_num >= RSW2_FWD_THBF_N) {
++		return -EFILTER_LIST_FULL;
++	}
++
++
++	return (int) slot_num;
++}
++
++static int rsw2_fwd_add_cascade_filter(struct rswitch2_drv *rsw2, struct cascade_filter *filter) {
++
++	int ret;
++	u32 filter_conf;
++
++	uint filter_slot;
++	uint filter_map_entry;
++
++	ret = rsw2_fwd_find_free_cascade_filter_slot(rsw2);
++	if(ret < 0) {
++		return ret;
++	}
++
++	filter_slot = (uint)ret;
++	filter->stream_id = filter_slot;
++
++	filter_conf = FIELD_PREP(FWCFC_CFPFFV, filter->pframe_bitmap);
++	filter_conf |= FIELD_PREP(FWCFC_CFEFFV, filter->eframe_bitmap);
++
++	for(filter_map_entry = 0; filter_map_entry < RSW2_FWD_CFMF_N; filter_map_entry++) {
++		u32 reg_val;
++
++		reg_val = FIELD_PREP(FWCFMC_CFFV, filter->entry[filter_map_entry].enabled);
++		reg_val |= FIELD_PREP(FWCFMC_CFFN, filter->entry[filter_map_entry].id);
++
++		iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWCFMC(filter_slot, filter_map_entry));
++	}
++
++	iowrite32(filter_conf, rsw2->fwd_base_addr + RSW2_FWD_FWCFC(filter_slot));
++
++	return ret;
++}
++
++
++static int rsw2_fwd_add_3byte_filter(struct rswitch2_drv *rsw2, struct three_byte_filter *filter) {
++	int ret = 0;
++	u32 filter_conf;
++	u32 filter_val0;
++	u32 filter_val1;
++	uint filter_slot;
++
++	ret = rsw2_fwd_find_free_3byte_filter_slot(rsw2);
++	if(ret < 0) {
++		return ret;
++	}
++
++	filter_slot = (uint)ret;
++
++	filter_conf = FIELD_PREP(FWTHBFC_THBFUM, filter->mode);
++	filter_conf |= FIELD_PREP(FWTHBFC_THBFOV, filter->offset);
++
++
++	switch(filter->mode) {
++	case pf_mask_mode:
++		filter_val0  = FIELD_PREP(FWTHBFV0C_THBFV0B0, filter->m.val[2]);
++		filter_val0 |= FIELD_PREP(FWTHBFV0C_THBFV0B1, filter->m.val[1]);
++		filter_val0 |= FIELD_PREP(FWTHBFV0C_THBFV0B2, filter->m.val[0]);
++
++		filter_val1  = FIELD_PREP(FWTHBFV0C_THBFV1B0, filter->m.mask[2]);
++		filter_val1 |= FIELD_PREP(FWTHBFV0C_THBFV1B1, filter->m.mask[1]);
++		filter_val1 |= FIELD_PREP(FWTHBFV0C_THBFV1B2, filter->m.mask[0]);
++
++		filter->m.id = 2 * (filter_slot + RSW2_FWD_TWBF_N);
++		break;
++
++	case pf_expand_mode:
++		filter_val0  = FIELD_PREP(FWTHBFV0C_THBFV0B0, filter->e.val[2]);
++		printk("filter->e.val[0]: 0x%2x filter_val0: 0x%8x\n", filter->e.val[0], filter_val0);
++		filter_val0 |= FIELD_PREP(FWTHBFV0C_THBFV0B1, filter->e.val[1]);
++		printk("filter->e.val[1]: 0x%2x filter_val0: 0x%8x\n", filter->e.val[1], filter_val0);
++		filter_val0 |= FIELD_PREP(FWTHBFV0C_THBFV0B2, filter->e.val[0]);
++		printk("filter->e.val[2]: 0x%2x filter_val0: 0x%8x\n", filter->e.val[2], filter_val0);
++		filter_val1  = FIELD_PREP(FWTHBFV0C_THBFV1B0, filter->e.val[5]);
++		printk("filter->e.val[3]: 0x%2x filter_val1: 0x%8x\n", filter->e.val[3], filter_val1);
++		filter_val1 |= FIELD_PREP(FWTHBFV0C_THBFV1B1, filter->e.val[4]);
++		printk("filter->e.val[4]: 0x%2x filter_val1: 0x%8x\n", filter->e.val[4], filter_val1);
++		filter_val1 |= FIELD_PREP(FWTHBFV0C_THBFV1B2, filter->e.val[3]);
++		printk("filter->e.val[5]: 0x%2x filter_val1: 0x%8x\n", filter->e.val[5], filter_val1);
++
++		filter->e.id = 2 * (filter_slot + RSW2_FWD_TWBF_N);
++		break;
++
++	case pf_precise_mode:
++		filter_val0  = FIELD_PREP(FWTHBFV0C_THBFV0B0, filter->p.val[2]);
++		filter_val0 |= FIELD_PREP(FWTHBFV0C_THBFV0B1, filter->p.val[1]);
++		filter_val0 |= FIELD_PREP(FWTHBFV0C_THBFV0B2, filter->p.val[0]);
++
++		filter_val1  = FIELD_PREP(FWTHBFV0C_THBFV1B0, filter->p.val2[2]);
++		filter_val1 |= FIELD_PREP(FWTHBFV0C_THBFV1B1, filter->p.val2[1]);
++		filter_val1 |= FIELD_PREP(FWTHBFV0C_THBFV1B2, filter->p.val2[0]);
++
++		filter->p.id = 2 * (filter_slot + RSW2_FWD_TWBF_N);
++		filter->p.id2 = filter->p.id + 1;
++		break;
++	}
++
++
++	iowrite32(filter_val0, rsw2->fwd_base_addr + RSW2_FWD_FWTHBFV0C(filter_slot));
++	iowrite32(filter_val1, rsw2->fwd_base_addr + RSW2_FWD_FWTHBFV1C(filter_slot));
++	iowrite32(filter_conf, rsw2->fwd_base_addr + RSW2_FWD_FWTHBFC(filter_slot));
++
++	return ret;
++}
++
++static int rsw2_fwd_add_l3_entry(struct rswitch2_drv *rsw2, u32 stream_id, u32 src_port_vec, u32 dest_port_vec, u32 cpu_q) {
++
++	int ret;
++	u32 reg_val;
++
++	/* FIXME: FIELD_PREP */
++	reg_val = 0;
+ 
++	iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWLTHTL0);
++
++	/* StreamID upper part - we only use lowest 32bit */
++	iowrite32(0, rsw2->fwd_base_addr + RSW2_FWD_FWLTHTL1);
++	iowrite32(0, rsw2->fwd_base_addr + RSW2_FWD_FWLTHTL2);
++	iowrite32(0, rsw2->fwd_base_addr + RSW2_FWD_FWLTHTL3);
++	iowrite32(stream_id, rsw2->fwd_base_addr + RSW2_FWD_FWLTHTL4);
++
++	reg_val = FIELD_PREP(FWLTHTL7_LTHSLVL, src_port_vec);
++
++// 	reg_val |= FIELD_PREP(FWLTHTL7_LTHRNL, 47 /*- FIXME: Rule number */);
++//	reg_val |= FIELD_PREP(FWLTHTL7_LTHRVL, 1);
++
++	iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWLTHTL7);
++
++	reg_val = FIELD_PREP(FWLTHTL8_LTHCSDL, cpu_q);
++	iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWLTHTL8(0));
++
++	reg_val = FIELD_PREP(FWLTHTL9_LTHDVL, dest_port_vec);
++	iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWLTHTL9);
++
++
++	/* Wait for learning result */
++	ret = readl_poll_timeout(rsw2->fwd_base_addr + RSW2_FWD_FWLTHTIM, reg_val,
++						FIELD_GET(FWLTHTIM_LTHTR, reg_val),
++						RSWITCH2_REG_POLL_DELAY, RSWITCH2_REG_POLL_TIMEOUT);
++	if (ret != 0) {
++		pr_err("L3 table learning timed out\n");
++		return ret;
++	}
++
++	reg_val = ioread32(rsw2->fwd_base_addr + RSW2_FWD_FWLTHTLR);
++	if(FIELD_GET(FWLTHTLR_LTHLF, reg_val)) {
++		/* FIXME: Check others error bits */
++		pr_err("Learning failed\n");
++	}
++	else {
++		printk("Learning succeeded\n");
++	}
++	return ret;
++}
+ 
+ int rswitch2_fwd_init(struct rswitch2_drv *rsw2)
+ {
+@@ -35,15 +236,33 @@ int rswitch2_fwd_init(struct rswitch2_drv *rsw2)
+ 	iowrite32(0xFFFFFFFF, rsw2->fwd_base_addr + RSW2_FWD_FWSCR34);
+ 
+ 	/* Enable IPv4 traffic. Configure MAC handling */
+-	reg_val = FWPC0_LTHTA | FWPC0_IP4UE | FWPC0_IP4TE | FWPC0_IP4OE;
++	reg_val = FWPC0_LTHTA | FWPC0_IP4UE | FWPC0_IP4TE /*| FWPC0_IP4OE*/;
+ 	reg_val |= FWPC0_MACDSA | FWPC0_MACSSA | FWPC0_MACHLA | FWPC0_MACHMA;
+ 
+-	for (cur_port = 0; cur_port < num_of_ports; cur_port++)
++	// FIXME: check if needed
++	reg_val |= FWPC0_L2SE;
++
++
++	for (cur_port = 0; cur_port < num_of_ports; cur_port++) {
+ 		iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWPC0(cur_port));
++	}
++
++	/* Specification seems to be wrong */
++#if 0
++	for (cur_port = 0; cur_port < num_of_ports; cur_port++) {
++
++		reg_val = ioread32(rsw2->fwd_base_addr + RSW2_FWD_FWPC1(i));
++		printk("REG: 0x%.8x\n", rsw2->fwd_base_addr + RSW2_FWD_FWPC1(i));
++		printk("READ RSW2_FWD_FWPC1(%d): 0x%.8x\n", i, reg_val);
++		reg_val |= FIELD_PREP(FWPC1_DDE, 1);
++		reg_val |= FIELD_PREP(FWPC1_DDSL, 1);
++		printk("WRITE: RSW2_FWD_FWPC1(%d): 0x%.8x\n", i, reg_val);
++		iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWPC1(i));
++	}
++#endif
+ 
+-	/* Enable direct descriptor on port 0 */
+ 	reg_val = ioread32(rsw2->fwd_base_addr + RSW2_FWD_FWPC1(rsw2->num_of_tsn_ports));
+-	reg_val |= FWPC1_DDE;
++	reg_val |= FIELD_PREP(FWPC1_DDE, 1);
+ 	iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWPC1(rsw2->num_of_tsn_ports));
+ 
+ 	reg_val = ioread32(rsw2->fwd_base_addr + RSW2_FWD_FWMACHEC);
+@@ -63,13 +282,13 @@ int rswitch2_fwd_init(struct rswitch2_drv *rsw2)
+ 		return ret;
+ 	}
+ 
+-	/* Static entry for PTP multicast frames */
+-	reg_val = ((rsw2_ptp_multicast_mac[0] & 0xff) << 8) | rsw2_ptp_multicast_mac[1];
++	/* Static entry for GWCA port */
++	reg_val = ((rsw2_own_multicast_mac[0] & 0xff) << 8) | rsw2_own_multicast_mac[1];
+ 	iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWMACTL1);
+ 
+-	reg_val = ((rsw2_ptp_multicast_mac[2] & 0xff) << 24);
+-	reg_val |= ((rsw2_ptp_multicast_mac[3] & 0xff) << 16);
+-	reg_val |= ((rsw2_ptp_multicast_mac[4] & 0xff) << 8) | rsw2_ptp_multicast_mac[5];
++	reg_val = ((rsw2_own_multicast_mac[2] & 0xff) << 24);
++	reg_val |= ((rsw2_own_multicast_mac[3] & 0xff) << 16);
++	reg_val |= ((rsw2_own_multicast_mac[4] & 0xff) << 8) | rsw2_own_multicast_mac[5];
+ 	iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWMACTL2);
+ 
+ 	/* Lock vector learn on all ports */
+@@ -78,12 +297,25 @@ int rswitch2_fwd_init(struct rswitch2_drv *rsw2)
+ 	iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWMACTL3);
+ 
+ 	/* TODO: PTP queue number might need to be adjusted, depending on GWCA implementation */
+-	reg_val = FIELD_PREP(FWMACTL4_MACCSDL, RSWITCH2_PTP_Q_NUM);
++	reg_val = FIELD_PREP(FWMACTL4_MACCSDL, 24);
++
+ 	iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWMACTL4(0));
+ 
+ 	reg_val = FIELD_PREP(FWMACTL5_MACDVL, (1 << rsw2->num_of_tsn_ports));
++
+ 	iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWMACTL5);
+ 
++	ret = readl_poll_timeout(rsw2->fwd_base_addr + RSW2_FWD_FWMACTLR, reg_val,
++							(FIELD_GET(FWMACTLR_MACTL, reg_val) == 0),
++							RSWITCH2_REG_POLL_DELAY, RSWITCH2_REG_POLL_TIMEOUT);
++	if (ret != 0) {
++		pr_err("MAC Table Learn timed out\n");
++		return ret;
++	} else {
++		pr_err("MAC Table entry learned: 0x%.8x\n", reg_val);
++	}
++
++
+ 	/* Configure aging */
+ 	reg_val = FIELD_PREP(FWMACAGUSP_MACAGUSP, 0x4E);
+ 	iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWMACAGUSP);
+@@ -109,6 +341,61 @@ int rswitch2_fwd_init(struct rswitch2_drv *rsw2)
+ 	for (cur_port = 0; cur_port < num_of_ports; cur_port++) {
+ 		reg_val = FIELD_PREP(FWPBFC_PBDV, ((~(1 << cur_port)) & ((1 << num_of_ports) - 1)));
+ 		iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWPBFC(cur_port));
++
++		//reg_val = cur_port + 3;
++		reg_val = 24;
++		iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWPBFCSDC(0, cur_port));
++	}
++
++	iowrite32(0, rsw2->fwd_base_addr + RSW2_FWD_FWIP4SC);
++
++	/* Set max. hash entries and collisions */
++	reg_val = FIELD_PREP(FWLTHHEC_LTHHMUE, 0x7FF);
++	reg_val |= FIELD_PREP(FWLTHHEC_LTHHMC, 0x3FF);
++	iowrite32(reg_val, rsw2->fwd_base_addr + RSW2_FWD_FWLTHHEC);
++
++	/* Initialize L3 table */
++	iowrite32(FWLTHTIM_LTHTIOG, rsw2->fwd_base_addr + RSW2_FWD_FWLTHTIM);
++
++	ret = readl_poll_timeout(rsw2->fwd_base_addr + RSW2_FWD_FWLTHTIM, reg_val,
++						FIELD_GET(FWLTHTIM_LTHTR, reg_val),
++						RSWITCH2_REG_POLL_DELAY, RSWITCH2_REG_POLL_TIMEOUT);
++	if (ret != 0) {
++		pr_err("Initialization of L3 table timed out\n");
++		return ret;
++	}
++
++	/* FIXME */
++	{
++		int i;
++		int lret;
++		struct three_byte_filter filter;
++		struct cascade_filter cc_filter[3 /* num of phy. ports */];
++
++		filter.mode = pf_expand_mode;
++		filter.offset = 0;
++
++		/* Set PTP multicast address */
++		if (!mac_pton("01:80:C2:00:00:0E", filter.e.val))
++			printk("mac_pton() failed\n");
++
++		lret = rsw2_fwd_add_3byte_filter(rsw2, &filter);
++		printk("lret = %d filter.e.id = %d\n", lret, filter.e.id);
++
++		memset(cc_filter, 0 , sizeof(cc_filter));
++
++		for( i = 0; i < 3; i++) {
++			set_bit(i, &cc_filter[i].eframe_bitmap);
++			set_bit(i, &cc_filter[i].pframe_bitmap);
++
++
++			cc_filter[i].entry[0].id = filter.e.id;
++			cc_filter[i].entry[0].enabled = true;
++
++			rsw2_fwd_add_cascade_filter(rsw2, &cc_filter[i]);
++
++			rsw2_fwd_add_l3_entry(rsw2, cc_filter[i].stream_id, cc_filter[i].eframe_bitmap, 0x8 /* CPU only */, /*25*/ 8 + i);
++		}
+ 	}
+ 
+ 	return 0;
+diff --git a/drivers/net/ethernet/renesas/rswitch2/rswitch2_fwd.h b/drivers/net/ethernet/renesas/rswitch2/rswitch2_fwd.h
+index d855e7c1ed19..941f431b4e3d 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/rswitch2_fwd.h
++++ b/drivers/net/ethernet/renesas/rswitch2/rswitch2_fwd.h
+@@ -14,6 +14,46 @@
+ 
+ #define RSWITCH2_FWD_MAX_HASH_ENTRIES	2048
+ 
++#define RSW2_FWD_TWBF_N (48)	/* Number of two-byte filters */
++#define RSW2_FWD_THBF_N (16)	/* Number of three-byte filters number */
++#define RSW2_FWD_FOBF_N (48)	/* Number of four-byte filters number */
++#define RSW2_FWD_RAGF_N (16)	/* Number of range-byte filters number */
++#define RSW2_FWD_CADF_N (64)	/* Number of cascade filters number */
++#define RSW2_FWD_CFMF_N (7)		/* Number of cascade mapped filters */
++#define EFILTER_LIST_FULL (1)
++enum perfect_filter_mode {
++	pf_mask_mode = 0,
++	pf_expand_mode = 1,
++	pf_precise_mode = 2,
++};
++struct three_byte_filter {
++	u8 offset;
++	enum perfect_filter_mode mode;
++	union {
++		u8 val[3];
++		u8 mask[3];
++		uint id;
++	} m;
++	union {
++		u8 val[6];
++		uint id;
++	} e;
++	union {
++		u8 val[3];
++		u8 val2[3];
++		uint id;
++		uint id2;
++	} p;
++};
++struct cascade_filter {
++	ulong pframe_bitmap;
++	ulong eframe_bitmap;
++	struct {
++		bool enabled;
++		uint id;
++	} entry[RSW2_FWD_CFMF_N];
++	ulong stream_id;
++};
+ 
+ #define RSW2_FWD_FWGC		0x0000 /* Forwarding Engine General Configuration */
+ #define RSW2_FWD_FWTTC0		0x0010 /* Forwarding Engine TAG TPID Configuration 0 */
+@@ -73,12 +113,20 @@
+ 
+ /* ForWarding engine THree Byte Filter Configuration i (i=0..PFL_THBF_N-1) */
+ #define RSW2_FWD_FWTHBFC(i)		(0x1400 + (0x10 * (i)))
++#define FWTHBFC_THBFOV		GENMASK(23, 16)
++#define FWTHBFC_THBFUM		GENMASK(1, 0)
+ 
+ /* ForWarding engine THree Byte Filter Value Configuration 0 i (i=0..PFL_THBF_N-1) */
+ #define RSW2_FWD_FWTHBFV0C(i)	(0x1404 + (0x10 * (i)))
++#define FWTHBFV0C_THBFV0B2 		GENMASK(23, 16)
++#define FWTHBFV0C_THBFV0B1 		GENMASK(15, 8)
++#define FWTHBFV0C_THBFV0B0 		GENMASK(7, 0)
+ 
+ /* ForWarding engine THree Byte Filter Value Configuration 1 i (i=0..PFL_THBF_N-1) */
+ #define RSW2_FWD_FWTHBFV1C(i)	(0x1408 + (0x10 * (i)))
++#define FWTHBFV0C_THBFV1B2 		GENMASK(23, 16)
++#define FWTHBFV0C_THBFV1B1 		GENMASK(15, 8)
++#define FWTHBFV0C_THBFV1B0 		GENMASK(7, 0)
+ 
+ /* ForWarding engine FOur Byte Filter Configuration i (i=0..PFL_FOBF_N-1) */
+ #define RSW2_FWD_FWFOBFC(i)		(0x1800 + (0x10 * (i)))
+@@ -97,9 +145,13 @@
+ 
+ /* Forwarding Engine Cascade Filter Configuration i (i=0..PFL_CADF_N-1) */
+ #define RSW2_FWD_FWCFC(i)		(0x2000 + (0x40 * (i)))
++#define FWCFC_CFPFFV			GENMASK(19, 16) /* Cascade Filter P-Frame Filter Valid */
++#define FWCFC_CFEFFV			GENMASK( 6,  0) /* Cascade Filter E-Frame Filter Valid */
+ 
+ /* Forwarding Engine Cascade Filter Mapping Config. i j (i=0..PFL_CADF_N-1) (j=0..PFL_CFMF_N)*/
+ #define RSW2_FWD_FWCFMC(i, j)	(0x2004 + (0x40 * (i)) + (0x4 * (j)))
++#define FWCFMC_CFFV				BIT_MASK(15)
++#define FWCFMC_CFFN				GENMASK(14, 0)
+ 
+ #define RSW2_FWD_FWIP4SC	0x4008 /* Forwarding Engine IPv4 Stream Configuration */
+ #define RSW2_FWD_FWIP6SC	0x4018 /* Forwarding Engine IPv6 Stream Configuration */
+@@ -122,6 +174,8 @@
+ #define RSW2_FWD_FWSHCR13	0x4074 /* Forwarding Engine Software Hash Calculation Request 13*/
+ #define RSW2_FWD_FWSHCRR	0x4078 /* Forwarding Engine Software Hash Calculation Request Result */
+ #define RSW2_FWD_FWLTHHEC	0x4090 /* Forwarding Engine L3 Hash Entry Configuration */
++#define FWLTHHEC_LTHHMUE	GENMASK(26, 16)
++#define FWLTHHEC_LTHHMC		GENMASK( 9, 0)
+ #define RSW2_FWD_FWLTHHC	0x4094 /* Forwarding Engine L3 Hash Configuration */
+ #define RSW2_FWD_FWLTHTL0	0x40A0 /* Forwarding Engine L3 Table Learn 0 */
+ #define RSW2_FWD_FWLTHTL1	0x40A4 /* Forwarding Engine L3 Table Learn 1 */
+@@ -131,13 +185,30 @@
+ #define RSW2_FWD_FWLTHTL5	0x40B4 /* Forwarding Engine L3 Table Learn 5 */
+ #define RSW2_FWD_FWLTHTL6	0x40B8 /* Forwarding Engine L3 Table Learn 5 */
+ #define RSW2_FWD_FWLTHTL7	0x40BC /* Forwarding Engine L3 Table Learn 7 */
++#define FWLTHTL7_LTHSLVL	GENMASK(22, 16)	/* L3 Source Lock Vector Learn */
++#define FWLTHTL7_LTHRVL		BIT_MASK(15)	/* L3 Routing Number Learn Valid */
++#define FWLTHTL7_LTHRNL		GENMASK(7, 0)	/* L3 Routing Number Learn */
+ 
+ /* Forwarding Engine L3 Table Learn 8 i (i=0..PORT_GWCA_N-1) */
+ #define RSW2_FWD_FWLTHTL8(i)	(0x40C0 + (0x4 * (i)))
++#define FWLTHTL8_LTHCSDL	GENMASK(6, 0)	/* L3 CPU Sub-Destination Learn */
+ 
+ #define RSW2_FWD_FWLTHTL9	0x40D0 /* Forwarding Engine L3 Table Learn 9 */
++#define FWLTHTL9_LTHCMEL	BIT_MASK(21)  /* L3 CPU Mirroring Enable Learn */
++#define FWLTHTL9_LTHEMEL 	BIT_MASK(20)  /* L3 Ethernet Mirroring Enable Learn */
++#define FWLTHTL9_LTHIPUL 	BIT_MASK(19)  /* L3 Internal Priority Update Learn */
++#define FWLTHTL9_LTHIPVL 	GENMASK(18, 16) /* L3 Internal Priority Value Learn */
++#define FWLTHTL9_LTHDVL 	GENMASK(6, 0)	/* L3 Destination Vector Learn */
+ #define RSW2_FWD_FWLTHTLR	0x40D4 /* Forwarding Engine L3 Table Learn Result */
++#define FWLTHTLR_LTHTL 		BIT_MASK(31) /* L3 Table Learn */
++#define FWLTHTLR_LTHLCN		GENMASK(25, 16)
++#define FWLTHTLR_LTHLO BIT_MASK(3) /* L3 Learn Overwrite */
++#define FWLTHTLR_LTHLEF BIT_MASK(2) /* L3 Learn ECC Fail */
++#define FWLTHTLR_LTHLSF BIT_MASK(1) /* L3 Learn Security Fail */
++#define FWLTHTLR_LTHLF BIT_MASK(0) /* L3 Learn Fail */
+ #define RSW2_FWD_FWLTHTIM	0x40E0 /* Forwarding Engine L3 Table Initialization Monitoring */
++#define FWLTHTIM_LTHTR		BIT_MASK(1)
++#define FWLTHTIM_LTHTIOG	BIT_MASK(0)
+ #define RSW2_FWD_FWLTHTEM	0x40E4 /* Forwarding Engine L3 Table Entry Monitoring */
+ #define RSW2_FWD_FWLTHTS0	0x4100 /* Forwarding Engine L3 Table Search 0 */
+ #define RSW2_FWD_FWLTHTS1	0x4104 /* Forwarding Engine L3 Table Search 1 */
+@@ -291,7 +362,7 @@
+ #define FWPBFC_PBDV		GENMASK(6, 0)
+ 
+ /* Forwarding Engine Port Based Forwarding CSD Configuration j i (j= 0..PORT_GWCA_N-1) (i= 0..PORT_N-1)*/
+-#define RSW2_FWD_FWPBFCSDC(j, i)	(0x4A04 + (0x40 * (i)) + (0x4 * (j)))
++#define RSW2_FWD_FWPBFCSDC(j, i)	(0x4A04 + (0x10 * (i)) + (0x4 * (j)))
+ 
+ #define RSW2_FWD_FWL23URL0		0x4E00 /* Forwarding Engine Layer2/Layer3 Update Rule Learn 0 */
+ #define RSW2_FWD_FWL23URL1		0x4E04 /* Forwarding Engine Layer2/Layer3 Update Rule Learn 1 */
+-- 
+2.17.1
+

@@ -1,0 +1,342 @@
+From 88cd5e4b65a391a34bb3a90feac4d72f9b5c8081 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Tue, 22 Mar 2022 09:18:51 +0100
+Subject: [PATCH 041/151] net: rswitch2: Add SerDes init for 2.5G
+
+---
+ .../net/ethernet/renesas/rswitch2/rswitch2.h  |   1 +
+ .../ethernet/renesas/rswitch2/rswitch2_eth.c  | 200 ++++++++++++++----
+ .../renesas/rswitch2/rswitch2_serdes.h        |   1 +
+ 3 files changed, 163 insertions(+), 39 deletions(-)
+
+diff --git a/drivers/net/ethernet/renesas/rswitch2/rswitch2.h b/drivers/net/ethernet/renesas/rswitch2/rswitch2.h
+index fdbb66ffe156..3c6a5523e66a 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/rswitch2.h
++++ b/drivers/net/ethernet/renesas/rswitch2/rswitch2.h
+@@ -55,6 +55,7 @@ struct rswitch2_drv {
+ 	u32 num_of_cpu_ports;
+ 	u32 num_of_tsn_ports;
+ 	u32 ports_intialized;
++	bool serdes_common_init_done;
+ 	struct rswitch2_eth_port **ports;
+ 	struct rswitch2_dma_desc **bat_addr;
+ 	dma_addr_t bat_dma_addr;
+diff --git a/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c b/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
+index 22fc588f2d34..4bfaaa2ddaaf 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
++++ b/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
+@@ -365,24 +365,36 @@ static int rswitch2_serdes_init_sram(struct rswitch2_drv *rsw2)
+ 	return 0;
+ }
+ 
+-static int rswitch2_serdes_common_setting(struct rswitch2_eth_port *eth_port, enum rswitch_serdes_mode mode)
++static int rswitch2_serdes_common_setting(struct rswitch2_eth_port *eth_port)
+ {
+ 	struct rswitch2_drv *rsw2;
++	void __iomem *addr;
+ 
+ 	rsw2 = eth_port->rsw2;
++	addr = rsw2->serdes_base_addr;
++
++	//to allow mix operation SGMII and USXGMII PLLs configured both
++	//C4.1 == U4.1 | S4.1
++	rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_25G_REF_CLK_CTRL, BANK_180, 0x57 | 0x97);
++
++	//C4.2 == U4.2
++	rswitch2_serdes_write32(addr, VR_XS_PMA_MP_10G_MPLLA_CTRL2, BANK_180, 0xc200);
++	//C4.3 == U4.3
++	rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_MPLLA_CTRL0, BANK_180, 0x42);
++	//C4.4 == U4.4
++	rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_MPLLA_CTRL1, BANK_180, 0);
++	//C4.5 == U4.5
++	rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_MPLLA_CTRL3, BANK_180, 0x2f);
++
++	//C4.6 == S4.2
++	rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_MPLLB_CTRL0, BANK_180, 0x60);
++	//C4.7 == S4.2
++	rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_MPLLB_CTRL2, BANK_180, 0x2200);
++	//C4.8 == S4.2
++	rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_MPLLB_CTRL1, BANK_180, 0);
++	//C4.9 == S4.2
++	rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_MPLLB_CTRL3, BANK_180, 0x3d);
+ 
+-	switch (mode) {
+-	case SGMII:
+-		rswitch2_serdes_write32(rsw2->serdes_base_addr, VR_XS_PMA_MP_12G_16G_25G_REF_CLK_CTRL, BANK_180, 0x97);
+-		rswitch2_serdes_write32(rsw2->serdes_base_addr, VR_XS_PMA_MP_12G_16G_MPLLB_CTRL0, BANK_180, 0x60);
+-		rswitch2_serdes_write32(rsw2->serdes_base_addr, VR_XS_PMA_MP_12G_16G_MPLLB_CTRL2, BANK_180, 0x2200);
+-		rswitch2_serdes_write32(rsw2->serdes_base_addr, VR_XS_PMA_MP_12G_MPLLB_CTRL1, BANK_180, 0);
+-		rswitch2_serdes_write32(rsw2->serdes_base_addr, VR_XS_PMA_MP_12G_MPLLB_CTRL3, BANK_180, 0x3d);
+-
+-		break;
+-	default:
+-		return -EOPNOTSUPP;
+-	}
+ 
+ 	return 0;
+ }
+@@ -397,13 +409,14 @@ static int rswitch2_serdes_chan_setting(struct rswitch2_eth_port *eth_port, enum
+ 
+ 	addr = phy_port->serdes_chan_addr;
+ 
++
+ 	switch (mode) {
+ 	case SGMII:
+ 		rswitch2_serdes_write32(addr, SR_XS_PCS_CTRL2, BANK_300, 0x01);
+ 		rswitch2_serdes_write32(addr, VR_XS_PCS_DIG_CTRL1, BANK_380, 0x2000);
+ 
+ 		/* Set common settings*/
+-		ret = rswitch2_serdes_common_setting(eth_port, mode);
++		ret = rswitch2_serdes_common_setting(eth_port);
+ 		if (ret)
+ 			return ret;
+ 
+@@ -438,10 +451,67 @@ static int rswitch2_serdes_chan_setting(struct rswitch2_eth_port *eth_port, enum
+ 
+ 		rswitch2_serdes_write32(addr, VR_XS_PCS_DIG_CTRL1, BANK_380, 0x2100);
+ 		ret = rswitch2_serdes_reg_wait(addr, VR_XS_PCS_DIG_CTRL1, BANK_380, BIT(8), 0);
++		if (ret)
++			return ret;
++		break;
++
++	case USXGMII:
++		rswitch2_serdes_write32(addr, SR_XS_PCS_CTRL2, BANK_300, 0x0);
++		rswitch2_serdes_write32(addr, VR_XS_PCS_DEBUG_CTRL, BANK_380, 0x50);
++		rswitch2_serdes_write32(addr, VR_XS_PCS_DIG_CTRL1, BANK_380, 0x2200);
++
++		rswitch2_serdes_write32(addr, VR_XS_PCS_KR_CTRL, BANK_380, 0x400);
++
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_25G_MPLL_CMN_CTRL,
++				       BANK_180, 0x1);
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_25G_VCO_CAL_LD0, BANK_180, 0x56a);
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_VCO_CAL_REF0, BANK_180, 0x15);
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_25G_RX_GENCTRL1, BANK_180, 0x1100);
++		rswitch2_serdes_write32(addr, VR_XS_PMA_CONSUMER_10G_RX_GENCTRL4, BANK_180, 1);
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_25G_TX_RATE_CTRL, BANK_180, 0x01);
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_25G_RX_RATE_CTRL, BANK_180, 0x01);
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_TX_GENCTRL2, BANK_180, 0x300);
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_RX_GENCTRL2, BANK_180, 0x300);
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_AFE_DFE_EN_CTRL, BANK_180, 0);
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_RX_EQ_CTRL0, BANK_180, 0x0);
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_10G_RX_IQ_CTRL0, BANK_180, 0);
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_25G_TX_GENCTRL1, BANK_180, 0x310);
++
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_TX_GENCTRL2, BANK_180, 0x0301);
++		ret = rswitch2_serdes_reg_wait(addr, VR_XS_PMA_MP_12G_16G_TX_GENCTRL2, BANK_180, BIT(0), 0);
++		if (ret)
++			return ret;
++
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_RX_GENCTRL2, BANK_180, 0x301);
++		ret = rswitch2_serdes_reg_wait(addr, VR_XS_PMA_MP_12G_16G_RX_GENCTRL2, BANK_180, BIT(0), 0);
++		if (ret)
++			return ret;
++
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_25G_TX_GENCTRL1, BANK_180, 0x1310);
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_25G_TX_EQ_CTRL0, BANK_180, 0x1800);
++
++		rswitch2_serdes_write32(addr, VR_XS_PMA_MP_12G_16G_25G_TX_EQ_CTRL1, BANK_180, 0);
++
++		rswitch2_serdes_write32(addr, VR_XS_PCS_DIG_CTRL1, BANK_380, 0x2300);
++		ret = rswitch2_serdes_reg_wait(addr, VR_XS_PCS_DIG_CTRL1, BANK_380, BIT(8), 0);
+ 		if (ret)
+ 			return ret;
+ 
++		//TODO: Some phys does not support auto neg on USXGMII (as the one on VC4)
++		//This code shall be finally enabled/disabled by devicetree
++#if 0
++		//Enter AN_ON
++		rswitch2_serdes_write32(addr, VR_MII_AN_CTRL, BANK_1F80, 1);
++		rswitch2_serdes_write32(addr, SR_MII_CTRL, BANK_1F80, 0x1000);
++		ret = rswitch2_serdes_reg_wait(addr, 8, BANK_1F80, BIT(0), 1);
++		rswitch2_serdes_write32(addr, 8, BANK_1F80, 0);
++		if (ret) {
++				printk("Enter AN_ON failed\n");
++				return ret;
++		}
++#endif
+ 		break;
++
+ 	default:
+ 		return -EOPNOTSUPP;
+ 	}
+@@ -449,9 +519,10 @@ static int rswitch2_serdes_chan_setting(struct rswitch2_eth_port *eth_port, enum
+ 	return 0;
+ }
+ 
+-static int rswitch_serdes_set_speed(struct rswitch2_drv *rsw2, enum rswitch_serdes_mode mode,
++static int rswitch2_serdes_set_speed(struct rswitch2_drv *rsw2, enum rswitch_serdes_mode mode,
+ 				    int speed)
+ {
++	int ret;
+ 	void __iomem *addr = rsw2->serdes_base_addr;
+ 
+ 	switch (mode) {
+@@ -462,8 +533,20 @@ static int rswitch_serdes_set_speed(struct rswitch2_drv *rsw2, enum rswitch_serd
+ 			rswitch2_serdes_write32(addr, SR_MII_CTRL, BANK_1F00, 0x2100);
+ 		else if (speed == 10)
+ 			rswitch2_serdes_write32(addr, SR_MII_CTRL, BANK_1F00, 0x100);
++		break;
+ 
++	case USXGMII:
++		if (speed == 2500)
++			rswitch2_serdes_write32(addr, SR_MII_CTRL, BANK_1F00, 0x120);
++		else
++			return -EOPNOTSUPP;
++		udelay(20);
++		rswitch2_serdes_write32(addr, VR_XS_PCS_DIG_CTRL1, BANK_380, 0x2600);
++		ret = rswitch2_serdes_reg_wait(addr, VR_XS_PCS_DIG_CTRL1, BANK_380, BIT(10), 0);
++		if (ret)
++			return ret;
+ 		break;
++
+ 	default:
+ 		return -EOPNOTSUPP;
+ 	}
+@@ -471,9 +554,11 @@ static int rswitch_serdes_set_speed(struct rswitch2_drv *rsw2, enum rswitch_serd
+ 	return 0;
+ }
+ 
++
+ static int rswitch2_serdes_init(struct net_device *ndev, unsigned int port_num)
+ {
+ 	int ret;
++	int speed;
+ 	enum rswitch_serdes_mode mode;
+ 	struct rswitch2_drv *rsw2;
+ 	struct rswitch2_eth_port *eth_port;
+@@ -487,42 +572,61 @@ static int rswitch2_serdes_init(struct net_device *ndev, unsigned int port_num)
+ 	rsw2 = eth_port->rsw2;
+ 
+ 
+-	/* TODO: Support more modes */
+-	switch ( ndev->phydev->interface ) {
++	/* TODO: Support more modes and speed selection */
++	printk("%s: sw0p%d  phy_mode=%d\n", __FUNCTION__, port_num, ndev->phydev->interface );
++	switch (ndev->phydev->interface ) {
+ 	case PHY_INTERFACE_MODE_SGMII:
+ 		mode = SGMII;
+-		printk("%s:%d Mode is SGMII\n", __FUNCTION__, __LINE__);
++		speed = 1000;
++		printk("%s:%d Mode is SGMII æ %dmbit/s\n", __FUNCTION__, __LINE__, speed);
++
++		break;
++	case PHY_INTERFACE_MODE_USXGMII:
++		mode = USXGMII;
++		speed = 2500;
++		printk("%s:%d Mode is USXGMII æ %dmbit/s\n", __FUNCTION__, __LINE__, speed);
+ 		break;
+ 	default:
+ 		pr_debug("%s: Don't support this interface", __func__);
+ 		return -EOPNOTSUPP;
+ 	}
+ 
+-	printk("%s:%d SERDES init: port: %d    serdes port addr: 0x%px\n", __FUNCTION__, __LINE__, port_num, phy_port->serdes_chan_addr);
+ 
+ 
+-	/* Initialize SRAM */
+-	ret = rswitch2_serdes_init_sram(rsw2);
+-	if (ret)
+-		return ret;
++	if (!rsw2->serdes_common_init_done) {
+ 
+-	/* Disable FUSE_OVERRIDE_EN */
+-	if (ioread32(phy_port->serdes_chan_addr + RSWITCH_SERDES_FUSE_OVERRIDE(port_num)))
+-		iowrite32(0, phy_port->serdes_chan_addr + RSWITCH_SERDES_FUSE_OVERRIDE(port_num));
++		rsw2->serdes_common_init_done = true;
+ 
+-	/* Set common settings*/
+-	ret = rswitch2_serdes_common_setting(eth_port, mode);
+-	if (ret)
+-		return ret;
++		/* Disable FUSE_OVERRIDE_EN */
++		if (ioread32(phy_port->serdes_chan_addr + RSWITCH_SERDES_FUSE_OVERRIDE(port_num)))
++			iowrite32(0, phy_port->serdes_chan_addr + RSWITCH_SERDES_FUSE_OVERRIDE(port_num));
+ 
+-	/* Assert soft reset for PHY */
+-	rswitch2_serdes_write32(phy_port->serdes_chan_addr, 0x03d0, BANK_380, 1);
+-	rswitch2_serdes_write32(rsw2->serdes_base_addr, VR_XS_PCS_DIG_CTRL1, BANK_380, 0x8000);
++		/* Initialize SRAM */
++		ret = rswitch2_serdes_init_sram(rsw2);
++		if (ret)
++			return ret;
++
++		//printk("Step 2\n");
++		rswitch2_serdes_write32(phy_port->serdes_chan_addr, VR_XS_PCS_SFTY_MR_CTRL, BANK_380, 0x443);
++
++		/* Set common settings*/
++		//printk("Step 3 (U.4)\n");
++		ret = rswitch2_serdes_common_setting(eth_port);
++		if (ret)
++			return ret;
++
++		/* Assert softreset for PHY */
++		//printk("Step 4,5\n");
++		rswitch2_serdes_write32(phy_port->serdes_chan_addr, 0x03d0, BANK_380, 1);
++		rswitch2_serdes_write32(rsw2->serdes_base_addr, VR_XS_PCS_DIG_CTRL1, BANK_380, 0x8000);
++		/* Re-Initialize SRAM */
++		//printk("Step 6,7,8\n");
++		/* Initialize SRAM */
++		ret = rswitch2_serdes_init_sram(rsw2);
++		if (ret)
++			return ret;
++	}
+ 
+-	/* Initialize SRAM */
+-	ret = rswitch2_serdes_init_sram(rsw2);
+-	if (ret)
+-		return ret;
+ 
+ 	/* Set channel settings*/
+ 	ret = rswitch2_serdes_chan_setting(eth_port, mode);
+@@ -530,16 +634,34 @@ static int rswitch2_serdes_init(struct net_device *ndev, unsigned int port_num)
+ 		return ret;
+ 
+ 	/* Set speed (bps) */
+-	ret = rswitch_serdes_set_speed(rsw2, mode, 1000);
++	ret = rswitch2_serdes_set_speed(rsw2, mode, speed);
+ 	if (ret)
+ 		return ret;
+ 
++	/* The serdes connection to PHYs takes quite long */
+ 	ret = rswitch2_serdes_reg_wait(rsw2->serdes_base_addr, SR_XS_PCS_STS1, BANK_300, BIT(2), BIT(2));
++	printk("%s:%d link-up ret=%d\n", __FUNCTION__, __LINE__, ret);
++	if (ret) {
++		//reset RX side and retry
++		u32 value = rswitch2_serdes_read32(phy_port->serdes_chan_addr, VR_XS_PMA_MP_12G_16G_25G_RX_GENCTRL1, BANK_180);
++		rswitch2_serdes_write32(phy_port->serdes_chan_addr, VR_XS_PMA_MP_12G_16G_25G_RX_GENCTRL1, BANK_180, value | 0x10);
++		udelay(10);
++		rswitch2_serdes_write32(phy_port->serdes_chan_addr, VR_XS_PMA_MP_12G_16G_25G_RX_GENCTRL1, BANK_180, value);
++
++		ret = rswitch2_serdes_reg_wait(rsw2->serdes_base_addr, SR_XS_PCS_STS1, BANK_300, BIT(2), BIT(2));
++		//printk("%s:%d link-up ret=%d\n", __FUNCTION__, __LINE__, ret);
++	}
+ 	if (ret) {
+-		pr_debug("\n%s: SerDes Link up failed", __func__);
++		pr_debug("\n%s: \033[31mSerDes has not yet reached link up\033[m", __func__);
+ 		return ret;
+ 	}
+ 
++	//printk("Step 11,12\n");
++	rswitch2_serdes_write32(phy_port->serdes_chan_addr, 0x03c0, BANK_380, 0);
++	rswitch2_serdes_write32(phy_port->serdes_chan_addr, 0x03d0, BANK_380, 0);
++
++
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/net/ethernet/renesas/rswitch2/rswitch2_serdes.h b/drivers/net/ethernet/renesas/rswitch2/rswitch2_serdes.h
+index 1229633771d0..b892016036ac 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/rswitch2_serdes.h
++++ b/drivers/net/ethernet/renesas/rswitch2/rswitch2_serdes.h
+@@ -57,6 +57,7 @@ enum rswitch_serdes_mode {
+ #define VR_XS_PCS_DIG_CTRL1                     0x0000
+ #define VR_XS_PCS_DEBUG_CTRL                    0x0014
+ #define VR_XS_PCS_KR_CTRL                       0x001c
++#define VR_XS_PCS_SFTY_MR_CTRL                  0x03d4
+ 
+ #define BANK_1F00                               0x1f00
+ #define SR_MII_CTRL                             0x0000
+-- 
+2.17.1
+

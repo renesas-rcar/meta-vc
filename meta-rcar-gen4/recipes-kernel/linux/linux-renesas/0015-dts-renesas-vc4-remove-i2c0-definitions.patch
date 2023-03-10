@@ -1,0 +1,53 @@
+From 15592367dade30a5da4f579381618dff99a8cc54 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Thu, 27 Jan 2022 15:00:58 +0300
+Subject: [PATCH 015/151] dts: renesas: vc4: remove i2c0 definitions
+
+Per board's schematics, i2c0 bus is not wired.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ .../boot/dts/renesas/r8a779f0-vc4-cpu.dtsi    | 20 -------------------
+ 1 file changed, 20 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-cpu.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-cpu.dtsi
+index a4387d137f0a..dcf1daa7ff41 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-cpu.dtsi
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-cpu.dtsi
+@@ -72,21 +72,6 @@
+ 	clock-frequency = <32768>;
+ };
+ 
+-&i2c0 {
+-	pinctrl-0 = <&i2c0_pins>;
+-	pinctrl-names = "default";
+-
+-	status = "okay";
+-	clock-frequency = <400000>;
+-
+-	gpio_exp_20: gpio@20 {
+-		compatible = "ti,tca9554";
+-		reg = <0x20>;
+-		gpio-controller;
+-		#gpio-cells = <2>;
+-	};
+-};
+-
+ &i2c1 {
+ 	pinctrl-0 = <&i2c1_pins>;
+ 	pinctrl-names = "default";
+@@ -144,11 +129,6 @@
+ 	pinctrl-0 = <&scif_clk_pins>;
+ 	pinctrl-names = "default";
+ 
+-	i2c0_pins: i2c0 {
+-		groups = "i2c0";
+-		function = "i2c0";
+-	};
+-
+ 	i2c1_pins: i2c1 {
+ 		groups = "i2c1";
+ 		function = "i2c1";
+-- 
+2.17.1
+

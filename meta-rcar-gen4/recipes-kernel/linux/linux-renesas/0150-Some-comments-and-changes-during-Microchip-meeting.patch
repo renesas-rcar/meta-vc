@@ -1,0 +1,129 @@
+From bec15c283095ba521871bf47667ba72446cd1a4a Mon Sep 17 00:00:00 2001
+From: "Christian@p620" <christian.mardmoeller@renesas.com>
+Date: Thu, 8 Dec 2022 12:47:24 +0100
+Subject: [PATCH 150/151] Some comments and changes during Microchip meeting
+
+---
+ drivers/net/ethernet/microchip/lan865x/lan865x.c  | 11 +++++++++--
+ drivers/net/ethernet/microchip/lan865x/tc6-conf.h |  8 ++++----
+ drivers/net/ethernet/microchip/lan865x/tc6.c      |  8 ++++----
+ 3 files changed, 17 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/ethernet/microchip/lan865x/lan865x.c b/drivers/net/ethernet/microchip/lan865x/lan865x.c
+index dc354fb1c3fa..9fb3d7b48eb3 100755
+--- a/drivers/net/ethernet/microchip/lan865x/lan865x.c
++++ b/drivers/net/ethernet/microchip/lan865x/lan865x.c
+@@ -193,6 +193,7 @@ bool Tc6_WriteRegister(struct lan865x_priv *priv, uint32_t addr, uint32_t value)
+ 
+ void TC6Stub_Print(uint8_t idx, void *pGlobalTag, const char *statement, ... )
+ {
++		printk("TC6Stub_Print: %d %s\n", idx, statement);
+ }
+ 
+ void TC6_CB_OnRxEthernetSlice(TC6_t *pInst, const uint8_t *pRx, uint16_t offset, uint16_t len, void *pGlobalTag)
+@@ -368,7 +369,7 @@ static bool lan865x_init(struct lan865x_priv *priv)
+ 		while (i < TC6_MEMMAP_LENGTH) {
+ 			success = Tc6_WriteRegister(priv, TC6_MEMMAP[i].address, TC6_MEMMAP[i].value);
+ 			if (!success) {
+-				dev_err(&priv->spi->dev, "Initial register write failed\n");
++				dev_err(&priv->spi->dev, "Initial register write failed at %d\n", i);
+ 				break;
+ 			}
+ 			i++;
+@@ -463,6 +464,10 @@ static irqreturn_t lan865x_irq(int irq, void *dev_id)
+ {
+ 	struct lan865x_priv *priv = dev_id;
+ 
++	//static int irq_cnt = 0;
++	//if ((irq_cnt % 10000)==0) printk("lan865x_irq irq=%d\n", irq_cnt);
++	//irq_cnt++;
++
+ 	if (priv->tc6 && priv->enable_data) {
+ 		priv->tc6IntActive = true;
+ 		wake_up_interruptible(&priv->tc6_wq);
+@@ -900,9 +905,10 @@ static int lan865x_probe(struct spi_device *spi)
+ 	}
+ 
+ 	if (priv->plca_enable)
+-		netdev_info(netdev, "PLCA mode is active\n");
++		netdev_info(netdev, "PLCA mode is active (node-count=%d  node-id=%d)\n", priv->plca_node_count, priv->plca_node_id);
+ 	else
+ 		netdev_info(netdev, "CSMA/CD mode is active\n");
++	netdev_info(netdev, "Tx mode is %s\n", (priv->tx_cut_thr_mode)?"cut-through":"store-forward");
+ 
+ 	return 0;
+ 
+@@ -972,6 +978,7 @@ MODULE_DESCRIPTION(DRV_NAME " 10Base-T1S MACPHY Ethernet Driver");
+ MODULE_AUTHOR("Parthiban Veerasooran <Parthiban.Veerasooran@microchip.com>");
+ MODULE_AUTHOR("Thorsten Kummermehr <Thorsten.Kummermehr@microchip.com>");
+ MODULE_LICENSE("GPL");
++MODULE_VERSION(DRV_VERSION);
+ module_param_named(debug, debug.msg_enable, int, 0);
+ MODULE_PARM_DESC(debug, "Debug verbosity level in amount of bits set (0=none, ..., 31=all)");
+ module_param_named(enable, plca_enable, byte, 0660);
+diff --git a/drivers/net/ethernet/microchip/lan865x/tc6-conf.h b/drivers/net/ethernet/microchip/lan865x/tc6-conf.h
+index b4814a63f1cc..ccade6abbbff 100755
+--- a/drivers/net/ethernet/microchip/lan865x/tc6-conf.h
++++ b/drivers/net/ethernet/microchip/lan865x/tc6-conf.h
+@@ -33,7 +33,7 @@
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+-  
++
+ #include <asm-generic/bug.h>
+ 
+ /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+@@ -46,12 +46,12 @@ extern "C" {
+ #ifndef TC6_ASSERT
+ #define TC6_ASSERT(condition)  BUG_ON(condition?false:true)
+ #endif
+-    
++
+ /**
+  * \brief Set the maximum amount of parallel TC6 instances. 1 means a single MACPHY hardware is attached
+  */
+ #ifndef TC6_MAX_INSTANCES
+-#define TC6_MAX_INSTANCES   (2)
++#define TC6_MAX_INSTANCES   (3)
+ #endif
+ 
+ /**
+@@ -99,7 +99,7 @@ extern "C" {
+ #ifndef SPI_FULL_BUFFERS
+ #define SPI_FULL_BUFFERS    (4)
+ #endif
+-    
++
+ /**
+  * \brief Defines the queue size for holding pointer to Ethernet frames coming out of the TCP/IP stack.
+  * \note Only a reference to the payload is stored, not the entire payload it self.
+diff --git a/drivers/net/ethernet/microchip/lan865x/tc6.c b/drivers/net/ethernet/microchip/lan865x/tc6.c
+index 9a30fd9a61c4..897594abfbce 100755
+--- a/drivers/net/ethernet/microchip/lan865x/tc6.c
++++ b/drivers/net/ethernet/microchip/lan865x/tc6.c
+@@ -220,9 +220,9 @@ TC6_t *TC6_Init(void *pGlobalTag)
+             break;
+         }
+     }
+-    if (!g) {
+-        TC6_ASSERT(false);
+-    }
++    //if (!g) {
++    //    TC6_ASSERT(false);
++    //}
+     return g;
+ }
+ 
+@@ -972,7 +972,7 @@ static uint16_t process_tx(TC6_t *g, uint8_t *tx_buf)
+         if (g->prot.offsetEth == entry->len) {
+             if (entry->len < TC6_CHUNK_SIZE) {
+                 /* Test hack to round up tiny Ethernet frames to full chunk size. */
+-		header |= MK_MASK(HDR_EV, 1u) | MK_MASK(HDR_EBO, TC6_CHUNK_SIZE - 5u);
++                header |= MK_MASK(HDR_EV, 1u) | MK_MASK(HDR_EBO, TC6_CHUNK_SIZE - 1u);
+             } else {
+                 header |= MK_MASK(HDR_EV, 1u) | MK_MASK(HDR_EBO, tocopy_len - 1u);
+             }
+-- 
+2.17.1
+

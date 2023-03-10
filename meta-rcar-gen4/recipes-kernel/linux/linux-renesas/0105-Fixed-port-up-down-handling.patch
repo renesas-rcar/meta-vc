@@ -1,0 +1,230 @@
+From 1ffee3879fdd8bbd75d0e0659cf11c7ba218d804 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Fri, 23 Sep 2022 11:24:13 +0200
+Subject: [PATCH 105/151] Fixed port up/down handling
+
+---
+ .../ethernet/renesas/rswitch2/rswitch2_eth.c  | 102 ++++++++++++++----
+ drivers/net/phy/marvell_88q211x.c             |  19 +++-
+ 2 files changed, 102 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c b/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
+index 502911055399..6d994bdb4529 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
++++ b/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
+@@ -91,6 +91,22 @@ static int rswitch2_gwca_init(struct rswitch2_drv *rsw2)
+ 		goto err_out;
+ 	}
+ 
++
++	ret = rswitch2_gwca_set_state(rsw2, gwmc_reset);
++		if (ret != 0) {
++			dev_err(rsw2->dev, "Failed to set GWCA reset state\n");
++			goto err_out;
++		}
++
++
++	ret = rswitch2_gwca_set_state(rsw2, gwmc_disable);
++		if (ret != 0) {
++			dev_err(rsw2->dev, "Failed to set GWCA disable state\n");
++			goto err_out;
++		}
++
++
++
+ 	ret = rswitch2_gwca_set_state(rsw2, gwmc_config);
+ 	if (ret != 0) {
+ 		dev_err(rsw2->dev, "Failed to set GWCA config state\n");
+@@ -939,6 +955,7 @@ static void rswitch2_stat_timer(struct timer_list *t)
+ 
+ static int rswitch2_eth_open(struct net_device *ndev)
+ {
++	struct rswitch2_drv *rsw2;
+ 	struct rswitch2_eth_port *eth_port;
+ 	struct rswitch2_physical_port *phy_port;
+ 	struct rswitch2_internal_port *intern_port;
+@@ -946,27 +963,46 @@ static int rswitch2_eth_open(struct net_device *ndev)
+ 	int ret;
+ 
+ 	eth_port = netdev_priv(ndev);
++	rsw2 = eth_port->rsw2;
+ 	phy_port = eth_port->phy_port;
+ 	intern_port = eth_port->intern_port;
+ 
+ 	/* Gateway port */
+ 	if (intern_port != NULL) {
+-		int rx_queue;
++		int cur_q;
++		const uint 	num_of_rx_q = ARRAY_SIZE(intern_port->rx_q);
++
++		ret = rswitch2_gwca_set_state(rsw2, gwmc_operation);
++		if (ret != 0) {
++			dev_err(rsw2->dev, "Failed to set GWCA operation state\n");
++		}
+ 
+ 		netdev_dbg(ndev, "internal port open(): '%s'\n", ndev->name);
+-		for (rx_queue = 0; rx_queue < NUM_BE_RX_QUEUES; rx_queue++)
+-			napi_enable(&intern_port->rx_q[rx_queue].napi);
++		for (cur_q = 0; cur_q < num_of_rx_q; cur_q++) {
++			u32 reg_queue = (cur_q + intern_port->rx_q[cur_q].offset) / 32;
++			u32 bit_queue = (cur_q + intern_port->rx_q[cur_q].offset) % 32;
++
++
++			/* Enable RX interrupt */
++			iowrite32(BIT(bit_queue), rsw2->gwca_base_addrs[0] + RSW2_GCWA_GWDIE(reg_queue));
+ 
+-		netif_start_queue(ndev);
++			napi_enable(&intern_port->rx_q[cur_q].napi);
++		}
++		// FIXME:
++		netif_tx_start_all_queues(ndev);
++		//netif_start_queue(ndev);
+ 	}
+ 	else {
+-		int rx_queue;
++		int cur_q;
++		const uint 	num_of_rx_q = ARRAY_SIZE(phy_port->rx_q);
++
+ 
+ 		netdev_dbg(ndev, "physical port open(): '%s'\n", ndev->name);
+-		for (rx_queue = 0; rx_queue < RSW2_LL_RX_PER_PORT_QUEUES; rx_queue++)
+-			napi_enable(&phy_port->rx_q[rx_queue].napi);
++		for (cur_q = 0; cur_q < num_of_rx_q; cur_q++) {
++			napi_enable(&phy_port->rx_q[cur_q].napi);
++		}
+ 
+-		netif_start_queue(ndev);
++		netif_tx_start_all_queues(ndev);
+ 
+ 
+ 		phy_port_num = eth_port->port_num - eth_port->rsw2->num_of_cpu_ports;
+@@ -1010,40 +1046,55 @@ static int rswitch2_eth_close(struct net_device *ndev)
+ 	struct rswitch2_eth_port *eth_port;
+ 	struct rswitch2_physical_port *phy_port;
+ 	struct rswitch2_internal_port *intern_port;
++	int ret;
+ 
+ 	eth_port = netdev_priv(ndev);
+ 	rsw2 = eth_port->rsw2;
+ 	phy_port = eth_port->phy_port;
+ 	intern_port = eth_port->intern_port;
+ 
+-	del_timer(&eth_port->stat_timer);
+-
+-
+ 	if (intern_port != NULL) {
+-		int rx_queue;
++		int cur_q;
++		const uint 	num_of_rx_q = ARRAY_SIZE(intern_port->rx_q);
+ 
+ 		netdev_dbg(ndev, "internal port close(): '%s'\n", ndev->name);
+ 
+ 		netif_tx_stop_all_queues(ndev);
+ 
+-		for (rx_queue = 0; rx_queue < NUM_BE_RX_QUEUES; rx_queue++) {
+-			u32 reg_queue = rx_queue / 32;
+-			u32 bit_queue = rx_queue % 32;
++		for (cur_q = 0; cur_q < num_of_rx_q; cur_q++) {
++			u32 reg_queue = (cur_q + intern_port->rx_q[cur_q].offset) / 32;
++			u32 bit_queue = (cur_q + intern_port->rx_q[cur_q].offset) % 32;
+ 
+ 			/* Disable and clear RX interrupt */
+ 			iowrite32(BIT(bit_queue), rsw2->gwca_base_addrs[0] + RSW2_GCWA_GWDID(reg_queue));
+ 			iowrite32(BIT(bit_queue), rsw2->gwca_base_addrs[0] + RSW2_GCWA_GWDIS(reg_queue));
+ 
+-			napi_disable(&intern_port->rx_q[rx_queue].napi);
++			napi_disable(&intern_port->rx_q[cur_q].napi);
+ 
+ 		}
+-		kfree(eth_port->phy_port);
+-		eth_port->phy_port = NULL;
++		ret = rswitch2_gwca_set_state(rsw2, gwmc_disable);
++		if (ret != 0) {
++			dev_err(rsw2->dev, "Failed to set GWCA disable state\n");
++		}
++		// FIXME
++		//kfree(eth_port->phy_port);
++		//eth_port->phy_port = NULL;
+ 	} else if (phy_port != NULL) {
++		int cur_q;
++		const uint 	num_of_rx_q = ARRAY_SIZE(phy_port->rx_q);
++
++		del_timer(&eth_port->stat_timer);
++
+ 		netdev_dbg(ndev, "physical port close(): '%s'\n", ndev->name);
+ 		del_timer(&phy_port->serdes_usxgmii_op_timer);
+ 
+ 		netif_carrier_off(ndev);
++
++		netif_tx_stop_all_queues(ndev);
++
++		for (cur_q = 0; cur_q < num_of_rx_q; cur_q++) {
++			napi_disable(&phy_port->rx_q[cur_q].napi);
++		}
+ 		phy_stop(ndev->phydev);
+ 		phy_disconnect(ndev->phydev);
+ 	}
+@@ -2966,6 +3017,21 @@ static int rswitch2_init_physical_port(struct rswitch2_drv *rsw2, unsigned int p
+ 		goto cleanup_phy_port;
+ 	}
+ 
++	ret = rswitch2_emac_set_state(port_ndev, emac_reset);
++	if (ret < 0) {
++		dev_err(rsw2->dev, "Port set state 'reset' failed\n");
++		goto cleanup_phy_port;
++	}
++
++
++	ret = rswitch2_emac_set_state(port_ndev, emac_disable);
++	if (ret < 0) {
++		dev_err(rsw2->dev, "Port set state 'disable' failed\n");
++		goto cleanup_phy_port;
++	}
++
++
++
+ 	ret = rswitch2_emac_set_state(port_ndev, emac_config);
+ 	if (ret < 0) {
+ 		netdev_err(port_ndev, "Port set state 'config' failed\n");
+diff --git a/drivers/net/phy/marvell_88q211x.c b/drivers/net/phy/marvell_88q211x.c
+index 2e3ef723d03e..e06982465f3f 100644
+--- a/drivers/net/phy/marvell_88q211x.c
++++ b/drivers/net/phy/marvell_88q211x.c
+@@ -609,7 +609,16 @@ static inline int mv88q211x_hwmon_config(struct phy_device *phydev, bool enable)
+ 
+ static int mv88q211x_power_down(struct phy_device *phydev)
+ {
++	u16 reg_val;
++
+ 	pr_info("mv88q211x_power_down()\n");
++
++	//enable low-power mode
++	reg_val = phy_read_mmd(phydev, 1, 0x0000);
++	phy_write_mmd(phydev, 1, 0x0000, reg_val | 0x0800);
++
++
++
+ #if NOT_USED
+ 	return phy_set_bits_mmd(phydev, MDIO_MMD_VEND2, MV_V2_PORT_CTRL,
+ 				MV_V2_PORT_CTRL_PWRDOWN);
+@@ -619,8 +628,16 @@ static int mv88q211x_power_down(struct phy_device *phydev)
+ 
+ static int mv88q211x_power_up(struct phy_device *phydev)
+ {
++	u16 reg_val;
++
+ 	pr_info("mv88q211x_power_up()\n");
+-#if NOT_USED
++
++	// disable low-power mode
++	reg_val = phy_read_mmd(phydev, 1, 0x0000);
++	phy_write_mmd(phydev, 1, 0x0000, reg_val & 0xF7FF);
++	mdelay(1);
++
++	#if NOT_USED
+ 	struct mv3310_priv *priv = dev_get_drvdata(&phydev->mdio.dev);
+ 	int ret;
+ 
+-- 
+2.17.1
+

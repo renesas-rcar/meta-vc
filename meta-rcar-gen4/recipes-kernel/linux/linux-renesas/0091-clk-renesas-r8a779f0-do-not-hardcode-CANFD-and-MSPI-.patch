@@ -1,0 +1,93 @@
+From 21a62ae07a25b08bd2e7e99e5f59806dec780d1b Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Mon, 29 Aug 2022 10:33:37 +0300
+Subject: [PATCH 091/151] clk: renesas: r8a779f0: do not hardcode CANFD and
+ MSPI clocks
+
+Instead of hardcoding, read CLK_CANFD divider and CLK_MSPI parent
+from appropriate registers.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/clk/renesas/r8a779f0-cpg-mssr.c | 39 +++++++++++++++++++++++--
+ 1 file changed, 36 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/clk/renesas/r8a779f0-cpg-mssr.c b/drivers/clk/renesas/r8a779f0-cpg-mssr.c
+index 447d8369c992..c495205c5877 100644
+--- a/drivers/clk/renesas/r8a779f0-cpg-mssr.c
++++ b/drivers/clk/renesas/r8a779f0-cpg-mssr.c
+@@ -32,6 +32,8 @@ enum r8a779f0_clk_types {
+ 	CLK_TYPE_CD_PLLO,
+ 	CLK_TYPE_CD_SYS,
+ 	CLK_TYPE_CD_UHSB,
++	CLK_TYPE_CD_CANFD,
++	CLK_TYPE_CD_MSPI,
+ };
+ 
+ enum clk_ids {
+@@ -174,8 +176,8 @@ static const struct cpg_core_clk r8a779f0_core_clks[] __initconst = {
+ 	DEF_FIXED("cd_lsb",	CD_CLK_LSB,	CD_CLK_UHSB, 4, 1),
+ 
+ 	/* Control domain clock outputs */
+-	DEF_FIXED("cd_canfd",	R8A779F0_CLK_CD_CANFD,	CD_CLK_MOSC,	1, 1),
+-	DEF_FIXED("cd_mspi",	R8A779F0_CLK_CD_MSPI,	CD_CLK_HSB,	1, 1),
++	DEF_TYPE("cd_canfd",	R8A779F0_CLK_CD_CANFD,	CLK_TYPE_CD_CANFD),
++	DEF_TYPE("cd_mspi",	R8A779F0_CLK_CD_MSPI,	CLK_TYPE_CD_MSPI),
+ };
+ 
+ static const struct mssr_mod_clk r8a779f0_mod_clks[] __initconst = {
+@@ -325,6 +327,22 @@ static const struct clk_div_table pllo_div_table[] = {
+ #define SYS_PARENT_WIDTH		1
+ static const char * const sys_parents[] = { "cd_pllo", "cd_iosc" };
+ 
++#define CLKC_RCANS_OFFSET		0x158
++#define RCAN_DIV_SHIFT			0
++#define RCAN_DIV_WIDTH			2
++#define RCAN_PARENT			"cd_mosc"
++static const struct clk_div_table rcan_div_table[] = {
++	{ .val = 1, .div = 1 },
++	{ .val = 2, .div = 2 },
++	{ .val = 3, .div = 4 },
++	{}
++};
++
++#define CLKC_MSPIS_OFFSET		0x178
++#define MSPI_PARENT_SHIFT		0
++#define MSPI_PARENT_WIDTH		1
++static const char * const mspi_parents[] = { "cd_mosc", "cd_hsb" };
++
+ static struct clk * __init r8a779f0_cpg_clk_register(struct device *dev,
+ 	const struct cpg_core_clk *core, const struct cpg_mssr_info *info,
+ 	struct clk **clks, void __iomem *base,
+@@ -412,12 +430,27 @@ static struct clk * __init r8a779f0_cpg_clk_register(struct device *dev,
+ 				break;
+ 			}
+ 		} else {
+-			/* CLK_SYS sourced from CLK_POOL - divider is 5 */
++			/* CLK_SYS sourced from CLK_PLLO - divider is 5 */
+ 			div = 5;
+ 		}
+ 		return clk_register_fixed_factor(NULL, core->name,
+ 					"cd_sys", 0, 1, div);
+ 
++	case CLK_TYPE_CD_CANFD:
++		return clk_register_divider_table(NULL, core->name,
++				RCAN_PARENT, 0,
++				cpg_mssr_cd_base(dev) + CLKC_RCANS_OFFSET,
++				RCAN_DIV_SHIFT, RCAN_DIV_WIDTH,
++				CLK_DIVIDER_READ_ONLY,
++				rcan_div_table, NULL);
++
++	case CLK_TYPE_CD_MSPI:
++		return clk_register_mux(NULL, core->name,
++				mspi_parents, ARRAY_SIZE(mspi_parents), 0,
++				cpg_mssr_cd_base(dev) + CLKC_MSPIS_OFFSET,
++				MSPI_PARENT_SHIFT, MSPI_PARENT_WIDTH,
++				CLK_MUX_READ_ONLY, NULL);
++
+ 	default:
+ 		return rcar_gen4_cpg_clk_register(dev, core, info, clks, base,
+ 				notifiers);
+-- 
+2.17.1
+

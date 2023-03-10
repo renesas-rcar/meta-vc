@@ -1,0 +1,194 @@
+From f511d0b948cac02c29cbc94fe803d2943fb4113d Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Wed, 9 Mar 2022 17:06:02 +0300
+Subject: [PATCH 030/151] arm64: dts: renesas: r8a779f0: cleanup switch
+ definition
+
+- move board-independent settings to r8a779f0.dtsi
+  - use "renesas,switch2" name
+- keep board-specific updates in both r8a779f0-vc4.dts and
+  r8a779f0-vc4-ctrl-domain.dts for this commit
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ .../dts/renesas/r8a779f0-vc4-ctrl-domain.dts  | 88 -------------------
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts  | 24 ++---
+ 2 files changed, 6 insertions(+), 106 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+index 77117a83e659..d087d9dd6608 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+@@ -214,117 +214,29 @@
+ 	clock-frequency = <100000000>;
+ };
+ 
+-/*
+-&rswitch {
+-	status = "disabled";
+-	#address-cells = <1>;
+-	#size-cells = <0>;
+-
+-	ports {
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+-		port@0 {
+-			reg = <0>;
+-			phy-handle = <&etha0>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha0: ethernet-phy@0 {
+-				reg = <1>;
+-				compatible = "ethernet-phy-ieee802.3-c45";
+-			};
+-		};
+-		port@1 {
+-			reg = <1>;
+-			phy-handle = <&etha0>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha1: ethernet-phy@1 {
+-				reg = <2>;
+-				compatible = "ethernet-phy-ieee802.3-c45";
+-			};
+-		};
+-		port@2 {
+-			reg = <2>;
+-			phy-handle = <&etha0>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha2: ethernet-phy@2 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-ieee802.3-c45";
+-			};
+-		};
+-	};
+-};
+-*/
+-
+ &rswitch {
+-	compatible = "renesas,rswitch2-r8a779f0",
+-				     "renesas, rswitch2";
+-	interrupts = <GIC_SPI 280 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 281 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 282 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 283 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 284 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 285 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 286 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 287 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 288 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 289 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 290 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 291 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 292 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 293 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 294 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 295 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 296 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 297 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 298 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 299 IRQ_TYPE_LEVEL_HIGH>;
+-	interrupt-names = "gwca0_rxtx0", "gwca0_rxtx1",
+-					  "gwca0_rxtx2", "gwca0_rxtx3",
+-					  "gwca0_rxtx4", "gwca0_rxtx5",
+-					  "gwca0_rxtx6", "gwca0_rxtx7",
+-					  "gwca1_rxtx0", "gwca1_rxtx1",
+-					  "gwca1_rxtx2", "gwca1_rxtx3",
+-					  "gwca1_rxtx4", "gwca1_rxtx5",
+-					  "gwca1_rxtx6", "gwca1_rxtx7",
+-					  "gwca0_rxts0", "gwca0_rxts1",
+-					  "gwca1_rxts0", "gwca1_rxts1";
+-		
+ 	status = "okay";
+ 
+-
+ 	ports {
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+ 		port@0 {
+-			reg = <0>;
+ 			phy-mode = "sgmii";
+ 			phy-handle = <&etha0>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+ 			etha0: ethernet-phy@0 {
+ 				reg = <3>;
+ 				compatible = "ethernet-phy-id002B.0218";
+ 			};
+ 		};
+ 		port@1 {
+-			reg = <1>;
+ 			phy-mode = "sgmii";
+ 			phy-handle = <&etha1>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+ 			etha1: ethernet-phy@1 {
+ 				reg = <3>;
+ 				compatible = "ethernet-phy-id002B.0218";
+ 			};
+ 		};
+ 		port@2 {
+-			reg = <2>;
+ 			phy-mode = "sgmii";
+ 			phy-handle = <&etha2>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+ 			etha2: ethernet-phy@2 {
+ 				reg = <3>;
+ 				compatible = "ethernet-phy-id002B.0218";
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+index e7b578eae1cc..910ef6baab12 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+@@ -197,41 +197,29 @@
+ &rswitch {
+ 	status = "okay";
+ 
+-	#address-cells = <1>;
+-	#size-cells = <0>;
+-
+ 	ports {
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+ 		port@0 {
+-			reg = <0>;
++			phy-mode = "sgmii";
+ 			phy-handle = <&etha0>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+ 			etha0: ethernet-phy@0 {
+ 				reg = <3>;
+-                		compatible = "ethernet-phy-id002B.0218";
+-
++				compatible = "ethernet-phy-id002B.0218";
+ 			};
+ 		};
+ 		port@1 {
+-			reg = <1>;
++			phy-mode = "sgmii";
+ 			phy-handle = <&etha1>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+ 			etha1: ethernet-phy@1 {
+ 				reg = <3>;
+-				compatible = "ethernet-phy-ieee802.3-c45";
++				compatible = "ethernet-phy-id002B.0218";
+ 			};
+ 		};
+ 		port@2 {
+-			reg = <2>;
++			phy-mode = "sgmii";
+ 			phy-handle = <&etha2>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+ 			etha2: ethernet-phy@2 {
+ 				reg = <3>;
+-				compatible = "ethernet-phy-ieee802.3-c45";
++				compatible = "ethernet-phy-id002B.0218";
+ 			};
+ 		};
+ 	};
+-- 
+2.17.1
+

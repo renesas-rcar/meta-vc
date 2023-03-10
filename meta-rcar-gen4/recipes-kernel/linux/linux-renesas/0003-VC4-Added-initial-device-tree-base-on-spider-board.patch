@@ -1,0 +1,396 @@
+From 823317aec4a08e2f57f5e7a2e275c319e1ad74d1 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Wed, 5 Jan 2022 13:03:03 +0100
+Subject: [PATCH 003/151] VC4: Added initial device tree base on spider board
+
+The device tree files are 99% copied from the spider board and
+just mentioned as base for modification
+---
+ .../boot/dts/renesas/r8a779f0-vc4-cpu.dtsi    | 212 ++++++++++++++++++
+ .../dts/renesas/r8a779f0-vc4-ethernet.dtsi    |  15 ++
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts  | 132 +++++++++++
+ 3 files changed, 359 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4-cpu.dtsi
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4-ethernet.dtsi
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-cpu.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-cpu.dtsi
+new file mode 100644
+index 000000000000..52d3945d2aea
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-cpu.dtsi
+@@ -0,0 +1,212 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Device Tree Source for the VC4 board
++ *
++ * Copyright (C) 2021 Renesas Electronics Corp.
++ */
++
++#include <dt-bindings/gpio/gpio.h>
++#include "r8a779f0.dtsi"
++
++/ {
++	model = "Renesas VC4 board";
++	compatible = "renesas,vc4", "renesas,r8a779f0";
++
++	aliases {
++		serial0 = &scif3;
++		serial1 = &scif0;
++	};
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++
++	memory@48000000 {
++		device_type = "memory";
++		/* first 128MB is reserved for secure area. */
++		reg = <0x0 0x48000000 0x0 0x78000000>;
++	};
++
++/*
++	memory@480000000 {
++		device_type = "memory";
++		reg = <0x4 0x80000000 0x0 0x80000000>;
++	};
++*/
++
++	reg_1p8v: regulator-1p8v {
++		compatible = "regulator-fixed";
++		regulator-name = "fixed-1.8V";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		regulator-boot-on;
++		regulator-always-on;
++	};
++
++	reg_3p3v: regulator-3p3v {
++		compatible = "regulator-fixed";
++		regulator-name = "fixed-3.3V";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-boot-on;
++		regulator-always-on;
++	};
++
++	vcc_sdhi: regulator-vcc-sdhi {
++		compatible = "regulator-fixed";
++
++		regulator-name = "SDHI Vcc";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++
++		gpio = <&gpio1 24 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++	};
++};
++
++&extal_clk {
++	clock-frequency = <20000000>;
++};
++
++&extalr_clk {
++	clock-frequency = <32768>;
++};
++
++&i2c0 {
++	pinctrl-0 = <&i2c0_pins>;
++	pinctrl-names = "default";
++
++	status = "okay";
++	clock-frequency = <400000>;
++
++	gpio_exp_20: gpio@20 {
++		compatible = "ti,tca9554";
++		reg = <0x20>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++};
++
++&i2c4 {
++	pinctrl-0 = <&i2c4_pins>;
++	pinctrl-names = "default";
++
++	status = "okay";
++	clock-frequency = <400000>;
++
++	eeprom@50 {
++		compatible = "rohm,br24g01", "atmel,24c01";
++		label = "cpu-board";
++		reg = <0x50>;
++		pagesize = <8>;
++	};
++};
++
++&mmc0 {
++	pinctrl-0 = <&sd_pins>;
++	pinctrl-1 = <&sd_pins>;
++	pinctrl-names = "default", "state_uhs";
++
++	vmmc-supply = <&vcc_sdhi>;
++	vqmmc-supply = <&vcc_sdhi>;
++	cd-gpios = <&gpio1 23 GPIO_ACTIVE_LOW>;
++	bus-width = <4>;
++	status = "okay";
++};
++
++&pfc {
++	pinctrl-0 = <&scif_clk_pins>;
++	pinctrl-names = "default";
++
++	i2c0_pins: i2c0 {
++		groups = "i2c0";
++		function = "i2c0";
++	};
++
++	i2c4_pins: i2c4 {
++		groups = "i2c4";
++		function = "i2c4";
++	};
++
++	mmc_pins: mmc {
++		groups = "mmc_data8", "mmc_ctrl", "mmc_ds";
++		function = "mmc";
++		power-source = <1800>;
++	};
++
++	sd_pins: sd {
++		groups = "mmc_data4", "mmc_ctrl";
++		function = "mmc";
++		power-source = <3300>;
++	};
++
++	scif0_pins: scif0 {
++		groups = "scif0_data", "scif0_ctrl";
++		function = "scif0";
++	};
++
++	scif3_pins: scif3 {
++		groups = "scif3_data", "scif3_ctrl";
++		function = "scif3";
++	};
++
++	hscif0_pins: hscif0 {
++		groups = "hscif0_data", "hscif0_ctrl";
++		function = "hscif0";
++	};
++
++	hscif1_pins: hscif1 {
++		groups = "hscif1_data", "hscif1_ctrl";
++		function = "hscif1";
++	};
++
++	scif_clk_pins: scif_clk {
++		groups = "scif_clk";
++		function = "scif_clk";
++	};
++};
++
++&rwdt {
++	timeout-sec = <60>;
++	status = "okay";
++};
++
++&scif0 {
++	pinctrl-0 = <&scif0_pins>;
++	pinctrl-names = "default";
++
++	uart-has-rtscts;
++	/* Please use exclusively to the hscif1 node */
++	status = "okay";
++};
++
++&scif3 {
++	pinctrl-0 = <&scif3_pins>;
++	pinctrl-names = "default";
++
++	uart-has-rtscts;
++	/* Please use exclusively to the hscif0 node */
++	status = "okay";
++};
++
++&hscif0 {
++	pinctrl-0 = <&hscif0_pins>;
++	pinctrl-names = "default";
++
++	uart-has-rtscts;
++	/* Please use exclusively to the scif3 node */
++	status = "disabled";
++};
++
++&hscif1 {
++	pinctrl-0 = <&hscif1_pins>;
++	pinctrl-names = "default";
++
++	uart-has-rtscts;
++	/* Please use exclusively to the scif0 node */
++	status = "disabled";
++};
++
++&scif_clk {
++	clock-frequency = <24000000>;
++};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ethernet.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ethernet.dtsi
+new file mode 100644
+index 000000000000..15e8d1ebf575
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ethernet.dtsi
+@@ -0,0 +1,15 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Device Tree Source for the Spider Ethernet sub-board
++ *
++ * Copyright (C) 2021 Renesas Electronics Corp.
++ */
++
++&i2c4 {
++	eeprom@52 {
++		compatible = "rohm,br24g01", "atmel,24c01";
++		label = "ethernet-sub-board";
++		reg = <0x52>;
++		pagesize = <8>;
++	};
++};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+new file mode 100644
+index 000000000000..7292f2e4ad56
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+@@ -0,0 +1,132 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Device Tree Source for the VC4 vehicle computer board
++ *
++ * Copyright (C) 2021 Renesas Electronics Corp.
++ */
++
++/dts-v1/;
++#include "r8a779f0-vc4-cpu.dtsi"
++#include "r8a779f0-vc4-ethernet.dtsi"
++
++/ {
++	model = "Renesas VC4 vehicle computer board based on R-Car S4 (r8a779f0)";
++	compatible = "renesas,vc4-cpu", "renesas,r8a779f0";
++
++	aliases {
++		eth0 = &rswitch;
++		};
++};
++
++&i2c4 {
++	eeprom@51 {
++		compatible = "rohm,br24g01", "atmel,24c01";
++		label = "breakout-board";
++		reg = <0x51>;
++		pagesize = <8>;
++	};
++};
++
++&pfc {
++	tsn0_pins: tsn0 {
++		mux {
++			groups = "tsn0_link", "tsn0_mdio";
++			function = "tsn0";
++			drive-strength = <12>;
++		};
++
++		pins_mdio {
++			groups = "tsn0_mdio";
++			drive-strength = <12>;
++		};
++	};
++
++	pcie0_pins: pcie0 {
++		groups = "pcie0_clkreq_n";
++		function = "pcie";
++	};
++
++	pcie1_pins: pcie1 {
++		groups = "pcie1_clkreq_n";
++		function = "pcie";
++	};
++
++	taud0_pwm_pins: taud0_pwm {
++		groups = "taud0_pwm1", "taud0_pwm2";
++		function = "taud0_pwm";
++	};
++};
++
++&rswitch {
++	status = "okay";
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	ports {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		port@0 {
++			reg = <0>;
++			phy-handle = <&etha0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			etha0: ethernet-phy@0 {
++				reg = <1>;
++				compatible = "ethernet-phy-ieee802.3-c45";
++			};
++		};
++		port@1 {
++			reg = <1>;
++			phy-handle = <&etha0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			etha1: ethernet-phy@1 {
++				reg = <2>;
++				compatible = "ethernet-phy-ieee802.3-c45";
++			};
++		};
++		port@2 {
++			reg = <2>;
++			phy-handle = <&etha0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			etha2: ethernet-phy@2 {
++				reg = <3>;
++				compatible = "ethernet-phy-ieee802.3-c45";
++			};
++		};
++	};
++};
++
++&pcie_bus_clk {
++	clock-frequency = <100000000>;
++};
++
++&pciec0 {
++	status = "okay";
++	pinctrl-0 = <&pcie0_pins>;
++	pinctrl-names = "default";
++};
++
++&pciec0_ep {
++	status = "disabled";
++	pinctrl-0 = <&pcie0_pins>;
++	pinctrl-names = "default";
++};
++
++&pciec1 {
++	status = "disabled";
++	pinctrl-0 = <&pcie1_pins>;
++	pinctrl-names = "default";
++};
++
++&tau_pwm0 {
++	pinctrl-0 = <&taud0_pwm_pins>;
++	pinctrl-names = "default";
++
++	status = "disable";
++};
++
++&gpio4 {
++	status = "disable";
++};
+-- 
+2.17.1
+

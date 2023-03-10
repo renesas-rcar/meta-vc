@@ -1,0 +1,26 @@
+From b0f82bee9cca98d811ba1fec6c2bb5d5bbffae88 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Tue, 18 Jan 2022 12:02:43 +0100
+Subject: [PATCH 010/151] VC4: Specified Marvell 88Q221x PHY
+
+---
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+index 9bfbe97baae3..36b7fd1961bf 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+@@ -72,7 +72,8 @@
+ 			#size-cells = <0>;
+ 			etha0: ethernet-phy@0 {
+ 				reg = <3>;
+-				compatible = "ethernet-phy-ieee802.3-c45";
++                		compatible = "ethernet-phy-id002B.0218";
++
+ 			};
+ 		};
+ 		port@1 {
+-- 
+2.17.1
+

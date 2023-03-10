@@ -1,0 +1,82 @@
+From b72858df529363469b42a0a8f84fd2516ee0b3f0 Mon Sep 17 00:00:00 2001
+From: "Christian@p620" <christian.mardmoeller@renesas.com>
+Date: Tue, 15 Nov 2022 15:59:19 +0100
+Subject: [PATCH 149/151] Set INTP interrupts in DT for T1S
+
+---
+ .../dts/renesas/r8a779f0-vc4-ctrl-domain.dts  | 30 +++++++++++++++----
+ 1 file changed, 24 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+index 3f8048236446..027a0e6d72a5 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+@@ -194,8 +194,10 @@
+ 
+ 		spi-max-frequency = <20000000>;
+ 
+-		interrupt-parent = <&gpio6>;
+-		interrupts = <18 IRQ_TYPE_LEVEL_LOW>;
++		pinctrl-0 = <&mspi0_t1s_pins>;
++		pinctrl-names = "default";
++		interrupt-parent = <&intswcd>;
++		interrupts = <R8A779F0_INTSWCD_INTP35>;
+ 		//reset-pin = /bits/ 16 <12>;
+ 
+ 		//local-mac-address = [14 15 16 11 12 13];
+@@ -219,8 +221,10 @@
+ 
+ 		spi-max-frequency = <20000000>;
+ 
+-		interrupt-parent = <&gpio6>;
+-		interrupts = <19 IRQ_TYPE_LEVEL_LOW>;
++		pinctrl-0 = <&mspi1_t1s_pins>;
++		pinctrl-names = "default";
++		interrupt-parent = <&intswcd>;
++		interrupts = <R8A779F0_INTSWCD_INTP34>;
+ 		//reset-pin = /bits/ 16 <12>;
+ 
+ 		//local-mac-address = [14 15 16 11 12 13];
+@@ -244,8 +248,10 @@
+ 
+ 		spi-max-frequency = <20000000>;
+ 
+-		interrupt-parent = <&gpio6>;
+-		interrupts = <20 IRQ_TYPE_LEVEL_LOW>;
++		pinctrl-0 = <&mspi4_t1s_pins>;
++		pinctrl-names = "default";
++		interrupt-parent = <&intswcd>;
++		interrupts = <R8A779F0_INTSWCD_INTP33>;
+ 		//reset-pin = /bits/ 16 <12>;
+ 
+ 		//local-mac-address = [14 15 16 11 12 13];
+@@ -338,14 +344,26 @@
+ 		groups = "mspi0_sck", "mspi0_din", "mspi0_dout", "mspi0_cs0";
+ 		function = "mspi0";
+ 	};
++	mspi0_t1s_pins: mspi0_t1s {
++		groups = "intp35";
++		function = "intp";
++	};
+ 
+ 	mspi1_pins: mpsi1 {
+ 		groups = "mspi1_sck", "mspi1_din", "mspi1_dout", "mspi1_cs0";
+ 		function = "mspi1";
+ 	};
++	mspi1_t1s_pins: mspi1_t1s {
++		groups = "intp34";
++		function = "intp";
++	};
+ 
+ 	mspi4_pins: mpsi4 {
+ 		groups = "mspi4_sck", "mspi4_din", "mspi4_dout", "mspi4_cs0";
+ 		function = "mspi4";
+ 	};
++	mspi4_t1s_pins: mspi4_t1s {
++		groups = "intp33";
++		function = "intp";
++	};
+ };
+-- 
+2.17.1
+

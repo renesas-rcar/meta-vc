@@ -1,0 +1,48 @@
+From 243c9bb0528a1bfe7f0e2883350b57511eeead34 Mon Sep 17 00:00:00 2001
+From: Vito Colagiacomo <vito.colagiacomo@renesas.com>
+Date: Thu, 20 Jan 2022 13:37:44 +0100
+Subject: [PATCH 014/151] dts: renesas: vc4: Add RTC clock to devicetree
+
+---
+ .../boot/dts/renesas/r8a779f0-vc4-cpu.dtsi     | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-cpu.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-cpu.dtsi
+index 7a00dfcb0c36..a4387d137f0a 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-cpu.dtsi
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-cpu.dtsi
+@@ -100,6 +100,19 @@
+ 	};
+ };
+ 
++&i2c1 {
++	pinctrl-0 = <&i2c1_pins>;
++	pinctrl-names = "default";
++
++	status = "okay";
++	clock-frequency = <400000>;
++
++	isl1208_rtc: rtc@6f {
++		compatible = "isil,isl1208";
++		reg = <0x6f>;
++	};
++};
++
+ &i2c4 {
+ 	pinctrl-0 = <&i2c4_pins>;
+ 	pinctrl-names = "default";
+@@ -141,6 +154,11 @@
+ 		function = "i2c1";
+ 	};
+ 
++	i2c1_pins: i2c1 {
++		groups = "i2c1";
++		function = "i2c1";
++	};
++
+ 	i2c4_pins: i2c4 {
+ 		groups = "i2c4";
+ 		function = "i2c4";
+-- 
+2.17.1
+

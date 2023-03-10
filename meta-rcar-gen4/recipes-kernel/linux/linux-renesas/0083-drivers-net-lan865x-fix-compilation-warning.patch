@@ -1,0 +1,31 @@
+From 0f35ea66ddc4e4747e832c1bc50735f2fe52cc63 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Fri, 19 Aug 2022 14:43:33 +0300
+Subject: [PATCH 083/151] drivers: net: lan865x: fix compilation warning
+
+Do not define lan865x_get_acpi_data() if !CONFIG_ACPI.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/net/ethernet/microchip/lan865x/lan865x.c | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/drivers/net/ethernet/microchip/lan865x/lan865x.c b/drivers/net/ethernet/microchip/lan865x/lan865x.c
+index fb50d5b7a148..a673ef2fbe70 100644
+--- a/drivers/net/ethernet/microchip/lan865x/lan865x.c
++++ b/drivers/net/ethernet/microchip/lan865x/lan865x.c
+@@ -828,11 +828,6 @@ static int lan865x_get_acpi_data(struct lan865x_priv *priv)
+ 
+ 	return 0;
+ }
+-#else
+-static int lan865x_get_acpi_data(struct lan865x_priv *priv)
+-{
+-	return -EINVAL;
+-}
+ #endif
+ void timer_callback(struct timer_list * data)
+ {
+-- 
+2.17.1
+

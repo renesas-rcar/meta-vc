@@ -1,0 +1,69 @@
+From f261017b5a8b7c6e0f0b8523c5cffa600ed0ebb1 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Tue, 6 Dec 2022 09:14:32 +0100
+Subject: [PATCH 002/151] arm64: pinctrl: renesas: Added R-Car S4 SoC
+ (r8a779f0)
+
+---
+ drivers/pinctrl/renesas/Kconfig  | 1 +
+ drivers/pinctrl/renesas/Makefile | 1 +
+ drivers/pinctrl/renesas/core.c   | 6 ++++++
+ drivers/pinctrl/renesas/sh_pfc.h | 1 +
+ 4 files changed, 9 insertions(+)
+
+diff --git a/drivers/pinctrl/renesas/Kconfig b/drivers/pinctrl/renesas/Kconfig
+index 8ab10105eb45..b8cd244cdeae 100644
+--- a/drivers/pinctrl/renesas/Kconfig
++++ b/drivers/pinctrl/renesas/Kconfig
+@@ -37,6 +37,7 @@ config PINCTRL_RENESAS
+ 	select PINCTRL_PFC_R8A77990 if ARCH_R8A77990
+ 	select PINCTRL_PFC_R8A77995 if ARCH_R8A77995
+ 	select PINCTRL_PFC_R8A779A0 if ARCH_R8A779A0
++	select PINCTRL_PFC_R8A779F0 if ARCH_R8A779F0
+ 	select PINCTRL_PFC_R8A779G0 if ARCH_R8A779G0
+ 	select PINCTRL_PFC_R8A779F0 if ARCH_R8A779F0
+ 	select PINCTRL_PFC_SH7203 if CPU_SUBTYPE_SH7203
+diff --git a/drivers/pinctrl/renesas/Makefile b/drivers/pinctrl/renesas/Makefile
+index 0dc7046f1fe8..b17f4edc0bbc 100644
+--- a/drivers/pinctrl/renesas/Makefile
++++ b/drivers/pinctrl/renesas/Makefile
+@@ -30,6 +30,7 @@ obj-$(CONFIG_PINCTRL_PFC_R8A77980)	+= pfc-r8a77980.o
+ obj-$(CONFIG_PINCTRL_PFC_R8A77990)	+= pfc-r8a77990.o
+ obj-$(CONFIG_PINCTRL_PFC_R8A77995)	+= pfc-r8a77995.o
+ obj-$(CONFIG_PINCTRL_PFC_R8A779A0)	+= pfc-r8a779a0.o
++obj-$(CONFIG_PINCTRL_PFC_R8A779F0)      += pfc-r8a779f0.o
+ obj-$(CONFIG_PINCTRL_PFC_R8A779G0)	+= pfc-r8a779g0.o
+ obj-$(CONFIG_PINCTRL_PFC_R8A779F0)      += pfc-r8a779f0.o
+ obj-$(CONFIG_PINCTRL_PFC_SH7203)	+= pfc-sh7203.o
+diff --git a/drivers/pinctrl/renesas/core.c b/drivers/pinctrl/renesas/core.c
+index cd6cb4e27e1b..a524065b935d 100644
+--- a/drivers/pinctrl/renesas/core.c
++++ b/drivers/pinctrl/renesas/core.c
+@@ -632,6 +632,12 @@ static const struct of_device_id sh_pfc_of_table[] = {
+ 		.data = &r8a779a0_pinmux_info,
+ 	},
+ #endif
++#ifdef CONFIG_PINCTRL_PFC_R8A779F0
++	{
++		.compatible = "renesas,pfc-r8a779f0",
++		.data = &r8a779f0_pinmux_info,
++	},
++#endif
+ #ifdef CONFIG_PINCTRL_PFC_R8A779G0
+ 	{
+ 		.compatible = "renesas,pfc-r8a779g0",
+diff --git a/drivers/pinctrl/renesas/sh_pfc.h b/drivers/pinctrl/renesas/sh_pfc.h
+index f95ed4069f70..edbb76969dec 100644
+--- a/drivers/pinctrl/renesas/sh_pfc.h
++++ b/drivers/pinctrl/renesas/sh_pfc.h
+@@ -341,6 +341,7 @@ extern const struct sh_pfc_soc_info r8a77980_pinmux_info;
+ extern const struct sh_pfc_soc_info r8a77990_pinmux_info;
+ extern const struct sh_pfc_soc_info r8a77995_pinmux_info;
+ extern const struct sh_pfc_soc_info r8a779a0_pinmux_info;
++extern const struct sh_pfc_soc_info r8a779f0_pinmux_info;
+ extern const struct sh_pfc_soc_info r8a779g0_pinmux_info;
+ extern const struct sh_pfc_soc_info r8a779f0_pinmux_info;
+ extern const struct sh_pfc_soc_info sh7203_pinmux_info;
+-- 
+2.17.1
+

@@ -1,0 +1,30 @@
+From bf27ea30c72ef55c7bcbd074ff95f9bf0470aed9 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Wed, 18 May 2022 00:13:47 +0300
+Subject: [PATCH 060/151] irqchip: renesas-intswcd: fix typo in CAN14 irq defs
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/irqchip/irq-r8a779f0-intswcd.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/irqchip/irq-r8a779f0-intswcd.c b/drivers/irqchip/irq-r8a779f0-intswcd.c
+index 8e006580a30f..d7cf421146f7 100644
+--- a/drivers/irqchip/irq-r8a779f0-intswcd.c
++++ b/drivers/irqchip/irq-r8a779f0-intswcd.c
+@@ -152,9 +152,9 @@ static const struct intswcd_hwirq_info r8a779f0_ihi[] = {
+ 	ENTRY(INTRCAN13ERR,	LEVEL,	27,  5, 17)
+ 	ENTRY(INTRCAN13REC,	LEVEL,	27,  5, 18)
+ 	ENTRY(INTRCAN13TRX,	LEVEL,	27,  5, 19)
+-	ENTRY(INTRCAN15ERR,	LEVEL,	28,  5, 20)
+-	ENTRY(INTRCAN15REC,	LEVEL,	28,  5, 21)
+-	ENTRY(INTRCAN15TRX,	LEVEL,	28,  5, 22)
++	ENTRY(INTRCAN14ERR,	LEVEL,	28,  5, 20)
++	ENTRY(INTRCAN14REC,	LEVEL,	28,  5, 21)
++	ENTRY(INTRCAN14TRX,	LEVEL,	28,  5, 22)
+ 	ENTRY(INTRCAN15ERR,	LEVEL,	29,  5, 23)
+ 	ENTRY(INTRCAN15REC,	LEVEL,	29,  5, 24)
+ 	ENTRY(INTRCAN15TRX,	LEVEL,	29,  5, 25)
+-- 
+2.17.1
+

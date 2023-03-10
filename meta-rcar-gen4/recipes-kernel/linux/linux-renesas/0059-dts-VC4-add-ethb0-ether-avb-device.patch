@@ -1,0 +1,88 @@
+From e48ca2439c5e084ec64ad337b3704e7d9de902a5 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Thu, 5 May 2022 16:36:31 +0300
+Subject: [PATCH 059/151] dts: VC4: add ethb0 (ether-avb) device
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ .../dts/renesas/r8a779f0-ctrl-domain.dtsi     | 19 ++++++++++
+ .../dts/renesas/r8a779f0-vc4-ctrl-domain.dts  | 36 +++++++++++++++++++
+ 2 files changed, 55 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
+index 1a8e0b74c41b..eefdf2d3f224 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
+@@ -1,6 +1,25 @@
+ #include <dt-bindings/interrupt-controller/renesas-intswcd-r8a779f0.h>
+ 
+ &soc {
++	etnb0: ethernet@df0a2000 {
++		compatible = "renesas,etheravb-r8a779f0";
++		reg = <0 0xdf0a2000 0 0x800>;
++		clocks = <&cpg CPG_CD_MOD 200>;
++		clock-names = "fck";
++		interrupt-parent = <&intswcd>;
++		interrupts = <R8A779F0_INTSWCD_INTETNB0DATA>,
++			     <R8A779F0_INTSWCD_INTETNB0ERR>,
++			     <R8A779F0_INTSWCD_INTETNB0MNG>,
++			     <R8A779F0_INTSWCD_INTETNB0MAC>;
++		interrupt-names = "data", "error", "management", "mac";
++		/* power domain is responsible for enabling/disabling clock
++		   in dynamic pm operations */
++		power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
+ 	gpio4: gpio@dfd90180 {
+ 		compatible = "renesas,gpio-r8a779f0";
+ 		reg = <0 0xdfd90180 0 0x54>;
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+index 2c1d4dc693ec..33165a20a8b3 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+@@ -10,3 +10,39 @@
+ 
+ #include "r8a779f0-vc4.dts"
+ #include "r8a779f0-ctrl-domain.dtsi"
++
++&etnb0 {
++	status = "okay";
++
++	pinctrl-0 = <&etnb0_pins>;
++	pinctrl-names = "default";
++
++	phy-mode = "rmii";
++	phy-handle = <&etnb0_100base_tx_phy>;
++
++	etnb0_100base_tx_phy: ethernet-phy@1 {
++		reg = <1>;
++		status = "okay";
++	};
++
++	etnb0_100base_t1_phy: ethernet-phy@2 {
++		reg = <2>;
++		status = "disabled";
++	};
++};
++
++&gpio5 {
++	etnb0-mux {
++		gpio-hog;
++		gpios = <17 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "ETNB0-MUX";
++	};
++};
++
++&pfc {
++	etnb0_pins: etnb0 {
++		groups = "etnb0_rmii", "etnb0_mdio", "etnb0_link";
++		function = "etnb0";
++	};
++};
+-- 
+2.17.1
+

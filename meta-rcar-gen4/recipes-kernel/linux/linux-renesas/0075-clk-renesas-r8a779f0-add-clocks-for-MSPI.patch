@@ -1,0 +1,53 @@
+From 9cd220ab88c8b6e3cc21db52a3dfeb07553ab4fc Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Fri, 12 Aug 2022 21:01:14 +0300
+Subject: [PATCH 075/151] clk: renesas: r8a779f0: add clocks for MSPI
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/clk/renesas/r8a779f0-cpg-mssr.c       | 7 +++++++
+ include/dt-bindings/clock/r8a779f0-cpg-mssr.h | 3 ++-
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/clk/renesas/r8a779f0-cpg-mssr.c b/drivers/clk/renesas/r8a779f0-cpg-mssr.c
+index 1d7390817e3d..7e34c76bda7a 100644
+--- a/drivers/clk/renesas/r8a779f0-cpg-mssr.c
++++ b/drivers/clk/renesas/r8a779f0-cpg-mssr.c
+@@ -160,6 +160,7 @@ static const struct cpg_core_clk r8a779f0_core_clks[] __initconst = {
+ 
+ 	/* Control domain clock outputs */
+ 	DEF_FIXED("cd_canfd",	R8A779F0_CLK_CD_CANFD,	CD_CLK_MOSC,	1, 1),
++	DEF_FIXED("cd_mspi",	R8A779F0_CLK_CD_MSPI,	CD_CLK_HSB,	1, 1),
+ };
+ 
+ static const struct mssr_mod_clk r8a779f0_mod_clks[] __initconst = {
+@@ -242,6 +243,12 @@ static const struct mssr_mod_clk r8a779f0_cd_mod_clks[] __initconst = {
+ 	DEF_CD_MOD("rscfd0",	0,	CD_CLK_HSB),
+ 	DEF_CD_MOD("rscfd1",	1,	CD_CLK_HSB),
+ 	DEF_CD_MOD("etnb0",	200,	CD_CLK_HSB),
++	DEF_CD_MOD("mspi0",	400,	CD_CLK_HSB),
++	DEF_CD_MOD("mspi1",	401,	CD_CLK_HSB),
++	DEF_CD_MOD("mspi2",	402,	CD_CLK_HSB),
++	DEF_CD_MOD("mspi3",	403,	CD_CLK_HSB),
++	DEF_CD_MOD("mspi4",	404,	CD_CLK_HSB),
++	DEF_CD_MOD("mspi5",	405,	CD_CLK_HSB),
+ 	DEF_CD_MOD("riic0",	600,	CD_CLK_LSB),
+ 	DEF_CD_MOD("ostm0",	900,	CD_CLK_HSB),
+ };
+diff --git a/include/dt-bindings/clock/r8a779f0-cpg-mssr.h b/include/dt-bindings/clock/r8a779f0-cpg-mssr.h
+index a1356aa10657..f2cea27ae647 100644
+--- a/include/dt-bindings/clock/r8a779f0-cpg-mssr.h
++++ b/include/dt-bindings/clock/r8a779f0-cpg-mssr.h
+@@ -63,7 +63,8 @@
+ #define R8A779F0_CLK_R			52
+ #define R8A779F0_CLK_OSC		53
+ #define R8A779F0_CLK_CD_CANFD		54
++#define R8A779F0_CLK_CD_MSPI		55
+ 
+-#define R8A779F0_LAST_CORE_CLK		54
++#define R8A779F0_LAST_CORE_CLK		55
+ 
+ #endif /* __DT_BINDINGS_CLOCK_R8A779F0_CPG_MSSR_H__ */
+-- 
+2.17.1
+

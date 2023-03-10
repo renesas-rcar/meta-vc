@@ -1,0 +1,34 @@
+From 36dcc30e795407145cc8a2b8e22f7add1a714ce6 Mon Sep 17 00:00:00 2001
+From: "Christian@p620" <Christian@p620>
+Date: Wed, 25 May 2022 15:16:52 +0200
+Subject: [PATCH 067/151] Change to 20 MHz main oszillator
+
+---
+ arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
+index 96bdb8426fef..ba29483a8230 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
+@@ -42,7 +42,7 @@
+ 				  "ch7_rec", "ch7_trx", "ch7_err";
+ 		clocks = <&cpg CPG_CD_MOD 0>,
+ 			 <&cpg CPG_CORE R8A779F0_CLK_CD_CANFD>;
+-		clock-names = "fck", "canfd";
++		clock-names = "fck", "can_clk";
+ 		power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+ 		status = "disabled";
+ 
+@@ -120,7 +120,7 @@
+ 				  "ch7_rec", "ch7_trx", "ch7_err";
+ 		clocks = <&cpg CPG_CD_MOD 1>,
+ 			 <&cpg CPG_CORE R8A779F0_CLK_CD_CANFD>;
+-		clock-names = "fck", "canfd";
++		clock-names = "fck", "can_clk";
+ 		power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+ 		status = "disabled";
+ 
+-- 
+2.17.1
+

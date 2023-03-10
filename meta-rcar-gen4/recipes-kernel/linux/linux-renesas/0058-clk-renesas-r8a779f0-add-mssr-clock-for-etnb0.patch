@@ -1,0 +1,24 @@
+From e3b9a818d834666d43b4fbec3ed5e3ac36a7b103 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Thu, 5 May 2022 16:38:15 +0300
+Subject: [PATCH 058/151] clk: renesas: r8a779f0: add mssr clock for etnb0
+
+---
+ drivers/clk/renesas/r8a779f0-cpg-mssr.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/clk/renesas/r8a779f0-cpg-mssr.c b/drivers/clk/renesas/r8a779f0-cpg-mssr.c
+index 31851757be22..e3d909467ca5 100644
+--- a/drivers/clk/renesas/r8a779f0-cpg-mssr.c
++++ b/drivers/clk/renesas/r8a779f0-cpg-mssr.c
+@@ -208,6 +208,7 @@ static const u16 r8a779f0_cd_mod_control_regs[] = {
+ };
+ 
+ static const struct mssr_mod_clk r8a779f0_cd_mod_clks[] __initconst = {
++	DEF_CD_MOD("etnb0",	200,	CD_CLK_HSB),
+ 	DEF_CD_MOD("riic0",	600,	CD_CLK_LSB),
+ 	DEF_CD_MOD("ostm0",	900,	CD_CLK_HSB),
+ };
+-- 
+2.17.1
+

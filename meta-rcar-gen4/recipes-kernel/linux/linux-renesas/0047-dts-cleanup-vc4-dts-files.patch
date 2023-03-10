@@ -1,0 +1,748 @@
+From f0a3373cb7137a82efee4d6b6f3ebb553506e5fc Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Fri, 25 Mar 2022 11:57:36 +0100
+Subject: [PATCH 047/151] dts: cleanup vc4 dts files
+
+---
+ arch/arm64/boot/dts/renesas/Makefile          |   2 -
+ .../r8a779f0-vc4-ctrl-domain-rsw-rel.dts      | 360 ------------------
+ .../boot/dts/renesas/r8a779f0-vc4-rsw-rel.dts | 346 -----------------
+ 3 files changed, 708 deletions(-)
+ delete mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain-rsw-rel.dts
+ delete mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4-rsw-rel.dts
+
+diff --git a/arch/arm64/boot/dts/renesas/Makefile b/arch/arm64/boot/dts/renesas/Makefile
+index afa2a477b2da..43aaa40a49b4 100644
+--- a/arch/arm64/boot/dts/renesas/Makefile
++++ b/arch/arm64/boot/dts/renesas/Makefile
+@@ -75,9 +75,7 @@ dtb-$(CONFIG_ARCH_R8A779G0) += r8a779g0-whitehawk.dtb
+ 
+ dtb-$(CONFIG_ARCH_R8A779F0) += r8a779f0-spider.dtb
+ dtb-$(CONFIG_ARCH_R8A779F0) += r8a779f0-vc4.dtb
+-dtb-$(CONFIG_ARCH_R8A779F0) += r8a779f0-vc4-rsw-rel.dtb
+ dtb-$(CONFIG_ARCH_R8A779F0) += r8a779f0-vc4-ctrl-domain.dtb
+-dtb-$(CONFIG_ARCH_R8A779F0) += r8a779f0-vc4-ctrl-domain-rsw-rel.dtb
+ 
+ dtb-$(CONFIG_ARCH_R8A77970) += r8a77970-eagle-function.dtb
+ dtb-$(CONFIG_ARCH_R8A77970) += r8a77970-es1-eagle.dtb r8a77970-es1-eagle-function.dtb
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain-rsw-rel.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain-rsw-rel.dts
+deleted file mode 100644
+index 7cdef2cfc360..000000000000
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain-rsw-rel.dts
++++ /dev/null
+@@ -1,360 +0,0 @@
+-// SPDX-License-Identifier: GPL-2.0
+-/*
+- * Device Tree Source for the VC4 vehicle computer board
+- * This device requires full access for CA55 cores (application domain) to
+- * the control domain. Means G4 processor domain needs to grant access before
+- * Linux is booted. 
+- *
+- * Copyright (C) 2021 Renesas Electronics Corp.
+- */
+-
+-/dts-v1/;
+-
+-#include "r8a779f0.dtsi"
+-#include "r8a779f0-ctrl-domain.dtsi"
+-#include <dt-bindings/gpio/gpio.h>
+-
+-/ {
+-	model = "Renesas VC4 board based on r8a779f0";
+-	compatible = "renesas,vc4", "renesas,r8a779f0";
+-
+-	aliases {
+-		serial0 = &scif3;
+-		serial1 = &scif0;
+-		eth0 = &rswitch;
+-	};
+-
+-	chosen {
+-		stdout-path = "serial0:115200n8";
+-	};
+-
+-	memory@48000000 {
+-		device_type = "memory";
+-		/* first 128MB is reserved for secure area. */
+-		reg = <0x0 0x48000000 0x0 0x78000000>;
+-	};
+-
+-	reg_1p8v: regulator-1p8v {
+-		compatible = "regulator-fixed";
+-		regulator-name = "fixed-1.8V";
+-		regulator-min-microvolt = <1800000>;
+-		regulator-max-microvolt = <1800000>;
+-		regulator-boot-on;
+-		regulator-always-on;
+-	};
+-
+-	reg_3p3v: regulator-3p3v {
+-		compatible = "regulator-fixed";
+-		regulator-name = "fixed-3.3V";
+-		regulator-min-microvolt = <3300000>;
+-		regulator-max-microvolt = <3300000>;
+-		regulator-boot-on;
+-		regulator-always-on;
+-	};
+-
+-	vcc_sdhi: regulator-vcc-sdhi {
+-		compatible = "regulator-fixed";
+-
+-		regulator-name = "SDHI Vcc";
+-		regulator-min-microvolt = <3300000>;
+-		regulator-max-microvolt = <3300000>;
+-
+-		gpio = <&gpio1 24 GPIO_ACTIVE_HIGH>;
+-		enable-active-high;
+-	};
+-};
+-
+-&extal_clk {
+-	clock-frequency = <20000000>;
+-};
+-
+-&extalr_clk {
+-	clock-frequency = <32768>;
+-};
+-
+-&gpio4 {
+-	status = "okay";
+-};
+-
+-&gpio5 {
+-	status = "okay";
+-};
+-
+-&gpio6 {
+-	status = "okay";
+-};
+-
+-&gpio7 {
+-	status = "okay";
+-};
+-
+-&i2c1 {
+-	status = "okay";
+-
+-	pinctrl-0 = <&i2c1_pins>;
+-	pinctrl-names = "default";
+-
+-	clock-frequency = <400000>;
+-
+-	rtc@6f {
+-		compatible = "isil,isl1208";
+-		reg = <0x6f>;
+-	};
+-};
+-
+-&i2c4 {
+-	status = "okay";
+-
+-	pinctrl-0 = <&i2c4_pins>;
+-	pinctrl-names = "default";
+-
+-	clock-frequency = <400000>;
+-
+-	eeprom@50 {
+-		compatible = "st,24c16", "atmel,24c16";
+-		reg = <0x50>;
+-
+-		vcc-supply = <&reg_3p3v>;
+-
+-		label = "board-data";
+-		pagesize = <8>;
+-	};
+-
+-	fpga4000@71 {
+-		compatible = "renesas,vc4-fpga4000";
+-		reg = <0x71>;
+-	};
+-};
+-
+-&mmc0 {
+-	status = "okay";
+-
+-	pinctrl-0 = <&sd_pins>;
+-	pinctrl-1 = <&sd_pins>;
+-	pinctrl-names = "default", "state_uhs";
+-
+-	vmmc-supply = <&vcc_sdhi>;
+-	vqmmc-supply = <&vcc_sdhi>;
+-	cd-gpios = <&gpio1 23 GPIO_ACTIVE_LOW>;
+-	bus-width = <4>;
+-};
+-
+-&pfc {
+-	i2c1_pins: i2c1 {
+-		groups = "i2c1";
+-		function = "i2c1";
+-	};
+-
+-	i2c4_pins: i2c4 {
+-		groups = "i2c4";
+-		function = "i2c4";
+-	};
+-
+-	pcie0_pins: pcie0 {
+-		groups = "pcie0_clkreq_n";
+-		function = "pcie";
+-	};
+-
+-	pcie1_pins: pcie1 {
+-		groups = "pcie1_clkreq_n";
+-		function = "pcie";
+-	};
+-
+-	scif0_pins: scif0 {
+-		groups = "scif0_data", "scif0_ctrl";
+-		function = "scif0";
+-	};
+-
+-	scif3_pins: scif3 {
+-		groups = "scif3_data", "scif3_ctrl";
+-		function = "scif3";
+-	};
+-
+-	scif_clk_pins: scif_clk {
+-		groups = "scif_clk";
+-		function = "scif_clk";
+-	};
+-
+-	sd_pins: sd {
+-		groups = "mmc_data4", "mmc_ctrl";
+-		function = "mmc";
+-		power-source = <3300>;
+-	};
+-
+-	tsn0_pins: tsn0 {
+-		mux {
+-			groups = "tsn0_link", "tsn0_mdio";
+-			function = "tsn0";
+-			drive-strength = <12>;
+-		};
+-
+-		pins_mdio {
+-			groups = "tsn0_mdio";
+-			drive-strength = <12>;
+-		};
+-	};
+-};
+-
+-&pciec0 {
+-	status = "okay";
+-
+-	pinctrl-0 = <&pcie0_pins>;
+-	pinctrl-names = "default";
+-};
+-
+-&pciec1 {
+-	// Exists on the board, but enabling it currently causes boot hang
+-	//status = "okay";
+-
+-	pinctrl-0 = <&pcie1_pins>;
+-	pinctrl-names = "default";
+-};
+-
+-&pcie_bus_clk {
+-	clock-frequency = <100000000>;
+-};
+-
+-&rswitch {
+-	status = "okay";
+-	
+-	#address-cells = <1>;
+-	#size-cells = <0>;
+-
+-	ports {
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+-		port@0 {
+-			reg = <0>;
+-			phy-handle = <&etha0>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha0: ethernet-phy@0 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-id002B.0218";
+-			};
+-		};
+-		port@1 {
+-			reg = <1>;
+-			phy-handle = <&etha1>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha1: ethernet-phy@1 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-id002B.0218";
+-			};
+-		};
+-		port@2 {
+-			reg = <2>;
+-			phy-handle = <&etha2>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha2: ethernet-phy@2 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-id002B.0218";
+-			};
+-		};
+-	};
+-};
+-
+-/*
+-&rswitch {
+-	compatible = "renesas,rswitch2-r8a779f0",
+-				     "renesas, rswitch2";
+-	interrupts = <GIC_SPI 280 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 281 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 282 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 283 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 284 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 285 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 286 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 287 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 288 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 289 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 290 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 291 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 292 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 293 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 294 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 295 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 296 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 297 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 298 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 299 IRQ_TYPE_LEVEL_HIGH>;
+-	interrupt-names = "gwca0_rxtx0", "gwca0_rxtx1",
+-					  "gwca0_rxtx2", "gwca0_rxtx3",
+-					  "gwca0_rxtx4", "gwca0_rxtx5",
+-					  "gwca0_rxtx6", "gwca0_rxtx7",
+-					  "gwca1_rxtx0", "gwca1_rxtx1",
+-					  "gwca1_rxtx2", "gwca1_rxtx3",
+-					  "gwca1_rxtx4", "gwca1_rxtx5",
+-					  "gwca1_rxtx6", "gwca1_rxtx7",
+-					  "gwca0_rxts0", "gwca0_rxts1",
+-					  "gwca1_rxts0", "gwca1_rxts1";
+-		
+-	status = "okay";
+-
+-
+-	ports {
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+-		port@0 {
+-			reg = <0>;
+-			phy-mode = "sgmii";
+-			phy-handle = <&etha0>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha0: ethernet-phy@0 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-id002B.0218";
+-			};
+-		};
+-		port@1 {
+-			reg = <1>;
+-			phy-mode = "sgmii";
+-			phy-handle = <&etha1>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha1: ethernet-phy@1 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-id002B.0218";
+-			};
+-		};
+-		port@2 {
+-			reg = <2>;
+-			phy-mode = "sgmii";
+-			phy-handle = <&etha2>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha2: ethernet-phy@2 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-id002B.0218";
+-			};
+-		};
+-	};
+-};
+-*/
+-
+-&scif0 {
+-	status = "okay";
+-
+-	pinctrl-0 = <&scif0_pins>;
+-	pinctrl-names = "default";
+-
+-	uart-has-rtscts;
+-};
+-
+-&scif3 {
+-	status = "okay";
+-
+-	pinctrl-0 = <&scif3_pins>;
+-	pinctrl-names = "default";
+-
+-	uart-has-rtscts;
+-};
+-
+-&scif_clk {
+-	pinctrl-0 = <&scif_clk_pins>;
+-	pinctrl-names = "default";
+-
+-	clock-frequency = <24000000>;
+-};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-rsw-rel.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-rsw-rel.dts
+deleted file mode 100644
+index a3d082ac1acd..000000000000
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-rsw-rel.dts
++++ /dev/null
+@@ -1,346 +0,0 @@
+-// SPDX-License-Identifier: GPL-2.0
+-/*
+- * Device Tree Source for the VC4 vehicle computer board
+- *
+- * Copyright (C) 2021 Renesas Electronics Corp.
+- */
+-
+-/dts-v1/;
+-
+-#include "r8a779f0.dtsi"
+-#include <dt-bindings/gpio/gpio.h>
+-
+-/ {
+-	model = "Renesas VC4 board based on r8a779f0";
+-	compatible = "renesas,vc4", "renesas,r8a779f0";
+-
+-	aliases {
+-		serial0 = &scif3;
+-		serial1 = &scif0;
+-		eth0 = &rswitch;
+-	};
+-
+-	chosen {
+-		stdout-path = "serial0:115200n8";
+-	};
+-
+-	memory@48000000 {
+-		device_type = "memory";
+-		/* first 128MB is reserved for secure area. */
+-		reg = <0x0 0x48000000 0x0 0x78000000>;
+-	};
+-
+-	reg_1p8v: regulator-1p8v {
+-		compatible = "regulator-fixed";
+-		regulator-name = "fixed-1.8V";
+-		regulator-min-microvolt = <1800000>;
+-		regulator-max-microvolt = <1800000>;
+-		regulator-boot-on;
+-		regulator-always-on;
+-	};
+-
+-	reg_3p3v: regulator-3p3v {
+-		compatible = "regulator-fixed";
+-		regulator-name = "fixed-3.3V";
+-		regulator-min-microvolt = <3300000>;
+-		regulator-max-microvolt = <3300000>;
+-		regulator-boot-on;
+-		regulator-always-on;
+-	};
+-
+-	vcc_sdhi: regulator-vcc-sdhi {
+-		compatible = "regulator-fixed";
+-
+-		regulator-name = "SDHI Vcc";
+-		regulator-min-microvolt = <3300000>;
+-		regulator-max-microvolt = <3300000>;
+-
+-		gpio = <&gpio1 24 GPIO_ACTIVE_HIGH>;
+-		enable-active-high;
+-	};
+-};
+-
+-&extal_clk {
+-	clock-frequency = <20000000>;
+-};
+-
+-&extalr_clk {
+-	clock-frequency = <32768>;
+-};
+-
+-// Allowing &gpio4 to initialize causes boot hang
+-&gpio4 {
+-	status = "disable";
+-};
+-
+-&i2c1 {
+-	status = "okay";
+-
+-	pinctrl-0 = <&i2c1_pins>;
+-	pinctrl-names = "default";
+-
+-	clock-frequency = <400000>;
+-
+-	rtc@6f {
+-		compatible = "isil,isl1208";
+-		reg = <0x6f>;
+-	};
+-};
+-
+-&i2c4 {
+-	status = "okay";
+-
+-	pinctrl-0 = <&i2c4_pins>;
+-	pinctrl-names = "default";
+-
+-	clock-frequency = <400000>;
+-
+-	eeprom@50 {
+-		compatible = "st,24c16", "atmel,24c16";
+-		reg = <0x50>;
+-
+-		vcc-supply = <&reg_3p3v>;
+-
+-		label = "board-data";
+-		pagesize = <8>;
+-	};
+-
+-	fpga4000@71 {
+-		compatible = "renesas,vc4-fpga4000";
+-		reg = <0x71>;
+-	};
+-};
+-
+-&mmc0 {
+-	status = "okay";
+-
+-	pinctrl-0 = <&sd_pins>;
+-	pinctrl-1 = <&sd_pins>;
+-	pinctrl-names = "default", "state_uhs";
+-
+-	vmmc-supply = <&vcc_sdhi>;
+-	vqmmc-supply = <&vcc_sdhi>;
+-	cd-gpios = <&gpio1 23 GPIO_ACTIVE_LOW>;
+-	bus-width = <4>;
+-};
+-
+-&pfc {
+-	i2c1_pins: i2c1 {
+-		groups = "i2c1";
+-		function = "i2c1";
+-	};
+-
+-	i2c4_pins: i2c4 {
+-		groups = "i2c4";
+-		function = "i2c4";
+-	};
+-
+-	pcie0_pins: pcie0 {
+-		groups = "pcie0_clkreq_n";
+-		function = "pcie";
+-	};
+-
+-	pcie1_pins: pcie1 {
+-		groups = "pcie1_clkreq_n";
+-		function = "pcie";
+-	};
+-
+-	scif0_pins: scif0 {
+-		groups = "scif0_data", "scif0_ctrl";
+-		function = "scif0";
+-	};
+-
+-	scif3_pins: scif3 {
+-		groups = "scif3_data", "scif3_ctrl";
+-		function = "scif3";
+-	};
+-
+-	scif_clk_pins: scif_clk {
+-		groups = "scif_clk";
+-		function = "scif_clk";
+-	};
+-
+-	sd_pins: sd {
+-		groups = "mmc_data4", "mmc_ctrl";
+-		function = "mmc";
+-		power-source = <3300>;
+-	};
+-
+-	tsn0_pins: tsn0 {
+-		mux {
+-			groups = "tsn0_link", "tsn0_mdio";
+-			function = "tsn0";
+-			drive-strength = <12>;
+-		};
+-
+-		pins_mdio {
+-			groups = "tsn0_mdio";
+-			drive-strength = <12>;
+-		};
+-	};
+-};
+-
+-&pciec0 {
+-	status = "okay";
+-
+-	pinctrl-0 = <&pcie0_pins>;
+-	pinctrl-names = "default";
+-};
+-
+-&pciec1 {
+-	// Exists on the board, but enabling it currently causes boot hang
+-	//status = "okay";
+-
+-	pinctrl-0 = <&pcie1_pins>;
+-	pinctrl-names = "default";
+-};
+-
+-&pcie_bus_clk {
+-	clock-frequency = <100000000>;
+-};
+-
+-
+-&rswitch {
+-
+-	status = "okay";
+-	#address-cells = <1>;
+-	#size-cells = <0>;
+-
+-	ports {
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+-		port@0 {
+-			reg = <0>;
+-			phy-handle = <&etha0>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha0: ethernet-phy@0 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-id002B.0218";
+-			};
+-		};
+-		port@1 {
+-			reg = <1>;
+-			phy-handle = <&etha1>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha1: ethernet-phy@1 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-id002B.0218";
+-			};
+-		};
+-		port@2 {
+-			reg = <2>;
+-			phy-handle = <&etha2>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha2: ethernet-phy@2 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-id002B.0218";
+-			};
+-		};
+-	};
+-};
+-
+-/*
+-&rswitch {
+-	compatible = "renesas,rswitch2-r8a779f0",
+-				     "renesas, rswitch2";
+-	interrupts = <GIC_SPI 280 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 281 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 282 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 283 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 284 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 285 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 286 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 287 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 288 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 289 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 290 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 291 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 292 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 293 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 294 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 295 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 296 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 297 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 298 IRQ_TYPE_LEVEL_HIGH>,
+-				 <GIC_SPI 299 IRQ_TYPE_LEVEL_HIGH>;
+-	interrupt-names = "gwca0_rxtx0", "gwca0_rxtx1",
+-					  "gwca0_rxtx2", "gwca0_rxtx3",
+-					  "gwca0_rxtx4", "gwca0_rxtx5",
+-					  "gwca0_rxtx6", "gwca0_rxtx7",
+-					  "gwca1_rxtx0", "gwca1_rxtx1",
+-					  "gwca1_rxtx2", "gwca1_rxtx3",
+-					  "gwca1_rxtx4", "gwca1_rxtx5",
+-					  "gwca1_rxtx6", "gwca1_rxtx7",
+-					  "gwca0_rxts0", "gwca0_rxts1",
+-					  "gwca1_rxts0", "gwca1_rxts1";
+-		
+-	status = "okay";
+-
+-
+-	ports {
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+-		port@0 {
+-			reg = <0>;
+-			phy-mode = "sgmii";
+-			phy-handle = <&etha0>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha0: ethernet-phy@0 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-id002B.0218";
+-			};
+-		};
+-		port@1 {
+-			reg = <1>;
+-			phy-mode = "sgmii";
+-			phy-handle = <&etha1>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha1: ethernet-phy@1 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-id002B.0218";
+-			};
+-		};
+-		port@2 {
+-			reg = <2>;
+-			phy-mode = "sgmii";
+-			phy-handle = <&etha2>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			etha2: ethernet-phy@2 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-id002B.0218";
+-			};
+-		};
+-	};
+-};
+-*/
+-
+-&scif0 {
+-	status = "okay";
+-
+-	pinctrl-0 = <&scif0_pins>;
+-	pinctrl-names = "default";
+-
+-	uart-has-rtscts;
+-};
+-
+-&scif3 {
+-	status = "okay";
+-
+-	pinctrl-0 = <&scif3_pins>;
+-	pinctrl-names = "default";
+-
+-	uart-has-rtscts;
+-};
+-
+-&scif_clk {
+-	pinctrl-0 = <&scif_clk_pins>;
+-	pinctrl-names = "default";
+-
+-	clock-frequency = <24000000>;
+-};
+-- 
+2.17.1
+

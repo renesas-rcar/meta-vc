@@ -1,0 +1,233 @@
+From 01b48bca8ee2816fb4f2ff7e288bcd0a9a659c67 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Wed, 28 Sep 2022 17:05:28 +0200
+Subject: [PATCH 113/151] Added ethool master/slave support (1GBit only)
+
+---
+ drivers/net/phy/marvell_88q211x.c | 138 +++++++++++++++++++++++++++---
+ 1 file changed, 125 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/net/phy/marvell_88q211x.c b/drivers/net/phy/marvell_88q211x.c
+index e06982465f3f..16a0206c4ee6 100644
+--- a/drivers/net/phy/marvell_88q211x.c
++++ b/drivers/net/phy/marvell_88q211x.c
+@@ -5,6 +5,7 @@
+  */
+ #include <linux/phy.h>
+ #include <linux/errno.h>
++#include <linux/ethtool.h>
+ #include "marvell_88q211x.h"
+ 
+ #define NOT_USED 0
+@@ -563,7 +564,7 @@ static int phy_init(struct phy_device *phydev, uint16_t flags)
+ 			if (is_link_partner_in_legacy_mode(phydev))
+ 				break;
+ 		}
+-		printk("%s:%d Link is down\n", __FUNCTION__, __LINE__);
++		//printk("%s:%d Link is down\n", __FUNCTION__, __LINE__);
+ 		phydev->link = 0;
+ 
+ 
+@@ -632,11 +633,15 @@ static int mv88q211x_power_up(struct phy_device *phydev)
+ 
+ 	pr_info("mv88q211x_power_up()\n");
+ 
++
+ 	// disable low-power mode
+ 	reg_val = phy_read_mmd(phydev, 1, 0x0000);
+ 	phy_write_mmd(phydev, 1, 0x0000, reg_val & 0xF7FF);
+ 	mdelay(1);
+ 
++	genphy_c45_read_status(phydev);
++
++
+ 	#if NOT_USED
+ 	struct mv3310_priv *priv = dev_get_drvdata(&phydev->mdio.dev);
+ 	int ret;
+@@ -735,15 +740,21 @@ static int mv88q211x_config_init(struct phy_device *phydev)
+ 
+ 	return ret;
+ }
+-#if NOT_USED
++
+ static int mv88q211x_get_features(struct phy_device *phydev)
+ {
+ 
+-	int ret, val;
++	int ret;
+ 
+ 	ret = genphy_c45_pma_read_abilities(phydev);
+ 	if (ret)
+ 		return ret;
++	linkmode_set_bit(ETHTOOL_LINK_MODE_100baseT1_Full_BIT, phydev->supported);
++	linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseT1_Full_BIT, phydev->supported);
++
++
++
++#if NOT_USED
+ 
+ 	if (mv3310_has_pma_ngbaset_quirk(phydev)) {
+ 		val = phy_read_mmd(phydev, MDIO_MMD_PMAPMD,
+@@ -759,14 +770,82 @@ static int mv88q211x_get_features(struct phy_device *phydev)
+ 				 phydev->supported,
+ 				 val & MDIO_PMA_NG_EXTABLE_5GBT);
+ 	}
++#endif
+ 
+ 	return 0;
+ }
+-#endif
++
++
++#define MDIO_PMA_CTRL2_BASET1		0x003D  /* BASE-T1 type */
++#define MDIO_PMA_EXTABLE_BT1		0x0800	/* BASE-T1 ability */
++#define MDIO_PMA_PMD_BT1	18	/* BASE-T1 PMA/PMD extended ability */
++#define MDIO_PMA_PMD_BT1_CTRL	2100	/* BASE-T1 PMA/PMD control register */
++
++/* BASE-T1 PMA/PMD control register */
++#define MDIO_PMA_PMD_BT1_CTRL_CFG_MST	0x4000 /* MASTER-SLAVE config value */
++
++
++/**
++ * mv88q211x_c45_pma_baset1_setup_master_slave - configures forced master/slave
++ * role of BaseT1 devices.
++ * @phydev: target phy_device struct
++ */
++static int mv88q211x_c45_pma_baset1_setup_master_slave(struct phy_device *phydev)
++{
++	int ctl = 0;
++
++	switch (phydev->master_slave_set) {
++		case MASTER_SLAVE_CFG_MASTER_PREFERRED:
++		case MASTER_SLAVE_CFG_MASTER_FORCE:
++			ctl = MDIO_PMA_PMD_BT1_CTRL_CFG_MST;
++			break;
++		case MASTER_SLAVE_CFG_SLAVE_FORCE:
++		case MASTER_SLAVE_CFG_SLAVE_PREFERRED:
++			break;
++		case MASTER_SLAVE_CFG_UNKNOWN:
++		case MASTER_SLAVE_CFG_UNSUPPORTED:
++			return 0;
++	default:
++		phydev_warn(phydev, "Unsupported Master/Slave mode\n");
++		return -EOPNOTSUPP;
++	}
++
++	return phy_modify_mmd(phydev, MDIO_MMD_PMAPMD, MDIO_PMA_PMD_BT1_CTRL,
++				 MDIO_PMA_PMD_BT1_CTRL_CFG_MST, ctl);
++}
++
+ 
+ static int mv88q211x_config_aneg(struct phy_device *phydev)
+ {
+-	pr_info("mv88q211x_config_aneg()\n");
++	bool changed = false;
++	int ret;
++
++	if (phydev->autoneg == AUTONEG_DISABLE) {
++
++		/* If speed not specified, get current setting */
++		if(phydev->speed == SPEED_UNKNOWN) {
++			genphy_c45_read_pma(phydev);
++		}
++		ret = genphy_c45_pma_setup_forced(phydev);
++		if(ret != 0) {
++			phydev_warn(phydev, "PMA forced setup failed: %d\n", ret);
++			return ret;
++		}
++		else {
++			ret = mv88q211x_c45_pma_baset1_setup_master_slave(phydev);
++			if(ret != 0) {
++				phydev_warn(phydev, "PMA baset1_setup_master_slave failed: %d\n", ret);
++				return ret;
++			}
++			changed = true;
++		}
++		return genphy_c45_check_and_restart_aneg(phydev, changed);
++	}
++	else {
++		phydev_err(phydev, "Auto-negotiation currently not supported");
++		return -EOPNOTSUPP;
++
++	}
+ #if NOT_USED
+ 	bool changed = false;
+ 	u16 reg;
+@@ -820,6 +899,36 @@ static int mv88q211x_aneg_done(struct phy_device *phydev)
+ 	return 0;
+ }
+ 
++
++/**
++ * mv88q211x_c45_pma_baset1_read_master_slave - read forced master/slave
++ * configuration
++ * @phydev: target phy_device struct
++ */
++
++int mv88q211x_c45_pma_baset1_read_master_slave(struct phy_device *phydev)
++{
++	int val;
++
++	phydev->master_slave_state = MASTER_SLAVE_STATE_UNKNOWN;
++	phydev->master_slave_get = MASTER_SLAVE_CFG_UNKNOWN;
++
++	val = phy_read_mmd(phydev, MDIO_MMD_PMAPMD, MDIO_PMA_PMD_BT1_CTRL);
++	if (val < 0)
++		return val;
++
++	if (val & MDIO_PMA_PMD_BT1_CTRL_CFG_MST) {
++		phydev->master_slave_get = MASTER_SLAVE_CFG_MASTER_FORCE;
++		phydev->master_slave_state = MASTER_SLAVE_STATE_MASTER;
++	} else {
++		phydev->master_slave_get = MASTER_SLAVE_CFG_SLAVE_FORCE;
++		phydev->master_slave_state = MASTER_SLAVE_STATE_SLAVE;
++	}
++
++	return 0;
++}
++
++
+ static int mv88q211x_read_status(struct phy_device *phydev)
+ {
+ 	int ret;
+@@ -829,19 +938,21 @@ static int mv88q211x_read_status(struct phy_device *phydev)
+ 	phydev->master_slave_state = MASTER_SLAVE_STATE_UNKNOWN;
+ 
+ 
+-	ret = genphy_c45_read_link(phydev);
+-	if (ret)
+-		return ret;
++	ret = mv88q211x_c45_pma_baset1_read_master_slave(phydev);
++	ret = genphy_c45_read_status(phydev);
+ 
+-	phydev->speed = SPEED_UNKNOWN;
+-	phydev->duplex = DUPLEX_UNKNOWN;
+-	phydev->pause = 0;
+-	phydev->asym_pause = 0;
+ 
++	if(mv88q211x_get_speed(phydev)) {
++		 phydev->speed = 1000;
++	} else {
++		phydev->speed = 100;
++	}
++
++/*		
+ 	if(!phydev->link) {
+ 		phydev->link = check_link(phydev);
+ 	}
+-
++*/
+ 	/*
+ 	 * #define MASTER_SLAVE_CFG_UNSUPPORTED		0
+ #define MASTER_SLAVE_CFG_UNKNOWN		1
+@@ -933,6 +1044,7 @@ static struct phy_driver mv88q211x_drivers[] = {
+ 		.read_status = mv88q211x_read_status,
+ 		.get_tunable = mv88q211x_get_tunable,
+ 		.set_tunable = mv88q211x_set_tunable,
++		.get_features = mv88q211x_get_features,
+ 		.remove = mv88q211x_remove,
+ 	},
+ };
+-- 
+2.17.1
+

@@ -1,0 +1,27 @@
+From c9608b60c939eaff026b6aa2bc390f0dff6f0db5 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Wed, 17 Aug 2022 18:00:46 +0300
+Subject: [PATCH 079/151] clk: renesas: r8a779f0: fix typo CD_CLK_HSB ->
+ CD_CLK_LSB
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/clk/renesas/r8a779f0-cpg-mssr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clk/renesas/r8a779f0-cpg-mssr.c b/drivers/clk/renesas/r8a779f0-cpg-mssr.c
+index 7e34c76bda7a..0c3b0ead7279 100644
+--- a/drivers/clk/renesas/r8a779f0-cpg-mssr.c
++++ b/drivers/clk/renesas/r8a779f0-cpg-mssr.c
+@@ -156,7 +156,7 @@ static const struct cpg_core_clk r8a779f0_core_clks[] __initconst = {
+ 	DEF_FIXED("cd_sys",	CD_CLK_SYS,	CD_CLK_IOSC, 1, 1),
+ 	DEF_RATE("cd_uhsb",	CD_CLK_UHSB,	160 * 1000 * 1000),
+ 	DEF_FIXED("cd_hsb",	CD_CLK_HSB,	CD_CLK_UHSB, 2, 1),
+-	DEF_FIXED("cd_lsb",	CD_CLK_HSB,	CD_CLK_UHSB, 4, 1),
++	DEF_FIXED("cd_lsb",	CD_CLK_LSB,	CD_CLK_UHSB, 4, 1),
+ 
+ 	/* Control domain clock outputs */
+ 	DEF_FIXED("cd_canfd",	R8A779F0_CLK_CD_CANFD,	CD_CLK_MOSC,	1, 1),
+-- 
+2.17.1
+

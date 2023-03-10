@@ -1,0 +1,25 @@
+From 80b5e2fd7bc45bf0067b501b658b0ee930f031a5 Mon Sep 17 00:00:00 2001
+From: Vito Colagiacomo <vito.colagiacomo@renesas.com>
+Date: Mon, 10 Jan 2022 13:58:05 +0100
+Subject: [PATCH 005/151] rswitch: Increase divider for MDC clock
+
+---
+ drivers/net/ethernet/renesas/rswitch.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/renesas/rswitch.c b/drivers/net/ethernet/renesas/rswitch.c
+index baf78a6e93cf..ab68cf903b4d 100644
+--- a/drivers/net/ethernet/renesas/rswitch.c
++++ b/drivers/net/ethernet/renesas/rswitch.c
+@@ -1439,7 +1439,7 @@ static void rswitch_rmac_setting(struct rswitch_etha *etha, const u8 *mac)
+ static void rswitch_etha_enable_mii(struct rswitch_etha *etha)
+ {
+ 	rswitch_etha_modify(etha, MPIC, MPIC_PSMCS_MASK | MPIC_PSMHT_MASK,
+-			    MPIC_PSMCS(0x05) | MPIC_PSMHT(0x06));
++			    MPIC_PSMCS(0x40) | MPIC_PSMHT(0x06));
+ 	rswitch_etha_modify(etha, MPSM, 0, MPSM_MFF_C45);
+ }
+ 
+-- 
+2.17.1
+

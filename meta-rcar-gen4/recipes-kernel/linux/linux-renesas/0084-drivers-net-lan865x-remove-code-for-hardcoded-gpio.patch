@@ -1,0 +1,63 @@
+From fd355d17f5b62a7d7961405043ee03594aab26f8 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Fri, 19 Aug 2022 15:19:04 +0300
+Subject: [PATCH 084/151] drivers: net: lan865x: remove code for hardcoded gpio
+
+This code looks like pre-dts leftover; it was partially under
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/net/ethernet/microchip/lan865x/lan865x.c | 16 +---------------
+ 1 file changed, 1 insertion(+), 15 deletions(-)
+
+diff --git a/drivers/net/ethernet/microchip/lan865x/lan865x.c b/drivers/net/ethernet/microchip/lan865x/lan865x.c
+index a673ef2fbe70..e51f1e0d7e12 100644
+--- a/drivers/net/ethernet/microchip/lan865x/lan865x.c
++++ b/drivers/net/ethernet/microchip/lan865x/lan865x.c
+@@ -837,7 +837,7 @@ void timer_callback(struct timer_list * data)
+ 	wake_up_interruptible(&priv->tc6_wq);
+ 	mod_timer(&priv->tc6_timer, jiffies + msecs_to_jiffies(TIMEOUT));
+ }
+-#define INT_PIN	115
++
+ static int lan865x_probe(struct spi_device *spi)
+ {
+ 	struct lan865x_priv *priv;
+@@ -903,18 +903,6 @@ static int lan865x_probe(struct spi_device *spi)
+ 	
+ 	spi->rt = true;
+ 	spi_setup(spi);
+-#if 0
+-	gpio_request(INT_PIN, "LAN865X_INT_0");
+-	gpio_direction_input(INT_PIN);
+-	ret = gpio_to_irq(INT_PIN);
+-	if (ret < 0)
+-	{
+-		dev_err(&spi->dev, "error getting irq number: %d\n", ret);
+-		ret = -EIO;
+-		goto error_irq;
+-	}
+-	spi->irq = ret;
+-#endif
+ 	pr_info("spi->irq: %d\n", spi->irq);
+ 	timer_setup(&priv->tc6_timer, timer_callback, 0);
+ 	mod_timer(&priv->tc6_timer, jiffies + msecs_to_jiffies(TIMEOUT));
+@@ -949,7 +937,6 @@ static int lan865x_probe(struct spi_device *spi)
+ error_netdev_register:
+ 	devm_free_irq(&spi->dev, spi->irq, priv);
+ error_irq:
+-	gpio_free(INT_PIN);
+ error_set_mac:
+ 	priv->enable_data = false;
+ 	TC6_EnableData(priv->tc6, false);
+@@ -969,7 +956,6 @@ static int lan865x_remove(struct spi_device *spi)
+ 	del_timer(&priv->tc6_timer);
+ 	unregister_netdev(priv->netdev);
+ 	devm_free_irq(&spi->dev, spi->irq, priv);
+-	gpio_free(INT_PIN);
+ 	kthread_stop(priv->tc6_task);
+ 	free_netdev(priv->netdev);
+ 	spi->rt = false;
+-- 
+2.17.1
+

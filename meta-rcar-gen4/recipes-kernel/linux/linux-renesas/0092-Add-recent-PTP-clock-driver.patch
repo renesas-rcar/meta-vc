@@ -1,0 +1,23 @@
+From 8106b8e10c9d93455e65e39338f7ef3a58f6a7e5 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Thu, 8 Sep 2022 09:38:12 +0200
+Subject: [PATCH 092/151] Add recent PTP clock driver
+
+---
+ drivers/net/ethernet/renesas/rswitch2/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/ethernet/renesas/rswitch2/Makefile b/drivers/net/ethernet/renesas/rswitch2/Makefile
+index c9755e96c292..a49d1da7b767 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/Makefile
++++ b/drivers/net/ethernet/renesas/rswitch2/Makefile
+@@ -26,5 +26,6 @@ ifneq ($(CONFIG_RENESAS_RSWITCH2_GWCA), )
+ endif
+ 
+ rswitch2-y += rswitch2_fwd.o
++rswitch2-y += ../rtsn_ptp.o
+ 
+ 
+-- 
+2.17.1
+

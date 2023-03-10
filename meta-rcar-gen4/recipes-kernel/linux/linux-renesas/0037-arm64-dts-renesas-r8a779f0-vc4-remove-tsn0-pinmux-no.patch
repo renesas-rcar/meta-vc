@@ -1,0 +1,43 @@
+From e34e602a6cf7ed3724dd6af1bd61616da43ee4dd Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Sun, 20 Mar 2022 11:56:52 +0300
+Subject: [PATCH 037/151] arm64: dts: renesas: r8a779f0-vc4: remove tsn0 pinmux
+ node
+
+This node is
+(1) unused,
+(2) has wrong setting for GPIO_3_8 / TSN0_LINK pin: board uses it as
+gpio but the node configured it for peripheral.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts | 13 -------------
+ 1 file changed, 13 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+index 99512c032acb..98c2346245e1 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+@@ -171,19 +171,6 @@
+ 		function = "mmc";
+ 		power-source = <3300>;
+ 	};
+-
+-	tsn0_pins: tsn0 {
+-		mux {
+-			groups = "tsn0_link", "tsn0_mdio";
+-			function = "tsn0";
+-			drive-strength = <12>;
+-		};
+-
+-		pins_mdio {
+-			groups = "tsn0_mdio";
+-			drive-strength = <12>;
+-		};
+-	};
+ };
+ 
+ &pciec0 {
+-- 
+2.17.1
+

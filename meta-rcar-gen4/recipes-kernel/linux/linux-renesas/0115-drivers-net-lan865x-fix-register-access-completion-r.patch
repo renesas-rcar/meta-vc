@@ -1,0 +1,51 @@
+From cd0503a466a166bb5317e0c8a2ea2489b9ff5c17 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Thu, 13 Oct 2022 09:07:56 +0600
+Subject: [PATCH 115/151] drivers: net: lan865x: fix register access completion
+ race
+
+Driver used to call reinit_completion() after initiating a register
+access operation. This is racy - sometimes completion happens before
+this call.
+
+In particular, the race hits when SPI async operation is handled in PIO
+mode in a realtime thread that is scheduled to the same CPU where
+operation issue runs. In this case, the issue gets preempted inside
+spi_async() and is resumed only after operation completes.
+
+Resolve the race by moving reinit_completion() calls earlier.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/net/ethernet/microchip/lan865x/lan865x.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/microchip/lan865x/lan865x.c b/drivers/net/ethernet/microchip/lan865x/lan865x.c
+index f8d76dca186a..f124799b9b70 100644
+--- a/drivers/net/ethernet/microchip/lan865x/lan865x.c
++++ b/drivers/net/ethernet/microchip/lan865x/lan865x.c
+@@ -130,9 +130,9 @@ bool Tc6_ReadRegister(struct lan865x_priv *priv, uint32_t addr, uint32_t *value)
+ 	bool ret;
+ 	long wait_remaining;
+ 
++	reinit_completion(&priv->tc6_completion);
+ 	ret = TC6_ReadRegister(priv->tc6, addr, Tc6_Read_Callback, priv);
+ 	if (ret) {
+-		reinit_completion(&priv->tc6_completion);
+ 		priv->tc6NeedService = true;
+ 		wake_up_interruptible(&priv->tc6_wq);
+ 		wait_remaining = wait_for_completion_interruptible_timeout(&priv->tc6_completion,
+@@ -162,9 +162,9 @@ bool Tc6_WriteRegister(struct lan865x_priv *priv, uint32_t addr, uint32_t value)
+ 	bool ret;
+ 	long wait_remaining;
+ 
++	reinit_completion(&priv->tc6_completion);
+ 	ret = TC6_WriteRegister(priv->tc6, addr, value, Tc6_Write_Callback, priv);
+ 	if (ret) {
+-		reinit_completion(&priv->tc6_completion);
+ 		priv->tc6NeedService = true;
+ 		wake_up_interruptible(&priv->tc6_wq);
+ 		wait_remaining = wait_for_completion_interruptible_timeout(&priv->tc6_completion,
+-- 
+2.17.1
+

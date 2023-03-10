@@ -1,0 +1,29 @@
+From 51b3989c53ac440b63611450eabbe898338b4e0b Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Tue, 12 Apr 2022 16:15:38 +0300
+Subject: [PATCH 057/151] clk: renesas: ensure CPG_CD_MOD clocks are PM clocks
+
+Ensure that cpg_mssr_is_pm_clk() returns true for control domain's
+module standby clocks. This is required to make these clocks used by
+kernel's dynamic power management susystem.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/clk/renesas/renesas-cpg-mssr.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/clk/renesas/renesas-cpg-mssr.c b/drivers/clk/renesas/renesas-cpg-mssr.c
+index 6ee6c7c75620..2725a132a5cb 100644
+--- a/drivers/clk/renesas/renesas-cpg-mssr.c
++++ b/drivers/clk/renesas/renesas-cpg-mssr.c
+@@ -680,6 +680,7 @@ static bool cpg_mssr_is_pm_clk(const struct of_phandle_args *clkspec,
+ 		return false;
+ 
+ 	case CPG_MOD:
++	case CPG_CD_MOD:
+ 		return true;
+ 
+ 	default:
+-- 
+2.17.1
+

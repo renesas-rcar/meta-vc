@@ -1,0 +1,25 @@
+From 873b9eb82eff532efe8400f2d74a8bde8f5f4ade Mon Sep 17 00:00:00 2001
+From: "Christian@p620" <Christian@p620>
+Date: Fri, 15 Jul 2022 12:55:22 +0200
+Subject: [PATCH 068/151] Disable SERDES debug messages
+
+---
+ drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c b/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
+index 50245c43885d..b8bbfabc85c7 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
++++ b/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
+@@ -4,7 +4,7 @@
+  * Copyright (C) 2019-2021 Renesas Electronics Corporation
+  *
+  */
+-#define DEBUG_SERDES
++//#define DEBUG_SERDES
+ 
+ #include <linux/clk.h>
+ #include <linux/delay.h>
+-- 
+2.17.1
+

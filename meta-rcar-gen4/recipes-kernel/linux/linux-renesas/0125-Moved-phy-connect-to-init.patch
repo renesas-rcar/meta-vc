@@ -1,0 +1,166 @@
+From 5cdb38b368cf3f45903b96b7816cbc9707701bf7 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Thu, 24 Nov 2022 17:30:41 +0100
+Subject: [PATCH 125/151] Moved phy connect to init
+
+---
+ .../ethernet/renesas/rswitch2/rswitch2_eth.c  | 46 ++++++++++++-------
+ drivers/net/phy/marvell_88q211x.c             |  8 ++--
+ 2 files changed, 34 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c b/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
+index bed32a36551a..aedfc0ea8dfe 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
++++ b/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
+@@ -265,6 +265,8 @@ static void rswitch2_phy_state_change(struct net_device *ndev)
+ 	if(!phydev->link) {
+ 
+ 		void __iomem *etha_base_addr;
++		phy_interface_t phy_iface;
++		int speed;
+ 
+ 		etha_base_addr = (void __iomem *)ndev->base_addr;
+ 		spin_lock_irqsave(&rsw2->lock, flags);
+@@ -275,12 +277,19 @@ static void rswitch2_phy_state_change(struct net_device *ndev)
+ 		reg_val = FIELD_PREP(EAMC_OPC, emac_disable);
+ 		iowrite32(reg_val, etha_base_addr + RSW2_ETHA_EAMC);
+ 
++		phy_iface = phy_port->phy_iface;
++		speed = phy_port->phy->speed;
++
+ 		phy_port->phy_iface = PHY_INTERFACE_MODE_USXGMII;
+ 		phy_port->phy->speed = SPEED_2500;
+ 		rswitch2_serdes_init(ndev, false);
+ 
+ 		rswitch2_emac_set_state(ndev, emac_disable);
+ 
++		phy_port->phy_iface = phy_iface;
++		phy_port->phy->speed = speed;
++
++
+ 		rsw2_notice(MSG_GEN, "===================== Link Down end =======================\n");
+ 		spin_unlock_irqrestore(&rsw2->lock, flags);
+ 
+@@ -989,12 +998,7 @@ static int rswitch2_eth_open(struct net_device *ndev)
+ 
+ 
+ 
+-		ret = phy_connect_direct(ndev, phy_port->phy, &rswitch2_phy_state_change, phy_port->phy_iface);
+-		//ret = rswitch2_phy_init(ndev, phy_port_num);
+-		if (ret != 0) {
+-			rsw2_err(MSG_GEN, "%s: rswitch2_phy_init failed: %d\n", ndev->name, ret);
+-			return ret;
+-		}
++
+ 
+ 		//ret = rswitch2_mac_set_speed(eth_port);
+ 		//if (ret != 0)
+@@ -1233,8 +1237,8 @@ static int rswitch2_eth_close(struct net_device *ndev)
+ 		for (cur_q = 0; cur_q < num_of_tx_q; cur_q++) {
+ 			rswitch2_tx_free(ndev, cur_q);
+ 		}
++		phy_stop(ndev->phydev);
+ 
+-		phy_disconnect(ndev->phydev);
+ 	}
+ 
+ 	return 0;
+@@ -3152,10 +3156,11 @@ static int rswitch2_init_physical_port(struct rswitch2_drv *rsw2, unsigned int p
+ 
+ 	netif_napi_add(port_ndev, &phy_port->rx_q[0].napi, rswitch2_poll, 64);
+ 
+-	ret = register_netdev(port_ndev);
+-	if (ret < 0) {
+-		rsw2_err(MSG_GEN, "register_netdev port failed: %d\n", ret);
+-		goto cleanup_phy_port;
++	ret = phy_connect_direct(port_ndev, phy_port->phy, &rswitch2_phy_state_change, phy_port->phy_iface);
++
++	if (ret != 0) {
++		rsw2_err(MSG_GEN, "%s: rswitch2_phy_init failed: %d\n", port_ndev->name, ret);
++		return ret;
+ 	}
+ 
+ 	rsw2->ports[rsw2->ports_intialized] = eth_port;
+@@ -3460,11 +3465,6 @@ int rswitch2_eth_init(struct rswitch2_drv *rsw2)
+ 
+ 
+ 		}
+-		ret = register_netdev(ndev);
+-		if (ret < 0) {
+-			rsw2_err(MSG_GEN, "Failed to register netdev: %d\n", ret);
+-			goto port_init_err;
+-		}
+ 	}
+ 
+ 	for (cur_port = 0; cur_port < rsw2->num_of_tsn_ports; cur_port++) {
+@@ -3519,6 +3519,19 @@ int rswitch2_eth_init(struct rswitch2_drv *rsw2)
+ 	/* FIXME: return value */
+ 	rswitch2_ts_ring_init(rsw2);
+ 
++
++	for (cur_port = 0; cur_port < rsw2->num_of_tsn_ports + rsw2->num_of_cpu_ports; cur_port++) {
++		struct net_device *ndev;
++		ndev = rsw2->ports[cur_port ]->ndev;
++		ret = register_netdev(ndev);
++		if (ret < 0) {
++			rsw2_err(MSG_GEN, "Failed to register netdev: %d\n", ret);
++			goto port_init_err;
++		}
++		else
++			rsw2_info(MSG_GEN, "Register netdev '%s'sucessfully\n", ndev->name);
++	}
++
+ 	ret = rswitch2_gwca_set_state(rsw2, gwmc_operation);
+ 	if (ret < 0) {
+ 		rsw2_err(MSG_GEN, "Failed to set GWCA operation state!\n");
+@@ -3607,6 +3620,7 @@ void rswitch2_eth_exit(struct rswitch2_drv *rsw2)
+             uint num_of_rx_queues;
+             uint num_of_tx_queues;
+ 
++            phy_disconnect(phy_port->phy);
+             phy_device_remove(phy_port->phy);
+ 			phy_device_free(phy_port->phy);
+ 
+diff --git a/drivers/net/phy/marvell_88q211x.c b/drivers/net/phy/marvell_88q211x.c
+index 580a36f870a9..35a655a5b0c6 100644
+--- a/drivers/net/phy/marvell_88q211x.c
++++ b/drivers/net/phy/marvell_88q211x.c
+@@ -566,7 +566,7 @@ static int phy_init(struct phy_device *phydev, uint16_t flags)
+ 		}
+ 		//printk("%s:%d Link is down\n", __FUNCTION__, __LINE__);
+ 		phydev->link = 0;
+-
++		phydev->speed = SPEED_UNKNOWN;
+ 
+ 	}
+ 
+@@ -594,6 +594,7 @@ static int phy_init(struct phy_device *phydev, uint16_t flags)
+ 		}
+ 		printk("%s:%d Link is down\n", __FUNCTION__, __LINE__);
+ 		phydev->link = 0;
++		phydev->speed = SPEED_UNKNOWN;
+ 	}
+ 
+ 	// Init failed - no link within expected time.
+@@ -727,7 +728,7 @@ static int mv88q211x_config_init(struct phy_device *phydev)
+ 
+ 	pr_info("mv88q211x: phydev->port: %i\n", phydev->port);
+ 
+-
++	phydev->master_slave_get = MASTER_SLAVE_CFG_UNKNOWN;
+ 	if(!phydev->is_c45) {
+ 		pr_info("mv88q211x_config_init() Not c45 !\n");
+ 		phydev->is_c45 = 1;
+@@ -820,8 +821,7 @@ static int mv88q211x_config_aneg(struct phy_device *phydev)
+ 	bool changed = false;
+ 	int ret;
+ 
+-	phydev_warn(phydev, "mv88q211x_config_aneg()\n");
+-
++	phydev_warn(phydev, "mv88q211x_config_aneg(): speed=%d   autoneg=%d    master_slave_state=%d\n", phydev->speed, phydev->autoneg, phydev->master_slave_state);
+ 
+ 	if (phydev->autoneg == AUTONEG_DISABLE) {
+ 
+-- 
+2.17.1
+

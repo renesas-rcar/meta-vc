@@ -1,0 +1,156 @@
+From 7c64dcb742637d9005267b72538325a8b9911702 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Wed, 30 Mar 2022 16:10:18 +0200
+Subject: [PATCH 049/151] net: rswitch2: Fix module unload
+
+---
+ .../ethernet/renesas/rswitch2/rswitch2_eth.c  | 23 ++++++++----
+ .../renesas/rswitch2/rswitch2_platf.c         | 35 ++++++++++++++++---
+ 2 files changed, 47 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c b/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
+index 4bfaaa2ddaaf..dd57e33e4726 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
++++ b/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
+@@ -1908,13 +1908,19 @@ static int rswitch2_mdio_reset(struct mii_bus *bus)
+ static int rswitch2_mdio_init(struct net_device *ndev, unsigned int port_num)
+ {
+ 	struct mii_bus *mii_bus;
+-	struct device_node *port;
++	struct device_node *dn_port;
+ 	int ret;
+ 
+ 	struct rswitch2_drv *rsw2;
+ 	struct rswitch2_eth_port *eth_port;
++	struct rswitch2_physical_port *phy_port;
++
+ 	eth_port = netdev_priv(ndev);
+ 	rsw2 = eth_port->rsw2;
++	phy_port = eth_port->phy_port;
++
++	/* Only physical ports have MDIO interface */
++	BUG_ON(phy_port == NULL);
+ 
+ 
+ 	mii_bus = mdiobus_alloc();
+@@ -1930,10 +1936,10 @@ static int rswitch2_mdio_init(struct net_device *ndev, unsigned int port_num)
+ 	mii_bus->reset = rswitch2_mdio_reset;
+ 	mii_bus->parent = rsw2->dev;
+ 
+-	port = rswitch2_get_port_node(ndev, port_num);
+-	of_node_get(port);
++	dn_port = rswitch2_get_port_node(ndev, port_num);
++	of_node_get(dn_port);
+ 
+-	ret = of_mdiobus_register(mii_bus, port);
++	ret = of_mdiobus_register(mii_bus, dn_port);
+ 	if (ret < 0) {
+ 		dev_info(rsw2->dev, "MDIO bus register failed: %d\n", ret);
+ 		mdiobus_free(mii_bus);
+@@ -1941,10 +1947,10 @@ static int rswitch2_mdio_init(struct net_device *ndev, unsigned int port_num)
+ 	}
+ 	dev_info(rsw2->dev, "mii_bus->dev: '%s'\n", mii_bus->dev.init_name);
+ 
+-	//rdev->etha->mii = mii_bus;
++	phy_port->mii_bus = mii_bus;
+ 
+ out:
+-	of_node_put(port);
++	of_node_put(dn_port);
+ 
+ 	return ret;
+ }
+@@ -2396,6 +2402,10 @@ void rswitch2_eth_exit(struct rswitch2_drv *rsw2)
+ 					phy_stop(ndev->phydev);
+ 				phy_disconnect(ndev->phydev);
+ 			}
++
++			mdiobus_unregister(phy_port->mii_bus);
++			mdiobus_free(phy_port->mii_bus);
++
+ 			kfree(eth_port->phy_port);
+ 			eth_port->phy_port = NULL;
+ 		} else if (intern_port) {
+@@ -2419,6 +2429,7 @@ void rswitch2_eth_exit(struct rswitch2_drv *rsw2)
+ 			free_netdev(ndev);
+ 		}
+ 	}
++
+ 	rswitch2_free_bat(rsw2);
+ 	kfree(rsw2->ports);
+ }
+diff --git a/drivers/net/ethernet/renesas/rswitch2/rswitch2_platf.c b/drivers/net/ethernet/renesas/rswitch2/rswitch2_platf.c
+index 31f118fce0fa..7e52a48929cd 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/rswitch2_platf.c
++++ b/drivers/net/ethernet/renesas/rswitch2/rswitch2_platf.c
+@@ -389,11 +389,16 @@ static int rswitch2_platf_probe(struct platform_device *pdev)
+ 		goto out_port_mem;
+ 	}
+ 
++	dev_err(&pdev->dev, "dev->dev.power.disable_depth:: %d\n", pdev->dev.power.disable_depth);
++
+ 	pm_runtime_enable(&pdev->dev);
+ 	pm_runtime_get_sync(&pdev->dev);
+ 	clk_prepare(drv_priv->phy_clk);
+ 	clk_enable(drv_priv->phy_clk);
+ 
++	dev_err(&pdev->dev, "dev->dev.power.disable_depth:: %d\n", pdev->dev.power.disable_depth);
++
++
+ 	device_set_wakeup_capable(&pdev->dev, 1);
+ 
+ 	/* Init RSwitch2 core */
+@@ -432,15 +437,34 @@ static int rswitch2_platf_remove(struct platform_device *pdev)
+ {
+ 	struct rswitch2_platf_driver_priv *drv_priv = platform_get_drvdata(pdev);
+ 
++	dev_err(&pdev->dev, "drv_priv: 0x%px\n", drv_priv);
++
+ 	if (drv_priv)
+-		if (drv_priv->rsw2)
++		if (drv_priv->rsw2) {
++
++			dev_err(&pdev->dev, "rsw2: 0x%px\n", drv_priv->rsw2);
++			dev_err(&pdev->dev, "rsw2->dev: 0x%px\n", drv_priv->rsw2->dev);
++
+ 			rswitch2_exit(drv_priv->rsw2);
+ 
++			rswitch2_platf_release_irqs(drv_priv->rsw2);
++
++			dev_err(&pdev->dev, "dev->dev.power.disable_depth:: %d\n", pdev->dev.power.disable_depth);
++
++
++			pm_runtime_put(&pdev->dev);
++			pm_runtime_disable(&pdev->dev);
++			clk_disable(drv_priv->phy_clk);
++
++			dev_err(&pdev->dev, "dev->dev.power.disable_depth:: %d\n", pdev->dev.power.disable_depth);
++
++		}
++
+ 
+ 	if (drv_priv) {
+ 		if (drv_priv->rsw2) {
+-			iounmap(drv_priv->rsw2->base_addr);
+-			iounmap(drv_priv->rsw2->serdes_base_addr);
++//			iounmap(drv_priv->rsw2->base_addr);
++//			iounmap(drv_priv->rsw2->serdes_base_addr);
+ 
+ 
+ 
+@@ -450,9 +474,10 @@ static int rswitch2_platf_remove(struct platform_device *pdev)
+ 		}
+ 
+ 
+-		rswitch2_platf_release_irqs(drv_priv->rsw2);
+ 
+-		kfree(drv_priv);
++
++		//kfree(drv_priv);
++		platform_set_drvdata(pdev, NULL);
+ 	}
+ 
+ 	return 0;
+-- 
+2.17.1
+

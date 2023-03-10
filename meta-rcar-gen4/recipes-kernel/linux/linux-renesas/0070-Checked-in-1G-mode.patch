@@ -1,0 +1,327 @@
+From b822f15b869a40603d56674fee221e1d110020f1 Mon Sep 17 00:00:00 2001
+From: "Christian@p620" <Christian@p620>
+Date: Tue, 9 Aug 2022 16:31:53 +0200
+Subject: [PATCH 070/151] Checked in 1G mode
+
+---
+ arch/arm64/boot/dts/renesas/Makefile          | 11 ++++-
+ .../dts/renesas/r8a779f0-vc4-tsn0-phy-1g.dtso |  2 -
+ .../renesas/r8a779f0-vc4-tsn0-phy-1gV1.dtso   | 30 ++++++++++++
+ .../renesas/r8a779f0-vc4-tsn0-phy-2g5.dtso    | 21 --------
+ .../renesas/r8a779f0-vc4-tsn0-phy-2g5V1.dtso  | 49 +++++++++++++++++++
+ .../dts/renesas/r8a779f0-vc4-tsn1-phy-1g.dtso |  4 +-
+ .../renesas/r8a779f0-vc4-tsn1-phy-1gV1.dtso   | 21 ++++++++
+ .../renesas/r8a779f0-vc4-tsn1-phy-2g5.dtso    | 22 +--------
+ .../renesas/r8a779f0-vc4-tsn1-phy-2g5V1.dtso  | 40 +++++++++++++++
+ 9 files changed, 153 insertions(+), 47 deletions(-)
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1gV1.dtso
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-2g5V1.dtso
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1gV1.dtso
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-2g5V1.dtso
+
+diff --git a/arch/arm64/boot/dts/renesas/Makefile b/arch/arm64/boot/dts/renesas/Makefile
+index 43aaa40a49b4..8cf7504e56f7 100644
+--- a/arch/arm64/boot/dts/renesas/Makefile
++++ b/arch/arm64/boot/dts/renesas/Makefile
+@@ -112,11 +112,18 @@ DTC_FLAGS += -@
+ # dtb-$(CONFIG_ARCH_R8A77970) += $(vb-dtbo)
+ # dtb-$(CONFIG_ARCH_R8A77980) += $(vb-dtbo)
+ 
+-r8a779f0-vc4-dtbo :=	r8a779f0-vc4-tsn0-phy-1g.dtbo \
++r8a779f0-vc4-dtbo := \
++			r8a779f0-vc4-tsn0-phy-1g.dtbo \
+ 			r8a779f0-vc4-tsn0-phy-2g5.dtbo \
+ 			r8a779f0-vc4-tsn1-phy-1g.dtbo \
+ 			r8a779f0-vc4-tsn1-phy-2g5.dtbo \
+ 			r8a779f0-vc4-tsn2-phy-1g.dtbo \
+ 			r8a779f0-vc4-tsn2-phy-1g-rh.dtbo
+ 
+-dtb-$(CONFIG_ARCH_R8A779F0) += $(r8a779f0-vc4-dtbo)
++r8a779f0-vc4V1-dtbo := \
++			r8a779f0-vc4-tsn0-phy-1gV1.dtbo \
++			r8a779f0-vc4-tsn0-phy-2g5V1.dtbo \
++			r8a779f0-vc4-tsn1-phy-1gV1.dtbo \
++			r8a779f0-vc4-tsn1-phy-2g5V1.dtbo
++
++dtb-$(CONFIG_ARCH_R8A779F0) += $(r8a779f0-vc4-dtbo) $(r8a779f0-vc4V1-dtbo)
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1g.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1g.dtso
+index 0fde7e6d2f74..c0c1eefe470d 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1g.dtso
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1g.dtso
+@@ -10,9 +10,7 @@
+ 		output-high;
+ 		line-name = "TSN0-PRE-MUX";
+ 	};
+-};
+ 
+-&gpio4 {
+ 	tsn0-mux {
+ 		gpio-hog;
+ 		gpios = <6 GPIO_ACTIVE_HIGH>;
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1gV1.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1gV1.dtso
+new file mode 100644
+index 000000000000..0fde7e6d2f74
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1gV1.dtso
+@@ -0,0 +1,30 @@
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++
++&gpio3 {
++	tsn0-pre-mux {
++		gpio-hog;
++		gpios = <8 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN0-PRE-MUX";
++	};
++};
++
++&gpio4 {
++	tsn0-mux {
++		gpio-hog;
++		gpios = <6 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN0-MUX";
++	};
++};
++
++&tsn0 {
++	phy-handle = <&tsn0_phy_1g>;
++};
++
++&tsn0_phy_1g {
++	status = "okay";
++};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-2g5.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-2g5.dtso
+index 7da8fee570f9..873d9df877b5 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-2g5.dtso
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-2g5.dtso
+@@ -10,9 +10,7 @@
+ 		output-high;
+ 		line-name = "TSN0-PRE-MUX";
+ 	};
+-};
+ 
+-&gpio4 {
+ 	tsn0-mux {
+ 		gpio-hog;
+ 		gpios = <6 GPIO_ACTIVE_HIGH>;
+@@ -21,28 +19,9 @@
+ 	};
+ };
+ 
+-&gpio3 {
+-	tsn0-no-sleep {
+-		gpio-hog;
+-		gpios = <15 GPIO_ACTIVE_HIGH>;
+-		output-high;
+-		line-name = "TSN0-NO-SLEEP";
+-	};
+-};
+-
+-&gpio6 {
+-	tsn0-no-wake {
+-		gpio-hog;
+-		gpios = <22 GPIO_ACTIVE_HIGH>;
+-		output-high;
+-		line-name = "TSN0-NO-WAKE";
+-	};
+-};
+-
+ &tsn0 {
+ 	phy-handle = <&tsn0_phy_2g5>;
+ 	phy-mode = "usxgmii";
+-
+ };
+ 
+ &tsn0_phy_2g5 {
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-2g5V1.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-2g5V1.dtso
+new file mode 100644
+index 000000000000..2822f16d541e
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-2g5V1.dtso
+@@ -0,0 +1,49 @@
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++
++&gpio3 {
++	tsn0-pre-mux {
++		gpio-hog;
++		gpios = <8 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN0-PRE-MUX";
++	};
++};
++
++&gpio4 {
++	tsn0-mux {
++		gpio-hog;
++		gpios = <6 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "TSN0-MUX";
++	};
++};
++
++&gpio3 {
++	tsn0-no-sleep {
++		gpio-hog;
++		gpios = <15 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN0-NO-SLEEP";
++	};
++};
++
++&gpio6 {
++	tsn0-no-wake {
++		gpio-hog;
++		gpios = <22 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN0-NO-WAKE";
++	};
++};
++
++&tsn0 {
++	phy-handle = <&tsn0_phy_2g5>;
++	phy-mode = "usxgmii";
++};
++
++&tsn0_phy_2g5 {
++	status = "okay";
++};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1g.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1g.dtso
+index 45db0ad299d9..059895a4c1b5 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1g.dtso
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1g.dtso
+@@ -3,10 +3,10 @@
+ 
+ #include <dt-bindings/gpio/gpio.h>
+ 
+-&gpio4 {
++&gpio3 {
+ 	tsn1-mux {
+ 		gpio-hog;
+-		gpios = <7 GPIO_ACTIVE_HIGH>;
++		gpios = <14 GPIO_ACTIVE_HIGH>;
+ 		output-high;
+ 		line-name = "TSN1-MUX";
+ 	};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1gV1.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1gV1.dtso
+new file mode 100644
+index 000000000000..45db0ad299d9
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1gV1.dtso
+@@ -0,0 +1,21 @@
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++
++&gpio4 {
++	tsn1-mux {
++		gpio-hog;
++		gpios = <7 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN1-MUX";
++	};
++};
++
++&tsn1 {
++	phy-handle = <&tsn1_phy_1g>;
++};
++
++&tsn1_phy_1g {
++	status = "okay";
++};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-2g5.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-2g5.dtso
+index e3b1cfc88d5e..33448ad68d2e 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-2g5.dtso
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-2g5.dtso
+@@ -3,33 +3,15 @@
+ 
+ #include <dt-bindings/gpio/gpio.h>
+ 
+-&gpio4 {
++&gpio3 {
+ 	tsn1-mux {
+ 		gpio-hog;
+-		gpios = <7 GPIO_ACTIVE_HIGH>;
++		gpios = <14 GPIO_ACTIVE_HIGH>;
+ 		output-low;
+ 		line-name = "TSN1-MUX";
+ 	};
+ };
+ 
+-&gpio3 {
+-	tsn1-no-sleep {
+-		gpio-hog;
+-		gpios = <12 GPIO_ACTIVE_HIGH>;
+-		output-high;
+-		line-name = "TSN1-NO-SLEEP";
+-	};
+-};
+-
+-&gpio6 {
+-	tsn1-no-wake {
+-		gpio-hog;
+-		gpios = <21 GPIO_ACTIVE_HIGH>;
+-		output-high;
+-		line-name = "TSN1-NO-WAKE";
+-	};
+-};
+-
+ &tsn1 {
+ 	phy-handle = <&tsn1_phy_2g5>;
+ 	phy-mode = "usxgmii";
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-2g5V1.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-2g5V1.dtso
+new file mode 100644
+index 000000000000..e3b1cfc88d5e
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-2g5V1.dtso
+@@ -0,0 +1,40 @@
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++
++&gpio4 {
++	tsn1-mux {
++		gpio-hog;
++		gpios = <7 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "TSN1-MUX";
++	};
++};
++
++&gpio3 {
++	tsn1-no-sleep {
++		gpio-hog;
++		gpios = <12 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN1-NO-SLEEP";
++	};
++};
++
++&gpio6 {
++	tsn1-no-wake {
++		gpio-hog;
++		gpios = <21 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN1-NO-WAKE";
++	};
++};
++
++&tsn1 {
++	phy-handle = <&tsn1_phy_2g5>;
++	phy-mode = "usxgmii";
++};
++
++&tsn1_phy_2g5 {
++	status = "okay";
++};
+-- 
+2.17.1
+

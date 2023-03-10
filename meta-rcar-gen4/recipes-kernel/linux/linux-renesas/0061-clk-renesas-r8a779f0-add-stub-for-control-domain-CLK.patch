@@ -1,0 +1,99 @@
+From fad2ac1ccf5297bc6f10f464ccd7dc626830ec9b Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Fri, 29 Apr 2022 00:28:47 +0300
+Subject: [PATCH 061/151] clk: renesas: r8a779f0: add stub for control domain
+ CLK_MOSC
+
+Thhe stub checks md[14:13] and registers a fixed clock with frequency
+equal to CLK_MOSC frequency for that setting.
+
+Starting/stopping and other operations are not supported.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/clk/renesas/r8a779f0-cpg-mssr.c | 41 ++++++++++++++++++++++++-
+ 1 file changed, 40 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/clk/renesas/r8a779f0-cpg-mssr.c b/drivers/clk/renesas/r8a779f0-cpg-mssr.c
+index e3d909467ca5..f6433ad1d41c 100644
+--- a/drivers/clk/renesas/r8a779f0-cpg-mssr.c
++++ b/drivers/clk/renesas/r8a779f0-cpg-mssr.c
+@@ -25,6 +25,10 @@
+ #include "renesas-cpg-mssr.h"
+ #include "rcar-gen4-cpg.h"
+ 
++enum r8a779f0_clk_types {
++	CLK_TYPE_CD_MOSC = CLK_TYPE_GEN4_SOC_BASE,
++};
++
+ enum clk_ids {
+ 	/* Core Clock Outputs exported to DT */
+ 	LAST_DT_CORE_CLK = R8A779F0_CLK_OSC,
+@@ -51,6 +55,7 @@ enum clk_ids {
+ 	CLK_RPCSRC,
+ 	CLK_OCO,
+ 
++	CD_CLK_MOSC,
+ 	CD_CLK_HSB,
+ 	CD_CLK_LSB,
+ 
+@@ -127,6 +132,7 @@ static const struct cpg_core_clk r8a779f0_core_clks[] __initconst = {
+ 	DEF_GEN4_OSC("osc",	R8A779F0_CLK_OSC,	CLK_EXTAL,	8),
+ 	DEF_GEN4_MDSEL("r",	R8A779F0_CLK_R, 29, CLK_EXTALR, 1, CLK_OCO, 1),
+ 
++	DEF_TYPE("cd_mosc",	CD_CLK_MOSC,	CLK_TYPE_CD_MOSC),
+ 	DEF_RATE("cd_hsb",	CD_CLK_HSB,	80 * 1000 * 1000),
+ 	DEF_RATE("cd_lsb",	CD_CLK_LSB,	40 * 1000 * 1000),
+ };
+@@ -254,6 +260,39 @@ static int __init r8a779f0_cpg_mssr_init(struct device *dev)
+ 	return rcar_gen4_cpg_init(cpg_pll_config, CLK_EXTALR, cpg_mode);
+ }
+ 
++static struct clk * __init r8a779f0_cpg_clk_register(struct device *dev,
++	const struct cpg_core_clk *core, const struct cpg_mssr_info *info,
++	struct clk **clks, void __iomem *base,
++	struct raw_notifier_head *notifiers)
++{
++	u32 mode_pins;
++	int error;
++	unsigned long rate;
++
++	switch (core->type) {
++	case CLK_TYPE_CD_MOSC:
++		error = rcar_rst_read_mode_pins(&mode_pins);
++		if (error)
++			return ERR_PTR(error);
++		switch ((mode_pins >> 13) & 3) {
++		case 0:
++			rate = 16 * 1000 * 1000;
++			break;
++		case 1:
++			rate = 20 * 1000 * 1000;
++			break;
++		default:
++			rate = 40 * 1000 * 1000;
++			break;
++		}
++		return clk_register_fixed_rate(NULL, core->name, NULL, 0, rate);
++
++	default:
++		return rcar_gen4_cpg_clk_register(dev, core, info, clks, base,
++				notifiers);
++	}
++}
++
+ const struct cpg_mssr_info r8a779f0_cpg_mssr_info __initconst = {
+ 	/* Core Clocks */
+ 	.core_clks = r8a779f0_core_clks,
+@@ -274,7 +313,7 @@ const struct cpg_mssr_info r8a779f0_cpg_mssr_info __initconst = {
+ 
+ 	/* Callbacks */
+ 	.init = r8a779f0_cpg_mssr_init,
+-	.cpg_clk_register = rcar_gen4_cpg_clk_register,
++	.cpg_clk_register = r8a779f0_cpg_clk_register,
+ 
+ 	.reg_layout = CLK_REG_LAYOUT_RCAR_GEN4,
+ };
+-- 
+2.17.1
+

@@ -1,0 +1,92 @@
+From a297416dcd247ed4c102b56c21bcf6ff79dc725a Mon Sep 17 00:00:00 2001
+From: "Christian@p620" <Christian@p620>
+Date: Thu, 1 Dec 2022 17:21:29 +0100
+Subject: [PATCH 126/151] Add T1S PLCA configuration template to DT
+
+---
+ .../dts/renesas/r8a779f0-vc4-ctrl-domain.dts  | 28 +++++++++++++++----
+ 1 file changed, 22 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+index c5d0a299f7bd..3f8048236446 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+@@ -188,7 +188,7 @@
+ 	pinctrl-0 = <&mspi0_pins>;
+ 	pinctrl-names = "default";
+ 
+-	t1s@0 {
++	t1s0 {
+ 		compatible = "microchip,lan865x";
+ 		reg = <0>;
+ 
+@@ -196,9 +196,14 @@
+ 
+ 		interrupt-parent = <&gpio6>;
+ 		interrupts = <18 IRQ_TYPE_LEVEL_LOW>;
++		//reset-pin = /bits/ 16 <12>;
+ 
++		//local-mac-address = [14 15 16 11 12 13];
++		tx-cut-through-mode = /bits/ 8 <0>;
+ 		plca-enable = /bits/ 8 <0>;
+-		tx-cut-through-mode = /bits/ 8 <1>;
++
++		plca-node-id = /bits/ 8 <0>; /* PLCA node id range: 0 to 254 */
++		plca-node-count = /bits/ 8 <8>; /* PLCA node count range: 1 to 255 */
+ 	};
+ };
+ 
+@@ -208,7 +213,7 @@
+ 	pinctrl-0 = <&mspi1_pins>;
+ 	pinctrl-names = "default";
+ 
+-	t1s@0 {
++	t1s1 {
+ 		compatible = "microchip,lan865x";
+ 		reg = <0>;
+ 
+@@ -216,9 +221,14 @@
+ 
+ 		interrupt-parent = <&gpio6>;
+ 		interrupts = <19 IRQ_TYPE_LEVEL_LOW>;
++		//reset-pin = /bits/ 16 <12>;
+ 
++		//local-mac-address = [14 15 16 11 12 13];
++		tx-cut-through-mode = /bits/ 8 <0>;
+ 		plca-enable = /bits/ 8 <0>;
+-		tx-cut-through-mode = /bits/ 8 <1>;
++
++		plca-node-id = /bits/ 8 <0>; /* PLCA node id range: 0 to 254 */
++		plca-node-count = /bits/ 8 <8>; /* PLCA node count range: 1 to 255 */
+ 	};
+ };
+ 
+@@ -228,7 +238,7 @@
+ 	pinctrl-0 = <&mspi4_pins>;
+ 	pinctrl-names = "default";
+ 
+-	t1s@0 {
++	t1s2 {
+ 		compatible = "microchip,lan865x";
+ 		reg = <0>;
+ 
+@@ -236,9 +246,15 @@
+ 
+ 		interrupt-parent = <&gpio6>;
+ 		interrupts = <20 IRQ_TYPE_LEVEL_LOW>;
++		//reset-pin = /bits/ 16 <12>;
+ 
++		//local-mac-address = [14 15 16 11 12 13];
++		tx-cut-through-mode = /bits/ 8 <0>;
+ 		plca-enable = /bits/ 8 <0>;
+-		tx-cut-through-mode = /bits/ 8 <1>;
++
++
++		plca-node-id = /bits/ 8 <0>; /* PLCA node id range: 0 to 254 */
++		plca-node-count = /bits/ 8 <8>; /* PLCA node count range: 1 to 255 */
+ 	};
+ };
+ 
+-- 
+2.17.1
+

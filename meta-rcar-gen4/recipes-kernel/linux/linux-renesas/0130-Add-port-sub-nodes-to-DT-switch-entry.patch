@@ -1,0 +1,43 @@
+From 7321633a68b08d819219617ad2c7fd6563788cc7 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Thu, 8 Dec 2022 16:31:29 +0100
+Subject: [PATCH 130/151] Add port sub-nodes to DT switch entry
+
+---
+ arch/arm64/boot/dts/renesas/r8a779f0.dtsi | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+index bf09e405d616..5d73ddd9db26 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
++++ b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+@@ -610,6 +610,26 @@
+ 			resets = <&cpg 1505>, <&cpg 1506>;
+ 			reset-names = "rsw2", "eth-phy";
+ 			status = "disabled";
++
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				port@0 {
++					reg = <0>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++				};
++				port@1 {
++					reg = <1>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++				};
++				port@2 {
++					reg = <2>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++				};
++			};
+ 		};
+ 
+ 		scif0: serial@e6e60000 {
+-- 
+2.17.1
+

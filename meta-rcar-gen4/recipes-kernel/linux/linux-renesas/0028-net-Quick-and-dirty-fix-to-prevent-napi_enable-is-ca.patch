@@ -1,0 +1,61 @@
+From 6ebba418e5d48882c70841b1cc2b6ea9816e614d Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Wed, 16 Mar 2022 20:49:40 +0100
+Subject: [PATCH 028/151] net: Quick and dirty fix to prevent napi_enable() is
+ called twice
+
+---
+ drivers/net/ethernet/renesas/Kconfig  | 2 ++
+ drivers/net/ethernet/renesas/Makefile | 2 ++
+ drivers/net/phy/marvell_88q211x.c     | 5 ++++-
+ 3 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/renesas/Kconfig b/drivers/net/ethernet/renesas/Kconfig
+index 497a5874a6c3..91f929f58b34 100644
+--- a/drivers/net/ethernet/renesas/Kconfig
++++ b/drivers/net/ethernet/renesas/Kconfig
+@@ -53,6 +53,8 @@ config RENESAS_ETHER_SWITCH
+ 	  This driver supports the following SoCs:
+ 		- R8A779Fx.
+ 
++source "drivers/net/ethernet/renesas/rswitch2/Kconfig"
++
+ config RTSN
+         tristate "Renesas Ethernet-TSN support"
+         depends on ARCH_RENESAS || COMPILE_TEST
+diff --git a/drivers/net/ethernet/renesas/Makefile b/drivers/net/ethernet/renesas/Makefile
+index d52ae998fc6b..88343d40f119 100644
+--- a/drivers/net/ethernet/renesas/Makefile
++++ b/drivers/net/ethernet/renesas/Makefile
+@@ -14,3 +14,5 @@ obj-$(CONFIG_RENESAS_ETHER_SWITCH) += rswitch.o
+ rtsn_drv-objs := rtsn.o rtsn_ptp.o
+ 
+ obj-$(CONFIG_RTSN) += rtsn_drv.o
++
++obj-$(CONFIG_RENESAS_RSWITCH2) += rswitch2/
+diff --git a/drivers/net/phy/marvell_88q211x.c b/drivers/net/phy/marvell_88q211x.c
+index 76264078abc1..9874d4004a2e 100644
+--- a/drivers/net/phy/marvell_88q211x.c
++++ b/drivers/net/phy/marvell_88q211x.c
+@@ -115,6 +115,9 @@ static int mv88q211x_config_init(struct phy_device *phydev)
+ 	int ret;
+ 	pr_info("mv88q211x_config_init()\n");
+ 
++	pr_info("mv88q211x: phydev->port: %i\n", phydev->port);
++
++
+ 	if(!phydev->is_c45) {
+ 		pr_info("mv88q211x_config_init() Not c45 !\n");
+ 		phydev->is_c45 = 1;
+@@ -794,7 +797,7 @@ static int phy_init(struct phy_device *phydev, uint16_t flags)
+ 
+ 	bool linkup_before_set_mode = false;
+ 
+-	for(i = 0; i < 100; i++) {
++	for(i = 0; i < 10; i++) {
+ 		product_id = get_product_id(phydev);
+ 		printk("%s:%d product_id = %d\n", __FUNCTION__, __LINE__, product_id);
+ 		if (product_id == MRVL_88Q2112_PRODUCT_ID)
+-- 
+2.17.1
+

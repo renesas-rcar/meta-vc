@@ -1,0 +1,24 @@
+From ca2fd6bb8bd91ca15358071e6b47e4e5d3ed4801 Mon Sep 17 00:00:00 2001
+From: "dennis.ostermann" <dennis.ostermann@renesas.com>
+Date: Thu, 15 Sep 2022 09:37:08 +0000
+Subject: [PATCH 100/151] Fix merge loss - Assign base address for PTP
+
+---
+ drivers/net/ethernet/renesas/rswitch2/rswitch2_platf.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/ethernet/renesas/rswitch2/rswitch2_platf.c b/drivers/net/ethernet/renesas/rswitch2/rswitch2_platf.c
+index b324e7a2fbdf..ec585e477979 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/rswitch2_platf.c
++++ b/drivers/net/ethernet/renesas/rswitch2/rswitch2_platf.c
+@@ -124,6 +124,7 @@ static void rswitch2_platf_set_base_addr(struct rswitch2_drv *rsw2)
+ 	rsw2->etha_base_addrs[1] = base_addr + RSWITCH2_TSNA1_BASE_ADDR;
+ 	rsw2->etha_base_addrs[2] = base_addr + RSWITCH2_TSNA2_BASE_ADDR;
+ 	rsw2->gwca_base_addrs[0] = base_addr + RSWITCH2_GWCA0_BASE_ADDR;
++	rsw2->ptp_base_addr = base_addr + RSWITCH2_GPTP_BASE_ADDR;	
+ 	//rsw2->gwca_base_addrs[1] = base_addr + RSWITCH2_GWCA1_BASE_ADDR;
+ 	rsw2->ptp_base_addr = base_addr + RSWITCH2_GPTP_BASE_ADDR;
+ }
+-- 
+2.17.1
+

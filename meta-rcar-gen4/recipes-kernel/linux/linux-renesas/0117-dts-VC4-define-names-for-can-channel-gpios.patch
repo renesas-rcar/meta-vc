@@ -1,0 +1,131 @@
+From 74af90e9aa353d5467881f40588f2b3d3f5ada1a Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Thu, 13 Oct 2022 12:26:28 +0600
+Subject: [PATCH 117/151] dts: VC4: define names for can channel gpios
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ .../dts/renesas/r8a779f0-vc4-ctrl-domain.dts     | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+index 0f22e1ca5ea2..c5d0a299f7bd 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+@@ -21,48 +21,56 @@
+ 		status = "okay";
+ 		gpios = <&fpga4000 FPGA4000_CAN0_EN GPIO_ACTIVE_HIGH>,
+ 			<&fpga4000 FPGA4000_CAN0_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
+ 	};
+ 
+ 	channel1 {
+ 		status = "okay";
+ 		gpios = <&fpga4000 FPGA4000_CAN1_EN GPIO_ACTIVE_HIGH>,
+ 			<&fpga4000 FPGA4000_CAN1_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
+ 	};
+ 
+ 	channel2 {
+ 		status = "okay";
+ 		gpios = <&fpga4000 FPGA4000_CAN2_EN GPIO_ACTIVE_HIGH>,
+ 			<&fpga4000 FPGA4000_CAN2_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
+ 	};
+ 
+ 	channel3 {
+ 		status = "okay";
+ 		gpios = <&fpga4000 FPGA4000_CAN3_EN GPIO_ACTIVE_HIGH>,
+ 			<&fpga4000 FPGA4000_CAN3_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
+ 	};
+ 
+ 	channel4 {
+ 		status = "okay";
+ 		gpios = <&fpga4000 FPGA4000_CAN4_EN GPIO_ACTIVE_HIGH>,
+ 			<&fpga4000 FPGA4000_CAN4_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
+ 	};
+ 
+ 	channel5 {
+ 		status = "okay";
+ 		gpios = <&fpga4000 FPGA4000_CAN5_EN GPIO_ACTIVE_HIGH>,
+ 			<&fpga4000 FPGA4000_CAN5_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
+ 	};
+ 
+ 	channel6 {
+ 		status = "okay";
+ 		gpios = <&fpga4000 FPGA4000_CAN6_EN GPIO_ACTIVE_HIGH>,
+ 			<&fpga4000 FPGA4000_CAN6_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
+ 	};
+ 
+ 	channel7 {
+ 		status = "okay";
+ 		gpios = <&fpga4000 FPGA4000_CAN7_EN GPIO_ACTIVE_HIGH>,
+ 			<&fpga4000 FPGA4000_CAN7_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
+ 	};
+ };
+ 
+@@ -76,48 +84,56 @@
+ 		status = "okay";
+ 		gpios = <&fpga4000 FPGA4000_CAN8_EN GPIO_ACTIVE_HIGH>,
+ 			<&fpga4000 FPGA4000_CAN8_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
+ 	};
+ 
+ 	channel1 {
+ 		status = "okay";
+ 		gpios = <&fpga4000 FPGA4000_CAN9_EN GPIO_ACTIVE_HIGH>,
+ 			<&fpga4000 FPGA4000_CAN9_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
+ 	};
+ 
+ 	channel2 {
+ 		status = "okay";
+ 		gpios = <&fpga4000 FPGA4000_CAN10_EN GPIO_ACTIVE_HIGH>,
+ 			<&fpga4000 FPGA4000_CAN10_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
+ 	};
+ 
+ 	channel3 {
+ 		status = "okay";
+ 		gpios = <&fpga4000 FPGA4000_CAN11_EN GPIO_ACTIVE_HIGH>,
+ 			<&fpga4000 FPGA4000_CAN11_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
+ 	};
+ 
+ 	channel4 {
+ 		status = "okay";
+ 		gpios = <&fpga4000 FPGA4000_CAN12_EN GPIO_ACTIVE_HIGH>,
+ 			<&fpga4000 FPGA4000_CAN12_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
+ 	};
+ 
+ 	channel5 {
+ 		status = "okay";
+ 		gpios = <&fpga4000 FPGA4000_CAN13_EN GPIO_ACTIVE_HIGH>,
+ 			<&fpga4000 FPGA4000_CAN13_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
+ 	};
+ 
+ 	channel6 {
+ 		status = "okay";
+ 		gpios = <&fpga4000 FPGA4000_CAN14_EN GPIO_ACTIVE_HIGH>,
+ 			<&fpga4000 FPGA4000_CAN14_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
+ 	};
+ 
+ 	channel7 {
+ 		status = "okay";
+ 		gpios = <&fpga4000 FPGA4000_CAN15_EN GPIO_ACTIVE_HIGH>,
+ 			<&fpga4000 FPGA4000_CAN15_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
+ 	};
+ };
+ 
+-- 
+2.17.1
+

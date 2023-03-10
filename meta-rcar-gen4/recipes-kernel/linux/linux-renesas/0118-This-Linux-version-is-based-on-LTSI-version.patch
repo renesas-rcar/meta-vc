@@ -1,0 +1,20 @@
+From 306d5ad1559a8c781260c0c723c10b43fa23a6e9 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesass.com>
+Date: Fri, 14 Oct 2022 07:50:13 +0200
+Subject: [PATCH 118/151] This Linux version is based on LTSI version
+
+---
+ localversion.ltsi | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 localversion.ltsi
+
+diff --git a/localversion.ltsi b/localversion.ltsi
+new file mode 100644
+index 000000000000..0aea67c0f963
+--- /dev/null
++++ b/localversion.ltsi
+@@ -0,0 +1 @@
++-ltsi
+-- 
+2.17.1
+

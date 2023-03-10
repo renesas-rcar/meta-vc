@@ -4,9 +4,12 @@
 RENESAS_BSP_URL = "git://git@gitlab.eur.eng.renesas.com:2222/automotive-network-section-ans/vehicle-computer-vc/renesas-linux.git"
 
 BRANCH = "vc4"
+#BRANCH = "210-add-support-for-level-handling-to-intswcd-driver"
 #BRANCH = "205-add-dedicated-phy-for-marvell-m88q3344-engineering-sample"
 SRC_URI = "${RENESAS_BSP_URL};protocol=ssh;nocheckout=1;branch=${BRANCH}"
 
+PATCHES = " \
+    "
 
 #BRANCH = "137-activate-avb-port-2"
 #SRC_URI = "git:///home/cmard/yocto/vc4/renesas-linux-cogent;protocol=file;branch=${BRANCH}"
