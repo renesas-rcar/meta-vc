@@ -1,7 +1,7 @@
 #This files overwites the configuration for Rnesas internal build
 #It includes the proprietary drivers and generates the device tree files for VC4 v1.0 (green PCB)
 
-RENESAS_BSP_URL = "git://git@gitlab.eur.eng.idt.com:2222/automotive-network-section-ans/vehicle-computer-vc/renesas-linux.git"
+RENESAS_BSP_URL = "git://git@gitlab.eur.eng.renesas.com:2222/automotive-network-section-ans/vehicle-computer-vc/renesas-linux.git"
 
 BRANCH = "vc4"
 #BRANCH = "205-add-dedicated-phy-for-marvell-m88q3344-engineering-sample"

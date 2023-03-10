@@ -4,7 +4,7 @@
 # Do not distribute.
 #
 
-RENESAS_RSWITCHTOOL_URL = "git://git@gitlab.eur.eng.idt.com:2222/automotive-network-section-ans/vehicle-computer-vc/vc-tools/rexecd.git"
+RENESAS_RSWITCHTOOL_URL = "git://git@gitlab.eur.eng.renesas.com:2222/automotive-network-section-ans/vehicle-computer-vc/vc-tools/rexecd.git"
 SRC_URI = "${RENESAS_RSWITCHTOOL_URL};protocol=ssh;branch=${BRANCH}"
 BRANCH = "master"
 
