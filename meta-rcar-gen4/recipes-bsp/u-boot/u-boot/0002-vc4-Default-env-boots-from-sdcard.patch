@@ -1,7 +1,7 @@
-From 67f5bb8c7e807065e94bf3aadb323f7a440d632d Mon Sep 17 00:00:00 2001
+From 88b6b39d479e36d9aa955c3f41f878424313a5c5 Mon Sep 17 00:00:00 2001
 From: Vito Colagiacomo <vito.colagiacomo@renesas.com>
 Date: Tue, 4 Jan 2022 16:46:25 +0100
-Subject: [PATCH] vc4: Default env boots from sdcard
+Subject: [PATCH 02/11] vc4: Default env boots from sdcard
 
 ---
  configs/r8a779f0_vc4_defconfig | 2 +-

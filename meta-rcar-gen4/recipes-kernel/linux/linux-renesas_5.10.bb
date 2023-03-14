@@ -2,7 +2,7 @@ DESCRIPTION = "Linux kernel for the R-Car VC4 based board"
 
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/${BPN}:"
+require recipes-kernel/linux/linux-yocto.inc
 
 COMPATIBLE_MACHINE = "vc4"
 
@@ -16,6 +16,9 @@ LINUX_VERSION ?= "5.10.41"
 PV = "${LINUX_VERSION}+git${SRCPV}"
 PR = "r1"
 
+# For generating defconfig
+KCONFIG_MODE = "--alldefconfig"
+KBUILD_DEFCONFIG = "defconfig"
 
 PATCHES = ""
 

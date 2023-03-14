@@ -22,13 +22,13 @@ if [ -f "${T1S_OVERLAY}" ]; then
   cat ~/examples/t1s0.dtbo > /sys/kernel/config/device-tree/overlays/t1s/dtbo
 fi
 
-#temporary fix to configure the interrupt line as falling edge
+#temporary fix to configure the input filter for low level detection 
 #eth0, intp35
-devmem 0xDFED_4b0c 2
-#eth0, intp34
-devmem 0xDFED_4b08 2
-#eth0, intp35
-devmem 0xDFED_4b04 2
+devmem 0xDFED_4b0c 4
+#eth1, intp34
+devmem 0xDFED_4b08 4
+#eth2, intp33
+devmem 0xDFED_4b04 4
 
 
 #load the driver

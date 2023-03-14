@@ -10,6 +10,8 @@ EXTRA_IMAGE_FEATURES += "package-management"
 
 PREFERRED_VERSION_ethtool ?= "5.12"
 
+PREFERRED_VERSION_iproute2 ?= "6.1.0"
+
 # Basic packages
 IMAGE_INSTALL_append = " \
     bash \

@@ -1,4 +1,4 @@
-DESCRIPTION = "RSwitch2 register dump application"
+llDESCRIPTION = "RSwitch2 register dump application"
 SECTION = "rsw2dump"
 LICENSE = "MIT"
 inherit autotools
@@ -26,7 +26,7 @@ EXTRA_OEMAKE = "'CC=${CC}' 'CXX=${CXX}'"
 do_compile() {
         cd ${S}
         export KERNEL_PATH="${TOPDIR}/tmp/work-shared/h3vc/kernel-source/"
-	oe_runmake 
+	oe_runmake
 }
 
 do_install() {
@@ -35,5 +35,3 @@ do_install() {
 }
 
 INSANE_SKIP_${PN} = "ldflags"
-
-
