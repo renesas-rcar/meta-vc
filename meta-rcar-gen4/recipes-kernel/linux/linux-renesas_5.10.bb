@@ -189,7 +189,7 @@ CONFIG = " \
 unset KBUILD_DEFCONFIG
 
 
-# Don't modules we properly do not provide
+# Don't build modules we properly do not provide
 unset KERNEL_MODULE_AUTOLOAD
 unset KERNEL_MODULE_PROBECONF
 

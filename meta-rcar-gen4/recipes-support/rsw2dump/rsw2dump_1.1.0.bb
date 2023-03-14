@@ -7,7 +7,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 DEPENDS = "linux-renesas"
 
 SRC_URI = " \
-    file://rsw2dump${PV}.tar.gz \
+    file://rsw2dump_${PV}.tar.gz \
 "
 
 S = "${WORKDIR}/rsw2dump"
@@ -26,7 +26,7 @@ EXTRA_OEMAKE = "'CC=${CC}' 'CXX=${CXX}'"
 do_compile() {
         cd ${S}
         export KERNEL_PATH="${TOPDIR}/tmp/work-shared/h3vc/kernel-source/"
-	oe_runmake 
+	oe_runmake
 }
 
 do_install() {
@@ -35,5 +35,3 @@ do_install() {
 }
 
 INSANE_SKIP_${PN} = "ldflags"
-
-
