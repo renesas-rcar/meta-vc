@@ -13,7 +13,6 @@ PATCHES = " \
     file://0006-dts-vc4-Fixed-rswitch-entry.patch				\
     file://0007-Remove-debug-messages.patch					\
     file://0008-DTS-VC4-add-VCCQ-node-for-controlling-MMC-IO-voltage.patch	\
-    file://0009-Fix-bauderate-in-defconfig.patch				\
     file://0010-Load-default-environment-via-TFTP-or-from-MMC.patch		\
     file://0011-Reset-the-board-after-environment-import-for-auto-bo.patch	\
 "
