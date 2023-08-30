@@ -1,0 +1,254 @@
+From a3e03e0ac65fa639fbae8be97d8dac920c22dce0 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Wed, 18 May 2022 00:34:08 +0300
+Subject: [PATCH 45/92] renesas-vc4-fpga4000: add CANFD signals control
+
+This turns fpga4000 driver into gpio-controller, so signals connected to
+CANFD transciever signals could be controlled using kernel gpio APIs.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts  |  6 +-
+ drivers/mfd/renesas-vc4-fpga4000.c            | 74 ++++++++++++++++++-
+ .../dt-bindings/mfd/renesas-vc4-fpga4000.h    | 74 +++++++++++++++++++
+ 3 files changed, 152 insertions(+), 2 deletions(-)
+ create mode 100644 include/dt-bindings/mfd/renesas-vc4-fpga4000.h
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+index 97be8a1795bc..8663db10f7be 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+@@ -9,6 +9,7 @@
+ 
+ #include "r8a779f0.dtsi"
+ #include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/mfd/renesas-vc4-fpga4000.h>
+ 
+ / {
+ 	model = "Renesas VC4 board based on r8a779f0";
+@@ -159,9 +160,12 @@ eeprom@50 {
+ 		pagesize = <8>;
+ 	};
+ 
+-	fpga4000@71 {
++	fpga4000: fpga4000@71 {
+ 		compatible = "renesas,vc4-fpga4000";
+ 		reg = <0x71>;
++
++		gpio-controller;
++		#gpio-cells = <2>;
+ 	};
+ };
+ 
+diff --git a/drivers/mfd/renesas-vc4-fpga4000.c b/drivers/mfd/renesas-vc4-fpga4000.c
+index 89859c150112..4b3319ce31d3 100644
+--- a/drivers/mfd/renesas-vc4-fpga4000.c
++++ b/drivers/mfd/renesas-vc4-fpga4000.c
+@@ -1,5 +1,6 @@
+ // SPDX-License-Identifier: GPL-2.0
+ 
++#include <linux/gpio/driver.h>
+ #include <linux/i2c.h>
+ #include <linux/kallsyms.h>
+ #include <linux/module.h>
+@@ -32,16 +33,28 @@
+ #define REG_POWER_EN_EXP_BRD		BIT(1)
+ #define REG_POWER_EN_GLOBAL		BIT(0)
+ 
++#define REG_CAN_GPIO_BASE	0x0040
++#define REG_CAN_GPIO_NR		8
++
++#define REG_MAX			0x0047
++
++#define CAN_GPIO_BASE		0
++#define CAN_GPIO_NR		64
++
++#define TOTAL_GPIO_NR		CAN_GPIO_NR
++
+ /* ranges, in first..last form, that driver can read */
+ static const struct regmap_range readable_ranges[] = {
+ 	regmap_reg_range(REG_PRODUCT,
+ 			 REG_FPGAVERSION + REG_FPGAVERSION_SIZE - 1),
+ 	regmap_reg_range(REG_DIPSW, REG_POWER_EN),
++	regmap_reg_range(REG_CAN_GPIO_BASE, REG_CAN_GPIO_BASE + REG_CAN_GPIO_NR - 1),
+ };
+ 
+ /* ranges, in first..last form, that driver can write */
+ static const struct regmap_range writeable_ranges[] = {
+ 	regmap_reg_range(REG_RESET, REG_POWER_EN),
++	regmap_reg_range(REG_CAN_GPIO_BASE, REG_CAN_GPIO_BASE + REG_CAN_GPIO_NR - 1),
+ };
+ 
+ /* ranges, in first..last form, that hardware can change at runtime,
+@@ -68,7 +81,7 @@ static const struct regmap_access_table fpga4000_volatile_table = {
+ static const struct regmap_config fpga4000_regmap_config = {
+ 	.reg_bits = 16,
+ 	.val_bits = 8,
+-	.max_register = 0x0028,
++	.max_register = REG_MAX,
+ 	.rd_table = &fpga4000_readable_table,
+ 	.wr_table = &fpga4000_writeable_table,
+ 	.volatile_table = &fpga4000_volatile_table,
+@@ -81,6 +94,8 @@ struct fpga4000 {
+ 	uint8_t version[REG_FPGAVERSION_SIZE];
+ 
+ 	struct notifier_block restart_nb;
++
++	struct gpio_chip gpio;
+ };
+ 
+ static int fpga4000_restart_handler(struct notifier_block *nb,
+@@ -122,6 +137,47 @@ static void fpga4000_unsetup_poweroff(struct fpga4000 *fpga)
+ 	}
+ }
+ 
++static int gpio_get_direction(struct gpio_chip *gc, unsigned int offset)
++{
++	if (offset >= CAN_GPIO_BASE && offset <= CAN_GPIO_BASE + CAN_GPIO_NR - 1)
++		return GPIO_LINE_DIRECTION_OUT;
++
++	return -EINVAL;
++}
++
++static int gpio_get(struct gpio_chip *gc, unsigned int offset)
++{
++	struct fpga4000 *fpga = container_of(gc, struct fpga4000, gpio);
++	unsigned int reg, mask, val;
++	int ret;
++
++	if (offset >= CAN_GPIO_BASE && offset <= CAN_GPIO_BASE + CAN_GPIO_NR - 1) {
++		reg = REG_CAN_GPIO_BASE + (offset / 8);
++		mask = 1 << (offset % 8);
++
++		ret = regmap_read(fpga->regmap, reg, &val);
++		if (ret < 0)
++			return ret;
++
++		return !!(val & mask);
++	}
++
++	return -EINVAL;
++}
++
++static void gpio_set(struct gpio_chip *gc, unsigned int offset, int value)
++{
++	struct fpga4000 *fpga = container_of(gc, struct fpga4000, gpio);
++	unsigned int reg, mask;
++
++	if (offset >= CAN_GPIO_BASE && offset <= CAN_GPIO_BASE + CAN_GPIO_NR - 1) {
++		reg = REG_CAN_GPIO_BASE + (offset / 8);
++		mask = 1 << (offset % 8);
++
++		regmap_update_bits(fpga->regmap, reg, mask, value ? mask : 0);
++	}
++}
++
+ #define PROD_VER_ATTR(name, size)				\
+ static ssize_t name##_show(struct device *dev,			\
+ 		struct device_attribute *attr, char *buf)	\
+@@ -292,6 +348,22 @@ static int fpga4000_probe(struct i2c_client *client,
+ 	}
+ 	dev_info_with_dump(dev, "version", fpga->version, REG_FPGAVERSION_SIZE);
+ 
++	fpga->gpio.label = client->name;
++	fpga->gpio.parent = dev;
++	fpga->gpio.owner = THIS_MODULE;
++	fpga->gpio.base = -1;
++	fpga->gpio.ngpio = TOTAL_GPIO_NR;
++	fpga->gpio.can_sleep = true;
++	fpga->gpio.get_direction = gpio_get_direction;
++	fpga->gpio.get = gpio_get;
++	fpga->gpio.set = gpio_set;
++
++	ret = devm_gpiochip_add_data(dev, &fpga->gpio, NULL);
++	if (ret) {
++		dev_err(dev, "register gpiochip: %pe\n", ERR_PTR(ret));
++		return ret;
++	}
++
+ 	fpga->restart_nb.notifier_call = fpga4000_restart_handler;
+ 	fpga->restart_nb.priority = 200;
+ 	ret = register_restart_handler(&fpga->restart_nb);
+diff --git a/include/dt-bindings/mfd/renesas-vc4-fpga4000.h b/include/dt-bindings/mfd/renesas-vc4-fpga4000.h
+new file mode 100644
+index 000000000000..0603d04f2102
+--- /dev/null
++++ b/include/dt-bindings/mfd/renesas-vc4-fpga4000.h
+@@ -0,0 +1,74 @@
++#ifndef __DT_BINDINGS_RENESAS_VC4_FPGA4000_H__
++#define __DT_BINDINGS_RENESAS_VC4_FPGA4000_H__
++
++/* CAN transcievers GPIOs - 64 of these these are sequential bits in regs 0x40..0x47 */
++
++#define FPGA4000_CAN0_TERMZ		0
++#define FPGA4000_CAN1_TERMZ		1
++#define FPGA4000_CAN2_TERMZ		2
++#define FPGA4000_CAN3_TERMZ		3
++#define FPGA4000_CAN4_TERMZ		4
++#define FPGA4000_CAN5_TERMZ		5
++#define FPGA4000_CAN6_TERMZ		6
++#define FPGA4000_CAN7_TERMZ		7
++#define FPGA4000_CAN8_TERMZ		8
++#define FPGA4000_CAN9_TERMZ		9
++#define FPGA4000_CAN10_TERMZ		10
++#define FPGA4000_CAN11_TERMZ		11
++#define FPGA4000_CAN12_TERMZ		12
++#define FPGA4000_CAN13_TERMZ		13
++#define FPGA4000_CAN14_TERMZ		14
++#define FPGA4000_CAN15_TERMZ		15
++
++#define FPGA4000_CAN0_EN		16
++#define FPGA4000_CAN1_EN		17
++#define FPGA4000_CAN2_EN		18
++#define FPGA4000_CAN3_EN		19
++#define FPGA4000_CAN4_EN		20
++#define FPGA4000_CAN5_EN		21
++#define FPGA4000_CAN6_EN		22
++#define FPGA4000_CAN7_EN		23
++#define FPGA4000_CAN8_EN		24
++#define FPGA4000_CAN9_EN		25
++#define FPGA4000_CAN10_EN		26
++#define FPGA4000_CAN11_EN		27
++#define FPGA4000_CAN12_EN		28
++#define FPGA4000_CAN13_EN		29
++#define FPGA4000_CAN14_EN		30
++#define FPGA4000_CAN15_EN		31
++
++#define FPGA4000_CAN0_STBZ		32
++#define FPGA4000_CAN1_STBZ		33
++#define FPGA4000_CAN2_STBZ		34
++#define FPGA4000_CAN3_STBZ		35
++#define FPGA4000_CAN4_STBZ		36
++#define FPGA4000_CAN5_STBZ		37
++#define FPGA4000_CAN6_STBZ		38
++#define FPGA4000_CAN7_STBZ		39
++#define FPGA4000_CAN8_STBZ		40
++#define FPGA4000_CAN9_STBZ		41
++#define FPGA4000_CAN10_STBZ		42
++#define FPGA4000_CAN11_STBZ		43
++#define FPGA4000_CAN12_STBZ		44
++#define FPGA4000_CAN13_STBZ		45
++#define FPGA4000_CAN14_STBZ		46
++#define FPGA4000_CAN15_STBZ		47
++
++#define FPGA4000_CAN0_WAKE		48
++#define FPGA4000_CAN1_WAKE		49
++#define FPGA4000_CAN2_WAKE		50
++#define FPGA4000_CAN3_WAKE		51
++#define FPGA4000_CAN4_WAKE		52
++#define FPGA4000_CAN5_WAKE		53
++#define FPGA4000_CAN6_WAKE		54
++#define FPGA4000_CAN7_WAKE		55
++#define FPGA4000_CAN8_WAKE		56
++#define FPGA4000_CAN9_WAKE		57
++#define FPGA4000_CAN10_WAKE		58
++#define FPGA4000_CAN11_WAKE		59
++#define FPGA4000_CAN12_WAKE		60
++#define FPGA4000_CAN13_WAKE		61
++#define FPGA4000_CAN14_WAKE		62
++#define FPGA4000_CAN15_WAKE		63
++
++#endif /* __DT_BINDINGS_RENESAS_VC4_FPGA4000_H__ */
+-- 
+2.30.2
+

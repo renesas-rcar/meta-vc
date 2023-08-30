@@ -1,0 +1,104 @@
+From 76dc214871dbc1a9ff2daa7cebcc0a21165bebac Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Fri, 12 Aug 2022 21:03:19 +0300
+Subject: [PATCH 49/92] arm64: dts: renesas: r8a779f0: add MSPI devices
+
+For now, without interrupts.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ .../dts/renesas/r8a779f0-ctrl-domain.dtsi     | 78 +++++++++++++++++++
+ 1 file changed, 78 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
+index fdd6bd808da2..9344f0410910 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
+@@ -228,6 +228,84 @@ intswcd: intswcd@d8f11000 {
+ 		interrupt-controller;
+ 		#interrupt-cells = <1>;
+ 	};
++
++	mspi0: spi@dfc76000 {
++		compatible = "renesas,mspi-r8a779f0";
++		reg = <0 0xdfc76000 0 0x2000>;
++		num-cs = <8>;
++		clocks = <&cpg CPG_CD_MOD 400>,
++			 <&cpg CPG_CORE R8A779F0_CLK_CD_MSPI>;
++		clock-names = "fck", "spi";
++		power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
++	mspi1: spi@dfc7e000 {
++		compatible = "renesas,mspi-r8a779f0";
++		reg = <0 0xdfc7e000 0 0x2000>;
++		num-cs = <8>;
++		clocks = <&cpg CPG_CD_MOD 401>,
++			 <&cpg CPG_CORE R8A779F0_CLK_CD_MSPI>;
++		clock-names = "fck", "spi";
++		power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
++	mspi2: spi@dfd80000 {
++		compatible = "renesas,mspi-r8a779f0";
++		reg = <0 0xdfd80000 0 0x2000>;
++		num-cs = <8>;
++		clocks = <&cpg CPG_CD_MOD 402>,
++			 <&cpg CPG_CORE R8A779F0_CLK_CD_MSPI>;
++		clock-names = "fck", "spi";
++		power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
++	mspi3: spi@dfcc0000 {
++		compatible = "renesas,mspi-r8a779f0";
++		reg = <0 0xdfcc0000 0 0x2000>;
++		num-cs = <8>;
++		clocks = <&cpg CPG_CD_MOD 403>,
++			 <&cpg CPG_CORE R8A779F0_CLK_CD_MSPI>;
++		clock-names = "fck", "spi";
++		power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
++	mspi4: spi@dfd82000 {
++		compatible = "renesas,mspi-r8a779f0";
++		reg = <0 0xdfd82000 0 0x2000>;
++		num-cs = <8>;
++		clocks = <&cpg CPG_CD_MOD 404>,
++			 <&cpg CPG_CORE R8A779F0_CLK_CD_MSPI>;
++		clock-names = "fck", "spi";
++		power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
++	mspi5: spi@dfcc4000 {
++		compatible = "renesas,mspi-r8a779f0";
++		reg = <0 0xdfcc4000 0 0x2000>;
++		num-cs = <4>;
++		clocks = <&cpg CPG_CD_MOD 405>,
++			 <&cpg CPG_CORE R8A779F0_CLK_CD_MSPI>;
++		clock-names = "fck", "spi";
++		power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
+ };
+ 
+ /* To enable control comain in cpg driver, need to define second reg range.
+-- 
+2.30.2
+

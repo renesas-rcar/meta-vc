@@ -1,0 +1,28 @@
+From 367a95f14c941adeeb91a4644a843f2e65223a5e Mon Sep 17 00:00:00 2001
+From: Hai Pham <hai.pham.ud@renesas.com>
+Date: Wed, 8 Dec 2021 11:28:38 +0700
+Subject: [PATCH 08/92] dt-bindings: rpc: renesas-rpc-if: Add support for the
+ R8A779F0 RPC-IF
+
+Add bindings for the R8A779F0 (R-Car S4)
+
+Signed-off-by: Hai Pham <hai.pham.ud@renesas.com>
+---
+ .../devicetree/bindings/memory-controllers/renesas,rpc-if.yaml   | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Documentation/devicetree/bindings/memory-controllers/renesas,rpc-if.yaml b/Documentation/devicetree/bindings/memory-controllers/renesas,rpc-if.yaml
+index 5015074326ab..764d99297e80 100644
+--- a/Documentation/devicetree/bindings/memory-controllers/renesas,rpc-if.yaml
++++ b/Documentation/devicetree/bindings/memory-controllers/renesas,rpc-if.yaml
+@@ -33,6 +33,7 @@ properties:
+       - const: renesas,rcar-gen3-rpc-if   # a generic R-Car gen3 device
+     items:
+       - enum:
++          - renesas,r8a779f0-rpc-if       # R-Car S4
+           - renesas,r8a779g0-rpc-if       # R-Car V4H
+       - const: renesas,rcar-gen4-rpc-if   # a generic R-Car gen4 device
+ 
+-- 
+2.30.2
+

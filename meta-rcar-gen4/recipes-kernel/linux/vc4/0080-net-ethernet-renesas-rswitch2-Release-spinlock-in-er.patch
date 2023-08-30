@@ -1,0 +1,30 @@
+From c76bcee840c1df98a2bcd0b27e9c9ac4770ee122 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesas.com>
+Date: Wed, 14 Jun 2023 14:56:08 +0200
+Subject: [PATCH 80/92] net: ethernet: renesas: rswitch2: Release spinlock in
+ error case
+
+---
+ drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c b/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
+index f02f20f275e9..1fd25354743b 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
++++ b/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
+@@ -363,9 +363,10 @@ static void rswitch2_phy_state_change(struct net_device *ndev)
+ 				break;
+ 
+ 			default:
+-				rsw2_err(MSG_GEN,, "Unsupported Speed\n");
++				rsw2_err(MSG_GEN, "Unsupported Speed\n");
++				spin_unlock_irqrestore(&rsw2->lock, flags);
+ 				return;
+-			}
++		}
+ 
+ 		rsw2_notice(MSG_GEN, "Link change: %s uses %s at %d Mbps\n", ndev->name, phy_modes(phydev->interface), phydev->speed);
+ 
+-- 
+2.30.2
+

@@ -7,30 +7,22 @@
 // rmmod lan865x_mod
 //
 //2. Remove overlay if added before
-// rmdir /sys/kernel/config/device-tree/overlays/t1s
+// rmdir /sys/kernel/config/device-tree/overlays/t1s0
 //
 //3. compile this file
 // dtc -I dts -O dtb -o t1s0.dtbo t1s0.dtso
 //
 //4. create a new overlay place (only usable once)
-// mkdir /sys/kernel/config/device-tree/overlays/t1s
+// mkdir /sys/kernel/config/device-tree/overlays/t1s0
 //
 //5. make the overlay active
-// cat t1s0.dtbo > /sys/kernel/config/device-tree/overlays/t1s/dtbo
+// cat t1s0.dtbo > /sys/kernel/config/device-tree/overlays/t1s0/dtbo
 //
 //6. Load the t1s driver (lan865x_mod.ko)
 // insmod/modprobe
 
-
-&mspi0 {
-	status = "okay";
-
-	pinctrl-0 = <&mspi0_pins>;
-	pinctrl-names = "default";
-
-	t1s0 {
-		plca-enable = /bits/ 8 <1>;
-		plca-node-id = /bits/ 8 <1>; /* PLCA node id range: 0 to 254 */
-		plca-node-count = /bits/ 8 <8>; /* PLCA node count range: 1 to 255 */
-	};
+&t1s0 {
+	plca-enable = /bits/ 8 <1>;
+	plca-node-id = /bits/ 8 <1>; /* PLCA node id range: 0 to 254 */
+	plca-node-count = /bits/ 8 <8>; /* PLCA node count range: 1 to 255 */
 };

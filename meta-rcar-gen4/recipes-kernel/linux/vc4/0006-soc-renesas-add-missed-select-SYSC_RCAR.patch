@@ -1,0 +1,37 @@
+From 93a036e9d30b62b00af6959fcd3f64087f220351 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Mon, 24 Jan 2022 20:29:01 +0300
+Subject: [PATCH 06/92] soc: renesas: add missed "select SYSC_RCAR"
+
+Missed "select SYSC_RCAR" for SYSC_R8A779A0 and SYSC_R8A779F0 are
+causing renesas-sysc driver to be not compiled if support for other
+r-car SoCs is disabled.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/soc/renesas/Kconfig | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/soc/renesas/Kconfig b/drivers/soc/renesas/Kconfig
+index b2fad9cbae47..e09c020177cd 100644
+--- a/drivers/soc/renesas/Kconfig
++++ b/drivers/soc/renesas/Kconfig
+@@ -370,12 +370,15 @@ config SYSC_R8A77970
+ 
+ config SYSC_R8A779A0
+ 	bool "System Controller support for R-Car V3U" if COMPILE_TEST
++	select SYSC_RCAR
+ 
+ config SYSC_R8A779F0
+        bool "System Controller support for R-Car S4" if COMPILE_TEST
++       select SYSC_RCAR
+ 
+ config SYSC_R8A779G0
+ 	bool "System Controller support for R-Car V4H" if COMPILE_TEST
++	select SYSC_RCAR
+ 
+ config SYSC_RMOBILE
+ 	bool "System Controller support for R-Mobile" if COMPILE_TEST
+-- 
+2.30.2
+

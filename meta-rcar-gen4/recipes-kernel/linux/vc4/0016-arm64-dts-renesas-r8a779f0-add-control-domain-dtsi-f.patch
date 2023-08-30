@@ -1,0 +1,84 @@
+From 8506cc93c0f41fbac6464f08d61da3f19cef0b64 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Mon, 22 May 2023 11:51:30 +0600
+Subject: [PATCH 16/92] arm64: dts: renesas: r8a779f0: add control domain dtsi
+ file
+
+The control domain dtsi file defines settings for peripherals that
+belong to the r8a779f0 control domain, and are accessible from Linux
+only if external software configures permissions for that.
+
+Currently, this defines:
+- nodes for gpio[4567],
+- modification for pfc node needed to access control domain clocks.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ .../dts/renesas/r8a779f0-ctrl-domain.dtsi     | 55 +++++++++++++++++++
+ 1 file changed, 55 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
+new file mode 100644
+index 000000000000..9c952cdec9e1
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
+@@ -0,0 +1,55 @@
++&soc {
++	gpio4: gpio@dfd90180 {
++		compatible = "renesas,gpio-r8a779f0";
++		reg = <0 0xdfd90180 0 0x54>;
++		#gpio-cells = <2>;
++		gpio-controller;
++		gpio-ranges = <&pfc 0 128 31>;
++		clocks = <&cpg CPG_MOD 915>;
++		power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++		resets = <&cpg 915>;
++	};
++
++	gpio5: gpio@dfd90980 {
++		compatible = "renesas,gpio-r8a779f0";
++		reg = <0 0xdfd90980 0 0x54>;
++		#gpio-cells = <2>;
++		gpio-controller;
++		gpio-ranges = <&pfc 0 160 20>;
++		clocks = <&cpg CPG_MOD 915>;
++		power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++		resets = <&cpg 915>;
++	};
++
++	gpio6: gpio@dfd91180 {
++		compatible = "renesas,gpio-r8a779f0";
++		reg = <0 0xdfd91180 0 0x54>;
++		#gpio-cells = <2>;
++		gpio-controller;
++		gpio-ranges = <&pfc 0 192 32>;
++		clocks = <&cpg CPG_MOD 915>;
++		power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++		resets = <&cpg 915>;
++	};
++
++	gpio7: gpio@dfd91980 {
++		compatible = "renesas,gpio-r8a779f0";
++		reg = <0 0xdfd91980 0 0x54>;
++		#gpio-cells = <2>;
++		gpio-controller;
++		gpio-ranges = <&pfc 0 224 32>;
++		clocks = <&cpg CPG_MOD 915>;
++		power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++		resets = <&cpg 915>;
++	};
++};
++
++/* To enable control comain in cpg driver, need to define second reg range.
++ *
++ * DTS syntax does not allow property value appending. Thus have to duplicate
++ * the original value and add the second range.
++ */
++&cpg {
++	reg = <0 0xe6150000 0 0x4000>,
++	      <0 0xdf980000 0 0x10000>;
++};
+-- 
+2.30.2
+

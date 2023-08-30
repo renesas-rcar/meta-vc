@@ -1,0 +1,457 @@
+From a83e2d98b9bab3e28d5bad6b2a2cf04d61533869 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Wed, 18 May 2022 00:38:58 +0300
+Subject: [PATCH 47/92] arm64: dts: renesas: vc4: add CANFD devices
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ .../dts/renesas/r8a779f0-ctrl-domain.dtsi     | 156 +++++++++++++
+ .../dts/renesas/r8a779f0-vc4-ctrl-domain.dts  | 212 ++++++++++++++++++
+ .../renesas/r8a779f0-vc4V1-ctrl-domain.dts    |  30 +++
+ 3 files changed, 398 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
+index e7cb5af8484b..fdd6bd808da2 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
+@@ -1,6 +1,162 @@
+ #include <dt-bindings/interrupt-controller/renesas-intswcd-r8a779f0.h>
+ 
+ &soc {
++	canfd0: can@dff50000 {
++		compatible = "renesas,r8a779f0-canfd";
++		reg = <0 0xdff50000 0 0x20000>;
++		interrupt-parent = <&intswcd>;
++		interrupts = <R8A779F0_INTSWCD_INTRCANGERR0>,
++			     <R8A779F0_INTSWCD_INTRCANGRECC0>,
++			     <R8A779F0_INTSWCD_INTRCAN0REC>,
++			     <R8A779F0_INTSWCD_INTRCAN0TRX>,
++			     <R8A779F0_INTSWCD_INTRCAN0ERR>,
++			     <R8A779F0_INTSWCD_INTRCAN1REC>,
++			     <R8A779F0_INTSWCD_INTRCAN1TRX>,
++			     <R8A779F0_INTSWCD_INTRCAN1ERR>,
++			     <R8A779F0_INTSWCD_INTRCAN2REC>,
++			     <R8A779F0_INTSWCD_INTRCAN2TRX>,
++			     <R8A779F0_INTSWCD_INTRCAN2ERR>,
++			     <R8A779F0_INTSWCD_INTRCAN3REC>,
++			     <R8A779F0_INTSWCD_INTRCAN3TRX>,
++			     <R8A779F0_INTSWCD_INTRCAN3ERR>,
++			     <R8A779F0_INTSWCD_INTRCAN4REC>,
++			     <R8A779F0_INTSWCD_INTRCAN4TRX>,
++			     <R8A779F0_INTSWCD_INTRCAN4ERR>,
++			     <R8A779F0_INTSWCD_INTRCAN5REC>,
++			     <R8A779F0_INTSWCD_INTRCAN5TRX>,
++			     <R8A779F0_INTSWCD_INTRCAN5ERR>,
++			     <R8A779F0_INTSWCD_INTRCAN6REC>,
++			     <R8A779F0_INTSWCD_INTRCAN6TRX>,
++			     <R8A779F0_INTSWCD_INTRCAN6ERR>,
++			     <R8A779F0_INTSWCD_INTRCAN7REC>,
++			     <R8A779F0_INTSWCD_INTRCAN7TRX>,
++			     <R8A779F0_INTSWCD_INTRCAN7ERR>;
++		interrupt-names = "g_err", "g_recc",
++				  "ch0_rec", "ch0_trx", "ch0_err",
++				  "ch1_rec", "ch1_trx", "ch1_err",
++				  "ch2_rec", "ch2_trx", "ch2_err",
++				  "ch3_rec", "ch3_trx", "ch3_err",
++				  "ch4_rec", "ch4_trx", "ch4_err",
++				  "ch5_rec", "ch5_trx", "ch5_err",
++				  "ch6_rec", "ch6_trx", "ch6_err",
++				  "ch7_rec", "ch7_trx", "ch7_err";
++		clocks = <&cpg CPG_CD_MOD 0>,
++			 <&cpg CPG_CORE R8A779F0_CLK_CD_CANFD>;
++		clock-names = "fck", "can_clk";
++		power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++		status = "disabled";
++
++		channel0 {
++			status = "disabled";
++		};
++
++		channel1 {
++			status = "disabled";
++		};
++
++		channel2 {
++			status = "disabled";
++		};
++
++		channel3 {
++			status = "disabled";
++		};
++
++		channel4 {
++			status = "disabled";
++		};
++
++		channel5 {
++			status = "disabled";
++		};
++
++		channel6 {
++			status = "disabled";
++		};
++
++		channel7 {
++			status = "disabled";
++		};
++	};
++
++	canfd1: can@dfd00000 {
++		compatible = "renesas,r8a779f0-canfd";
++		reg = <0 0xdfd00000 0 0x20000>;
++		interrupt-parent = <&intswcd>;
++		interrupts = <R8A779F0_INTSWCD_INTRCANGERR1>,
++			     <R8A779F0_INTSWCD_INTRCANGRECC1>,
++			     <R8A779F0_INTSWCD_INTRCAN8REC>,
++			     <R8A779F0_INTSWCD_INTRCAN8TRX>,
++			     <R8A779F0_INTSWCD_INTRCAN8ERR>,
++			     <R8A779F0_INTSWCD_INTRCAN9REC>,
++			     <R8A779F0_INTSWCD_INTRCAN9TRX>,
++			     <R8A779F0_INTSWCD_INTRCAN9ERR>,
++			     <R8A779F0_INTSWCD_INTRCAN10REC>,
++			     <R8A779F0_INTSWCD_INTRCAN10TRX>,
++			     <R8A779F0_INTSWCD_INTRCAN10ERR>,
++			     <R8A779F0_INTSWCD_INTRCAN11REC>,
++			     <R8A779F0_INTSWCD_INTRCAN11TRX>,
++			     <R8A779F0_INTSWCD_INTRCAN11ERR>,
++			     <R8A779F0_INTSWCD_INTRCAN12REC>,
++			     <R8A779F0_INTSWCD_INTRCAN12TRX>,
++			     <R8A779F0_INTSWCD_INTRCAN12ERR>,
++			     <R8A779F0_INTSWCD_INTRCAN13REC>,
++			     <R8A779F0_INTSWCD_INTRCAN13TRX>,
++			     <R8A779F0_INTSWCD_INTRCAN13ERR>,
++			     <R8A779F0_INTSWCD_INTRCAN14REC>,
++			     <R8A779F0_INTSWCD_INTRCAN14TRX>,
++			     <R8A779F0_INTSWCD_INTRCAN14ERR>,
++			     <R8A779F0_INTSWCD_INTRCAN15REC>,
++			     <R8A779F0_INTSWCD_INTRCAN15TRX>,
++			     <R8A779F0_INTSWCD_INTRCAN15ERR>;
++		interrupt-names = "g_err", "g_recc",
++				  "ch0_rec", "ch0_trx", "ch0_err",
++				  "ch1_rec", "ch1_trx", "ch1_err",
++				  "ch2_rec", "ch2_trx", "ch2_err",
++				  "ch3_rec", "ch3_trx", "ch3_err",
++				  "ch4_rec", "ch4_trx", "ch4_err",
++				  "ch5_rec", "ch5_trx", "ch5_err",
++				  "ch6_rec", "ch6_trx", "ch6_err",
++				  "ch7_rec", "ch7_trx", "ch7_err";
++		clocks = <&cpg CPG_CD_MOD 1>,
++			 <&cpg CPG_CORE R8A779F0_CLK_CD_CANFD>;
++		clock-names = "fck", "can_clk";
++		power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++		status = "disabled";
++
++		channel0 {
++			status = "disabled";
++		};
++
++		channel1 {
++			status = "disabled";
++		};
++
++		channel2 {
++			status = "disabled";
++		};
++
++		channel3 {
++			status = "disabled";
++		};
++
++		channel4 {
++			status = "disabled";
++		};
++
++		channel5 {
++			status = "disabled";
++		};
++
++		channel6 {
++			status = "disabled";
++		};
++
++		channel7 {
++			status = "disabled";
++		};
++	};
++
+ 	etnb0: ethernet@df0a2000 {
+ 		compatible = "renesas,etheravb-r8a779f0";
+ 		reg = <0 0xdf0a2000 0 0x800>;
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+index 8c96fbfcba93..551a956d0c4e 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+@@ -12,6 +12,132 @@
+ #include "r8a779f0-vc4.dts"
+ #include "r8a779f0-ctrl-domain.dtsi"
+ 
++&canfd0 {
++	status = "okay";
++
++	pinctrl-0 = <&canfd0_pins>;
++	pinctrl-names = "default";
++
++	channel0 {
++		status = "okay";
++		gpios = <&fpga4000 FPGA4000_CAN0_EN GPIO_ACTIVE_HIGH>,
++			<&fpga4000 FPGA4000_CAN0_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
++	};
++
++	channel1 {
++		status = "okay";
++		gpios = <&fpga4000 FPGA4000_CAN1_EN GPIO_ACTIVE_HIGH>,
++			<&fpga4000 FPGA4000_CAN1_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
++	};
++
++	channel2 {
++		status = "okay";
++		gpios = <&fpga4000 FPGA4000_CAN2_EN GPIO_ACTIVE_HIGH>,
++			<&fpga4000 FPGA4000_CAN2_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
++	};
++
++	channel3 {
++		status = "okay";
++		gpios = <&fpga4000 FPGA4000_CAN3_EN GPIO_ACTIVE_HIGH>,
++			<&fpga4000 FPGA4000_CAN3_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
++	};
++
++	channel4 {
++		status = "okay";
++		gpios = <&fpga4000 FPGA4000_CAN4_EN GPIO_ACTIVE_HIGH>,
++			<&fpga4000 FPGA4000_CAN4_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
++	};
++
++	channel5 {
++		status = "okay";
++		gpios = <&fpga4000 FPGA4000_CAN5_EN GPIO_ACTIVE_HIGH>,
++			<&fpga4000 FPGA4000_CAN5_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
++	};
++
++	channel6 {
++		status = "okay";
++		gpios = <&fpga4000 FPGA4000_CAN6_EN GPIO_ACTIVE_HIGH>,
++			<&fpga4000 FPGA4000_CAN6_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
++	};
++
++	channel7 {
++		status = "okay";
++		gpios = <&fpga4000 FPGA4000_CAN7_EN GPIO_ACTIVE_HIGH>,
++			<&fpga4000 FPGA4000_CAN7_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
++	};
++};
++
++&canfd1 {
++	status = "okay";
++
++	pinctrl-0 = <&canfd1_pins>;
++	pinctrl-names = "default";
++
++	channel0 {
++		status = "okay";
++		gpios = <&fpga4000 FPGA4000_CAN8_EN GPIO_ACTIVE_HIGH>,
++			<&fpga4000 FPGA4000_CAN8_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
++	};
++
++	channel1 {
++		status = "okay";
++		gpios = <&fpga4000 FPGA4000_CAN9_EN GPIO_ACTIVE_HIGH>,
++			<&fpga4000 FPGA4000_CAN9_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
++	};
++
++	channel2 {
++		status = "okay";
++		gpios = <&fpga4000 FPGA4000_CAN10_EN GPIO_ACTIVE_HIGH>,
++			<&fpga4000 FPGA4000_CAN10_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
++	};
++
++	channel3 {
++		status = "okay";
++		gpios = <&fpga4000 FPGA4000_CAN11_EN GPIO_ACTIVE_HIGH>,
++			<&fpga4000 FPGA4000_CAN11_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
++	};
++
++	channel4 {
++		status = "okay";
++		gpios = <&fpga4000 FPGA4000_CAN12_EN GPIO_ACTIVE_HIGH>,
++			<&fpga4000 FPGA4000_CAN12_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
++	};
++
++	channel5 {
++		status = "okay";
++		gpios = <&fpga4000 FPGA4000_CAN13_EN GPIO_ACTIVE_HIGH>,
++			<&fpga4000 FPGA4000_CAN13_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
++	};
++
++	channel6 {
++		status = "okay";
++		gpios = <&fpga4000 FPGA4000_CAN14_EN GPIO_ACTIVE_HIGH>,
++			<&fpga4000 FPGA4000_CAN14_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
++	};
++
++	channel7 {
++		status = "okay";
++		gpios = <&fpga4000 FPGA4000_CAN15_EN GPIO_ACTIVE_HIGH>,
++			<&fpga4000 FPGA4000_CAN15_STBZ GPIO_ACTIVE_HIGH>;
++		gpio-names = "EN", "STB_Z";
++	};
++};
++
+ &etnb0 {
+ 	/* keep it disabled until driver support is implemented */
+ 	status = "disabled";
+@@ -33,6 +159,22 @@ etnb0_100base_t1_phy: ethernet-phy@2 {
+ 	};
+ };
+ 
++&gpio6 {
++	sel-can-sent {
++		gpio-hog;
++		gpios = <21 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "SEL-CAN-SENT";
++	};
++
++	sel-can-flxray {
++		gpio-hog;
++		gpios = <22 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "SEL-CAN-FLXRAY";
++	};
++};
++
+ &gpio5 {
+ 	etnb0-mux {
+ 		gpio-hog;
+@@ -43,6 +185,76 @@ etnb0-mux {
+ };
+ 
+ &pfc {
++	canfd0_pins: canfd0 {
++		channel0 {
++			groups = "canfd0_data";
++			function = "canfd0";
++		};
++		channel1 {
++			groups = "canfd1_data";
++			function = "canfd1";
++		};
++		channel2 {
++			groups = "canfd2_data";
++			function = "canfd2";
++		};
++		channel3 {
++			groups = "canfd3_data";
++			function = "canfd3";
++		};
++		channel4 {
++			groups = "canfd4_data";
++			function = "canfd4";
++		};
++		channel5 {
++			groups = "canfd5_data";
++			function = "canfd5";
++		};
++		channel6 {
++			groups = "canfd6_data";
++			function = "canfd6";
++		};
++		channel7 {
++			groups = "canfd7_data";
++			function = "canfd7";
++		};
++	};
++
++	canfd1_pins: canfd1 {
++		channel8 {
++			groups = "canfd8_data";
++			function = "canfd8";
++		};
++		channel9 {
++			groups = "canfd9_data";
++			function = "canfd9";
++		};
++		channel10 {
++			groups = "canfd10_data";
++			function = "canfd10";
++		};
++		channel11 {
++			groups = "canfd11_data";
++			function = "canfd11";
++		};
++		channel12 {
++			groups = "canfd12_data";
++			function = "canfd12";
++		};
++		channel13 {
++			groups = "canfd13_data";
++			function = "canfd13";
++		};
++		channel14 {
++			groups = "canfd14_data";
++			function = "canfd14";
++		};
++		channel15 {
++			groups = "canfd15_data";
++			function = "canfd15";
++		};
++	};
++
+ 	etnb0_pins: etnb0 {
+ 		groups = "etnb0_rmii", "etnb0_mdio", "etnb0_link";
+ 		function = "etnb0";
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-ctrl-domain.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-ctrl-domain.dts
+index 23a55378cc08..e23fda06556b 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-ctrl-domain.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-ctrl-domain.dts
+@@ -73,3 +73,33 @@ &gpio6 {
+ 		line-name = "TSN1-NO-WAKE";
+ 	}; */
+ };
++
++/* SEL_CAN_SENT is at GPIO3_06 */
++
++&gpio6 {
++	/delete-node/ sel-can-sent;
++};
++
++&gpio3 {
++	sel-can-sent {
++		gpio-hog;
++		gpios = <6 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "SEL-CAN-SENT";
++	};
++};
++
++/* SEL_CAN_FLXRAY is at GPIO3_14 */
++
++&gpio6 {
++	/delete-node/ sel-can-flxray;
++};
++
++&gpio3 {
++	sel-can-flxray {
++		gpio-hog;
++		gpios = <14 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "SEL-CAN-FLXRAY";
++	};
++};
+-- 
+2.30.2
+

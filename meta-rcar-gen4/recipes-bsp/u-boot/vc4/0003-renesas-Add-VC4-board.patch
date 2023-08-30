@@ -1,0 +1,646 @@
+From 90196f69a63af67da23fd1bcad97a30099ea32ba Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Fri, 11 Aug 2023 12:03:55 +0600
+Subject: [PATCH 3/4] renesas: Add VC4 board
+
+Using device tree from linux, with exception of rpc and rswitch nodes.
+- rpc node added in r8a779f0-vc4-u-boot.dts similar to other boards
+- rswitch node kept as in older VC4 releases
+
+Using defconfig from older VC4 releases, resynced against current u-boot
+sources via 'make savedefconfig'
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ arch/arm/dts/Makefile                |   3 +-
+ arch/arm/dts/r8a779f0-vc4-u-boot.dts |  42 ++++
+ arch/arm/dts/r8a779f0-vc4.dts        | 294 +++++++++++++++++++++++++++
+ arch/arm/mach-rmobile/Kconfig.64     |   6 +
+ board/renesas/vc4/Kconfig            |  15 ++
+ board/renesas/vc4/Makefile           |   9 +
+ board/renesas/vc4/vc4.c              |  80 ++++++++
+ configs/r8a779f0_vc4_defconfig       |  64 ++++++
+ include/configs/vc4.h                |  27 +++
+ 9 files changed, 539 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/dts/r8a779f0-vc4-u-boot.dts
+ create mode 100644 arch/arm/dts/r8a779f0-vc4.dts
+ create mode 100644 board/renesas/vc4/Kconfig
+ create mode 100644 board/renesas/vc4/Makefile
+ create mode 100644 board/renesas/vc4/vc4.c
+ create mode 100644 configs/r8a779f0_vc4_defconfig
+ create mode 100644 include/configs/vc4.h
+
+diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
+index 4934824673..a6522a830d 100644
+--- a/arch/arm/dts/Makefile
++++ b/arch/arm/dts/Makefile
+@@ -809,7 +809,8 @@ endif
+ 
+ dtb-$(CONFIG_RCAR_GEN4) += \
+ 	r8a779f0-spider-u-boot.dtb \
+-	r8a779g0-whitehawk-u-boot.dtb
++	r8a779g0-whitehawk-u-boot.dtb \
++	r8a779f0-vc4-u-boot.dtb
+ 
+ ifdef CONFIG_RCAR_GEN4
+ DTC_FLAGS += -R 4 -p 0x1000
+diff --git a/arch/arm/dts/r8a779f0-vc4-u-boot.dts b/arch/arm/dts/r8a779f0-vc4-u-boot.dts
+new file mode 100644
+index 0000000000..5f240ada2d
+--- /dev/null
++++ b/arch/arm/dts/r8a779f0-vc4-u-boot.dts
+@@ -0,0 +1,42 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Device Tree Source extras for U-Boot for the VC4 board
++ *
++ * Copyright (C) 2021 Renesas Electronics Corp.
++ */
++
++#include "r8a779f0-vc4.dts"
++#include "r8a779f0-u-boot.dtsi"
++
++/ {
++	aliases {
++		spi0 = &rpc;
++	};
++};
++
++&pfc {
++	qspi0_pins: qspi0 {
++		groups = "qspi0_ctrl", "qspi0_data4";
++		function = "qspi0";
++	};
++};
++
++&rpc {
++	pinctrl-0 = <&qspi0_pins>;
++	pinctrl-names = "default";
++
++	#address-cells = <1>;
++	#size-cells = <0>;
++	spi-max-frequency = <40000000>;
++	status = "okay";
++
++	spi-flash@0 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "s25fs512s", "jedec,spi-nor";
++		reg = <0>;
++		spi-tx-bus-width = <1>;
++		spi-rx-bus-width = <1>;
++		spi-max-frequency = <40000000>;
++	};
++};
+diff --git a/arch/arm/dts/r8a779f0-vc4.dts b/arch/arm/dts/r8a779f0-vc4.dts
+new file mode 100644
+index 0000000000..d7e57a50af
+--- /dev/null
++++ b/arch/arm/dts/r8a779f0-vc4.dts
+@@ -0,0 +1,294 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Device Tree Source for the VC4 vehicle computer board
++ *
++ * Copyright (C) 2021-2023 Renesas Electronics Corp.
++ */
++
++/dts-v1/;
++
++#include "r8a779f0.dtsi"
++#include <dt-bindings/gpio/gpio.h>
++
++/ {
++	model = "Renesas VC4 board based on r8a779f0";
++	compatible = "renesas,vc4", "renesas,r8a779f0";
++
++	aliases {
++		serial0 = &scif3;
++		serial1 = &scif0;
++		/* serial0 = &hscif0 */
++		/* serial1 = &hscif1 */
++		eth0 = &rswitch;
++	};
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++
++	memory@48000000 {
++		device_type = "memory";
++		/* First 128MB is reserved for secure area. */
++		/* Last 512MB is reserved for CR. */
++		reg = <0x0 0x48000000 0x0 0x58000000>;
++	};
++
++	memory@480000000 {
++		device_type = "memory";
++		reg = <0x4 0x80000000 0x0 0x80000000>;
++	};
++
++	reg_1p8v: regulator-1p8v {
++		compatible = "regulator-fixed";
++		regulator-name = "fixed-1.8V";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		regulator-boot-on;
++		regulator-always-on;
++	};
++
++	reg_3p3v: regulator-3p3v {
++		compatible = "regulator-fixed";
++		regulator-name = "fixed-3.3V";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-boot-on;
++		regulator-always-on;
++	};
++
++	vcc_sdhi: regulator-vcc-sdhi {
++		compatible = "regulator-fixed";
++
++		regulator-name = "SDHI Vcc";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++
++		gpio = <&gpio1 24 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++	};
++
++	vccq_sdhi: regulator-vccq-sdhi {
++		compatible = "regulator-gpio";
++
++		regulator-name = "SDHI VccQ";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <3300000>;
++
++		gpios = <&gpio2 16 GPIO_ACTIVE_HIGH>;
++		gpios-states = <1>;
++		states = <3300000 1>, <1800000 0>;
++	};
++};
++
++&extal_clk {
++	clock-frequency = <20000000>;
++};
++
++&extalr_clk {
++	clock-frequency = <32768>;
++};
++
++&i2c1 {
++	status = "okay";
++
++	pinctrl-0 = <&i2c1_pins>;
++	pinctrl-names = "default";
++
++	clock-frequency = <400000>;
++
++	rtc@6f {
++		compatible = "isil,isl1208";
++		reg = <0x6f>;
++	};
++};
++
++&i2c4 {
++	status = "okay";
++
++	pinctrl-0 = <&i2c4_pins>;
++	pinctrl-names = "default";
++
++	clock-frequency = <400000>;
++
++	eeprom@50 {
++		compatible = "st,24c16", "atmel,24c16";
++		reg = <0x50>;
++
++		vcc-supply = <&reg_3p3v>;
++
++		label = "board-data";
++		pagesize = <8>;
++	};
++
++	fpga4000@71 {
++		compatible = "renesas,vc4-fpga4000";
++		reg = <0x71>;
++	};
++};
++
++&hscif0 {
++	/* Please use exclusively to the scif3 node */
++	status = "disabled";
++
++	pinctrl-0 = <&hscif0_pins>;
++	pinctrl-names = "default";
++
++	uart-has-rtscts;
++};
++
++&hscif1 {
++	/* Please use exclusively to the scif0 node */
++	status = "disabled";
++
++	pinctrl-0 = <&hscif1_pins>;
++	pinctrl-names = "default";
++
++	uart-has-rtscts;
++};
++
++&mmc0 {
++	status = "okay";
++
++	pinctrl-0 = <&sd_pins>;
++	pinctrl-1 = <&sd_pins>;
++	pinctrl-names = "default", "state_uhs";
++
++	vmmc-supply = <&vcc_sdhi>;
++	vqmmc-supply = <&vccq_sdhi>;
++	cd-gpios = <&gpio1 23 GPIO_ACTIVE_LOW>;
++	bus-width = <4>;
++};
++
++&pfc {
++	pinctrl-0 = <&scif_clk_pins>;
++	pinctrl-names = "default";
++
++
++	i2c1_pins: i2c1 {
++		groups = "i2c1";
++		function = "i2c1";
++	};
++
++	i2c4_pins: i2c4 {
++		groups = "i2c4";
++		function = "i2c4";
++	};
++
++	hscif0_pins: hscif0 {
++		groups = "hscif0_data", "hscif0_ctrl";
++		function = "hscif0";
++	};
++
++	hscif1_pins: hscif1 {
++		groups = "hscif1_data", "hscif1_ctrl";
++		function = "hscif1";
++	};
++
++	pcie0_pins: pcie0 {
++		groups = "pcie0_clkreq_n";
++		function = "pcie";
++	};
++
++	rswitch_pins: rswitch {
++		tsn0_mdio {
++			groups = "tsn0_mdio";
++			function = "tsn0";
++			drive-strength = <3>;
++			power-source = <3300>;
++		};
++
++		tsn1_mdio {
++			groups = "tsn1_mdio";
++			function = "tsn1";
++			drive-strength = <3>;
++			power-source = <3300>;
++		};
++
++		tsn2_mdio {
++			groups = "tsn2_mdio";
++			function = "tsn2";
++			drive-strength = <3>;
++			power-source = <3300>;
++		};
++	};
++
++	scif0_pins: scif0 {
++		groups = "scif0_data", "scif0_ctrl";
++		function = "scif0";
++	};
++
++	scif3_pins: scif3 {
++		groups = "scif3_data", "scif3_ctrl";
++		function = "scif3";
++	};
++
++	scif_clk_pins: scif_clk {
++		groups = "scif_clk";
++		function = "scif_clk";
++	};
++
++	sd_pins: sd {
++		groups = "mmc_data4", "mmc_ctrl";
++		function = "mmc";
++		power-source = <3300>;
++	};
++};
++
++&pciec0 {
++	status = "okay";
++
++	pinctrl-0 = <&pcie0_pins>;
++	pinctrl-names = "default";
++};
++
++&pciec1 {
++	status = "okay";
++};
++
++&pcie_bus_clk {
++	clock-frequency = <100000000>;
++};
++
++&rswitch {
++	status = "okay";
++	pinctrl-0 = <&rswitch_pins>;
++	pinctrl-names = "default";
++	phy-mode = "sgmii";
++	phy-handle = <&etha0>;
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	etha0: ethernet-phy@0 {
++		phy-connection-type = "sgmii";
++		device_type = "ethernet-phy";
++		compatible = "marvell,88q2110";
++		reg = <1>;
++	};
++};
++
++&scif0 {
++	/* Please use exclusively to the hscif1 node */
++	status = "okay";
++
++	pinctrl-0 = <&scif0_pins>;
++	pinctrl-names = "default";
++
++	uart-has-rtscts;
++};
++
++&scif3 {
++	/* Please use exclusively to the hscif0 node */
++	status = "okay";
++
++	pinctrl-0 = <&scif3_pins>;
++	pinctrl-names = "default";
++
++	uart-has-rtscts;
++};
++
++&scif_clk {
++	pinctrl-0 = <&scif_clk_pins>;
++	pinctrl-names = "default";
++
++	clock-frequency = <24000000>;
++};
+diff --git a/arch/arm/mach-rmobile/Kconfig.64 b/arch/arm/mach-rmobile/Kconfig.64
+index d7ebd8146c..3f78e61e2a 100644
+--- a/arch/arm/mach-rmobile/Kconfig.64
++++ b/arch/arm/mach-rmobile/Kconfig.64
+@@ -181,6 +181,11 @@ config TARGET_WHITEHAWK
+ 	help
+ 	  Support for Renesas R-Car Gen4 White Hawk platform
+ 
++config TARGET_VC4
++	bool "Vehicle Computer 4 board"
++	imply R8A779F0
++	help
++	  Support for Renesas R-Car Gen4 Vehicle Computer 4 platform
+ endchoice
+ 
+ config SYS_SOC
+@@ -188,6 +193,7 @@ config SYS_SOC
+ 
+ source "board/renesas/spider/Kconfig"
+ source "board/renesas/whitehawk/Kconfig"
++source "board/renesas/vc4/Kconfig"
+ 
+ config SYS_MALLOC_F_LEN
+ 	default 0x8000 if RCAR_GEN4
+diff --git a/board/renesas/vc4/Kconfig b/board/renesas/vc4/Kconfig
+new file mode 100644
+index 0000000000..d2ce644921
+--- /dev/null
++++ b/board/renesas/vc4/Kconfig
+@@ -0,0 +1,15 @@
++if TARGET_VC4
++
++config SYS_SOC
++	default "rmobile"
++
++config SYS_BOARD
++	default "vc4"
++
++config SYS_VENDOR
++	default "renesas"
++
++config SYS_CONFIG_NAME
++	default "vc4"
++
++endif
+diff --git a/board/renesas/vc4/Makefile b/board/renesas/vc4/Makefile
+new file mode 100644
+index 0000000000..8be8f785fb
+--- /dev/null
++++ b/board/renesas/vc4/Makefile
+@@ -0,0 +1,9 @@
++#
++# board/renesas/vc4/Makefile
++#
++# Copyright (C) 2021 Renesas Electronics Corp.
++#
++# SPDX-License-Identifier: GPL-2.0+
++#
++
++obj-y	:= vc4.o ../rcar-common/gen4-common.o
+diff --git a/board/renesas/vc4/vc4.c b/board/renesas/vc4/vc4.c
+new file mode 100644
+index 0000000000..15e6345366
+--- /dev/null
++++ b/board/renesas/vc4/vc4.c
+@@ -0,0 +1,80 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * board/renesas/vc4/vc4.c
++ *     This file is Spider board support.
++ *
++ * Copyright (C) 2021 Renesas Electronics Corp.
++ */
++
++#include <common.h>
++#include <asm/arch/rmobile.h>
++#include <asm/arch/sys_proto.h>
++#include <asm/global_data.h>
++#include <asm/io.h>
++#include <asm/mach-types.h>
++#include <asm/processor.h>
++#include <linux/errno.h>
++#include <asm/system.h>
++
++DECLARE_GLOBAL_DATA_PTR;
++
++#define EXTAL_CLK	20000000u
++
++static void init_generic_timer(void)
++{
++	u32 freq;
++
++	/* Set frequency data in CNTFID0 */
++	freq = EXTAL_CLK;
++
++	/* Update memory mapped and register based freqency */
++	asm volatile ("msr cntfrq_el0, %0" :: "r" (freq));
++	writel(freq, CNTFID0);
++
++	/* Enable counter */
++	setbits_le32(CNTCR_BASE, CNTCR_EN);
++}
++
++static void init_gic_v3(void)
++{
++	 /* GIC v3 power on */
++	writel(0x00000002, (GICR_LPI_PWRR));
++
++	/* Wait till the WAKER_CA_BIT changes to 0 */
++	writel(readl(GICR_LPI_WAKER) & ~0x00000002, (GICR_LPI_WAKER));
++	while (readl(GICR_LPI_WAKER) & 0x00000004)
++		;
++
++	writel(0xffffffff, GICR_SGI_BASE + GICR_IGROUPR0);
++}
++
++void s_init(void)
++{
++	if (current_el() == 3)
++		init_generic_timer();
++}
++
++int board_early_init_f(void)
++{
++	/* Unlock CPG access */
++	writel(0x5A5AFFFF, CPGWPR);
++	writel(0xA5A50000, CPGWPCR);
++
++	return 0;
++}
++
++int board_init(void)
++{
++	/* address of boot parameters */
++	gd->bd->bi_boot_params = CONFIG_SYS_TEXT_BASE + 0x50000;
++
++	if (current_el() == 3)
++		init_gic_v3();
++
++	return 0;
++}
++
++void reset_cpu(ulong addr)
++{
++	writel(RST_SPRES, RST_SRESCR0);
++}
+diff --git a/configs/r8a779f0_vc4_defconfig b/configs/r8a779f0_vc4_defconfig
+new file mode 100644
+index 0000000000..641bc9d1f8
+--- /dev/null
++++ b/configs/r8a779f0_vc4_defconfig
+@@ -0,0 +1,64 @@
++CONFIG_ARM=y
++CONFIG_ARCH_CPU_INIT=y
++CONFIG_ARCH_RMOBILE=y
++CONFIG_SYS_TEXT_BASE=0x50000000
++CONFIG_ENV_SIZE=0x40000
++CONFIG_ENV_OFFSET=0xD00000
++CONFIG_ENV_SECT_SIZE=0x40000
++CONFIG_DM_GPIO=y
++CONFIG_RCAR_GEN4=y
++CONFIG_TARGET_VC4=y
++# CONFIG_PSCI_RESET is not set
++CONFIG_DEFAULT_DEVICE_TREE="r8a779f0-vc4-u-boot"
++CONFIG_FIT=y
++CONFIG_USE_BOOTARGS=y
++CONFIG_BOOTARGS="root=/dev/mmcblk0p1 rw rootfstype=ext4 rootwait"
++CONFIG_SUPPORT_RAW_INITRD=y
++CONFIG_DEFAULT_FDT_FILE="r8a779f0-vc4.dtb"
++CONFIG_VERSION_VARIABLE=y
++CONFIG_HUSH_PARSER=y
++CONFIG_CMD_BOOTZ=y
++CONFIG_CMD_GPIO=y
++CONFIG_CMD_I2C=y
++CONFIG_CMD_MMC=y
++CONFIG_CMD_SPI=y
++CONFIG_CMD_DHCP=y
++CONFIG_CMD_MII=y
++CONFIG_CMD_PING=y
++CONFIG_CMD_EXT2=y
++CONFIG_CMD_EXT4=y
++CONFIG_CMD_EXT4_WRITE=y
++CONFIG_CMD_FAT=y
++CONFIG_CMD_FS_GENERIC=y
++CONFIG_OF_CONTROL=y
++CONFIG_ENV_IS_IN_SPI_FLASH=y
++CONFIG_SYS_RELOC_GD_ENV_ADDR=y
++CONFIG_REGMAP=y
++CONFIG_SYSCON=y
++CONFIG_CLK=y
++CONFIG_CLK_RENESAS=y
++CONFIG_RCAR_GPIO=y
++CONFIG_DM_I2C=y
++CONFIG_SYS_I2C_RCAR_I2C=y
++CONFIG_DM_MMC=y
++CONFIG_MMC_IO_VOLTAGE=y
++CONFIG_MMC_UHS_SUPPORT=y
++CONFIG_MMC_HS200_SUPPORT=y
++CONFIG_RENESAS_SDHI=y
++CONFIG_MTD=y
++CONFIG_DM_SPI_FLASH=y
++# CONFIG_SPI_FLASH_SFDP_SUPPORT is not set
++CONFIG_SPI_FLASH_MACRONIX=y
++CONFIG_SPI_FLASH_SPANSION=y
++# CONFIG_SPI_FLASH_USE_4K_SECTORS is not set
++CONFIG_PHY_MARVELL=y
++CONFIG_DM_ETH=y
++CONFIG_RENESAS_ETHER_SWITCH=y
++CONFIG_DM_REGULATOR=y
++CONFIG_DM_REGULATOR_FIXED=y
++CONFIG_DM_REGULATOR_GPIO=y
++CONFIG_SCIF_CONSOLE=y
++CONFIG_SPI=y
++CONFIG_DM_SPI=y
++CONFIG_RENESAS_RPC_SPI=y
++CONFIG_OF_LIBFDT_OVERLAY=y
+diff --git a/include/configs/vc4.h b/include/configs/vc4.h
+new file mode 100644
+index 0000000000..e678069dc9
+--- /dev/null
++++ b/include/configs/vc4.h
+@@ -0,0 +1,27 @@
++/* SPDX-License-Identifier: GPL-2.0+ */
++/*
++ * include/configs/vc4.h
++ *     This file is VC4 board configuration.
++ *
++ * Copyright (C) 2021 Renesas Electronics Corp.
++ */
++
++#ifndef __VC4_H
++#define __VC4_H
++
++#include "rcar-gen4-common.h"
++
++/* Board Clock */
++/* XTAL_CLK : 20.00MHz */
++#define CONFIG_SYS_CLK_FREQ	20000000u
++
++/* Generic Timer Definitions (use in assembler source) */
++#define COUNTER_FREQUENCY	0x1312D00	/* 20.00MHz from CPclk */
++
++#undef CONFIG_BOOTCOMMAND
++#define CONFIG_BOOTCOMMAND	  \
++	"ext4load mmc 0:1 0x48080000 /boot/Image; " \
++	"ext4load mmc 0:1 0x48000000 /boot/"CONFIG_DEFAULT_FDT_FILE"; " \
++	"booti 0x48080000 - 0x48000000"
++
++#endif /* __VC4_H */
+-- 
+2.30.2
+

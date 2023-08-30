@@ -1,0 +1,80 @@
+From b378c9f28869a4b80f4976468975522bad6344c8 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Thu, 10 Aug 2023 16:50:39 +0600
+Subject: [PATCH 88/92] net: ethernet: renesas: rswitch2: add API to detect
+ rswitch2 netdevs
+
+API is intended to use in ipconfig to find if a netdev is rswitch2's
+physical port. Such ports need to be moved up for ipconfig over
+rswitch2's cpu port to succeed.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ .../ethernet/renesas/rswitch2/rswitch2_eth.c  | 26 +++++++++++++++++++
+ include/net/rswitch2.h                        | 10 +++++++
+ 2 files changed, 36 insertions(+)
+ create mode 100644 include/net/rswitch2.h
+
+diff --git a/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c b/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
+index 5f013f8e8666..0417a917698f 100644
+--- a/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
++++ b/drivers/net/ethernet/renesas/rswitch2/rswitch2_eth.c
+@@ -25,6 +25,8 @@
+ 
+ #include <linux/of_platform.h>
+ 
++#include <net/rswitch2.h>
++
+ #include "rswitch2.h"
+ #include "rswitch2_eth.h"
+ #include "rswitch2_gwca.h"
+@@ -3521,6 +3523,30 @@ static void rswitch2_disable_ports(struct rswitch2_drv *rsw2)
+ 	}
+ }
+ 
++bool rswitch2_is_physical_port(struct net_device *ndev, struct net_device *ref_ndev)
++{
++	struct rswitch2_eth_port *eth_port, *ref_eth_port;
++
++	if (ndev->netdev_ops != &rswitch2_netdev_ops)
++		return false;		/* rdev is not from rswitch2 */
++
++	if (ref_ndev && ref_ndev->netdev_ops != &rswitch2_netdev_ops)
++		return false;		/* ref_ndev is not from rswitch2 */
++
++	eth_port = netdev_priv(ndev);
++	if (eth_port->intern_port)
++		return false;		/* CPU port */
++
++	if (!ref_ndev)
++		return true;		/* ndev is a physical port, no ref_ndev */
++
++	ref_eth_port = netdev_priv(ref_ndev);
++	if (!ref_eth_port->intern_port)
++		return false;		/* ref_ndev is not an internal port */
++
++	return eth_port->rsw2 == ref_eth_port->rsw2;
++}
++
+ int rswitch2_eth_init(struct rswitch2_drv *rsw2)
+ {
+ 	int ret;
+diff --git a/include/net/rswitch2.h b/include/net/rswitch2.h
+new file mode 100644
+index 000000000000..1b647c90a6a2
+--- /dev/null
++++ b/include/net/rswitch2.h
+@@ -0,0 +1,10 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++
++#ifndef __LINUX_NET_RSWITCH2_H
++#define __LINUX_NET_RSWITCH2_H
++
++struct net_device;
++
++extern bool rswitch2_is_physical_port(struct net_device *ndev, struct net_device *ref_ndev);
++
++#endif
+-- 
+2.30.2
+

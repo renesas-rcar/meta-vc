@@ -1,0 +1,678 @@
+From 9d822cc69109656650b6715bf2bb7cb1f8b3a613 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Sun, 20 Mar 2022 12:02:07 +0300
+Subject: [PATCH 69/92] arm64: dts: renesas: vc4: dt overlay based phy mux
+ setup
+
+Istead of comments in dts files, move tsn-mux and txn-phy settings
+to device tree overlays.
+
+Now, need to load one overlay per each tsn.
+
+Note: for V1 board overlays have to be loaded on top of -ctrl-domain
+version of the device tree.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ arch/arm64/boot/dts/renesas/Makefile          | 19 +++-
+ .../dts/renesas/r8a779f0-vc4-tsn0-phy-1g.dtso | 34 +++++++
+ .../renesas/r8a779f0-vc4-tsn0-phy-2g5.dtso    | 34 +++++++
+ .../dts/renesas/r8a779f0-vc4-tsn1-phy-1g.dtso | 27 ++++++
+ .../renesas/r8a779f0-vc4-tsn1-phy-2g5.dtso    | 27 ++++++
+ .../renesas/r8a779f0-vc4-tsn2-phy-1g-rh.dtso  | 27 ++++++
+ .../dts/renesas/r8a779f0-vc4-tsn2-phy-1g.dtso | 27 ++++++
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts  | 95 ++-----------------
+ .../renesas/r8a779f0-vc4V1-ctrl-domain.dts    | 50 ----------
+ .../renesas/r8a779f0-vc4V1-tsn0-phy-1g.dtso   | 16 ++++
+ .../renesas/r8a779f0-vc4V1-tsn0-phy-2g5.dtso  | 38 ++++++++
+ .../renesas/r8a779f0-vc4V1-tsn1-phy-1g.dtso   | 16 ++++
+ .../renesas/r8a779f0-vc4V1-tsn1-phy-2g5.dtso  | 38 ++++++++
+ .../r8a779f0-vc4V1-tsn2-phy-1g-rh.dtso        |  1 +
+ .../renesas/r8a779f0-vc4V1-tsn2-phy-1g.dtso   |  1 +
+ .../arm64/boot/dts/renesas/r8a779f0-vc4V1.dts | 30 ------
+ 16 files changed, 310 insertions(+), 170 deletions(-)
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1g.dtso
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-2g5.dtso
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1g.dtso
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-2g5.dtso
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn2-phy-1g-rh.dtso
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn2-phy-1g.dtso
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn0-phy-1g.dtso
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn0-phy-2g5.dtso
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn1-phy-1g.dtso
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn1-phy-2g5.dtso
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn2-phy-1g-rh.dtso
+ create mode 100644 arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn2-phy-1g.dtso
+
+diff --git a/arch/arm64/boot/dts/renesas/Makefile b/arch/arm64/boot/dts/renesas/Makefile
+index 826e30aed3a1..b735eefb5652 100644
+--- a/arch/arm64/boot/dts/renesas/Makefile
++++ b/arch/arm64/boot/dts/renesas/Makefile
+@@ -95,7 +95,7 @@ dtb-$(CONFIG_ARCH_R8A77980) += r8a77980-es2-condor.dtb
+ dtb-$(CONFIG_ARCH_R8A77980) += r8a77980-es2-v3hsk.dtb
+ 
+ # overlays
+-# DTC_FLAGS += -@
++DTC_FLAGS += -@
+ # ulcb-kf-dtbo := ulcb-kf-cn11.dtbo ulcb-kf-most.dtbo ulcb-kf-sd3.dtbo \
+ #		ulcb-kf-cn10-pca.dtbo ulcb-kf-cn11-pca.dtbo \
+ #		ulcb-kf-cn10-gmsl2.dtbo ulcb-kf-cn11-gmsl2.dtbo \
+@@ -111,3 +111,20 @@ dtb-$(CONFIG_ARCH_R8A77980) += r8a77980-es2-v3hsk.dtb
+ # dtb-$(CONFIG_ARCH_R8A77965) += $(ulcb-kf-dtbo)
+ # dtb-$(CONFIG_ARCH_R8A77970) += $(vb-dtbo)
+ # dtb-$(CONFIG_ARCH_R8A77980) += $(vb-dtbo)
++
++r8a779f0-vc4-dtbo :=	r8a779f0-vc4-tsn0-phy-1g.dtbo \
++			r8a779f0-vc4-tsn0-phy-2g5.dtbo \
++			r8a779f0-vc4-tsn1-phy-1g.dtbo \
++			r8a779f0-vc4-tsn1-phy-2g5.dtbo \
++			r8a779f0-vc4-tsn2-phy-1g.dtbo \
++			r8a779f0-vc4-tsn2-phy-1g-rh.dtbo
++dtb-$(CONFIG_ARCH_R8A779F0) += $(r8a779f0-vc4-dtbo)
++
++r8a779f0-vc4V1-dtbo :=	r8a779f0-vc4V1-tsn0-phy-1g.dtbo \
++			r8a779f0-vc4V1-tsn0-phy-2g5.dtbo \
++			r8a779f0-vc4V1-tsn1-phy-1g.dtbo \
++			r8a779f0-vc4V1-tsn1-phy-2g5.dtbo \
++			r8a779f0-vc4V1-tsn2-phy-1g.dtbo \
++			r8a779f0-vc4V1-tsn2-phy-1g-rh.dtbo
++dtb-$(CONFIG_ARCH_R8A779F0) += $(r8a779f0-vc4V1-dtbo)
++
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1g.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1g.dtso
+new file mode 100644
+index 000000000000..c4e0b445d1e1
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1g.dtso
+@@ -0,0 +1,34 @@
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++
++&gpio3 {
++	tsn0-pre-mux {
++		gpio-hog;
++		gpios = <8 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN0-PRE-MUX";
++	};
++
++	tsn0-mux {
++		gpio-hog;
++		gpios = <6 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN0-MUX";
++	};
++};
++
++&tsn0 {
++	phy-mode = "sgmii";
++	phy-handle = <&tsn0_phy_1g>;
++
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	tsn0_phy_1g: ethernet-phy@3 {
++		reg = <3>;
++		compatible = "ethernet-phy-id002B.0218";
++		status = "okay";
++	};
++};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-2g5.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-2g5.dtso
+new file mode 100644
+index 000000000000..3dd7ffc34f35
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-2g5.dtso
+@@ -0,0 +1,34 @@
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++
++&gpio3 {
++	tsn0-pre-mux {
++		gpio-hog;
++		gpios = <8 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN0-PRE-MUX";
++	};
++
++	tsn0-mux {
++		gpio-hog;
++		gpios = <6 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "TSN0-MUX";
++	};
++};
++
++&tsn0 {
++	phy-mode = "usxgmii";
++	phy-handle = <&tsn0_phy_2g5>;
++
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	tsn0_phy_2g5: ethernet-phy@0 {
++		reg = <0>;
++		compatible = "ethernet-phy-id0000.0000";
++		status = "okay";
++	};
++};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1g.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1g.dtso
+new file mode 100644
+index 000000000000..c5ac46aceb3b
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1g.dtso
+@@ -0,0 +1,27 @@
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++
++&gpio3 {
++	tsn1-mux {
++		gpio-hog;
++		gpios = <14 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN1-MUX";
++	};
++};
++
++&tsn1 {
++	phy-mode = "sgmii";
++	phy-handle = <&tsn1_phy_1g>;
++
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	tsn1_phy_1g: ethernet-phy@3 {
++		reg = <3>;
++		compatible = "ethernet-phy-id002B.0218";
++		status = "okay";
++	};
++};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-2g5.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-2g5.dtso
+new file mode 100644
+index 000000000000..e4233872a880
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-2g5.dtso
+@@ -0,0 +1,27 @@
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++
++&gpio3 {
++	tsn1-mux {
++		gpio-hog;
++		gpios = <14 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "TSN1-MUX";
++	};
++};
++
++&tsn1 {
++	phy-mode = "usxgmii";
++	phy-handle = <&tsn1_phy_2g5>;
++
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	tsn1_phy_2g5: ethernet-phy@0 {
++		reg = <0>;
++		compatible = "ethernet-phy-id0000.0000";
++		status = "okay";
++	};
++};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn2-phy-1g-rh.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn2-phy-1g-rh.dtso
+new file mode 100644
+index 000000000000..0c768f40dc9a
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn2-phy-1g-rh.dtso
+@@ -0,0 +1,27 @@
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++
++&gpio3 {
++	tsn1-mux {
++		gpio-hog;
++		gpios = <7 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "TSN2-MUX";
++	};
++};
++
++&tsn2 {
++	phy-mode = "sgmii";
++	phy-handle = <&tsn2_phy_1g_rh>;
++
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	tsn1_phy_1g_rh: ethernet-phy@1 {
++		reg = <1>;
++		compatible = "ethernet-phy-ieee802.3-c45";
++		status = "okay";
++	};
++};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn2-phy-1g.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn2-phy-1g.dtso
+new file mode 100644
+index 000000000000..b5a87843b990
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn2-phy-1g.dtso
+@@ -0,0 +1,27 @@
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++
++&gpio3 {
++	tsn2-mux {
++		gpio-hog;
++		gpios = <7 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN2-MUX";
++	};
++};
++
++&tsn2 {
++	phy-mode = "sgmii";
++	phy-handle = <&tsn2_phy_1g>;
++
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	tsn2_phy_1g: ethernet-phy@3 {
++		reg = <3>;
++		compatible = "ethernet-phy-id002B.0218";
++		status = "okay";
++	};
++};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+index a474c2244cf5..ac6930dbe20b 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+@@ -89,45 +89,6 @@ &extalr_clk {
+ 	clock-frequency = <32768>;
+ };
+ 
+-&gpio3 {
+-	tsn0-pre-mux {
+-		gpio-hog;
+-		gpios = <8 GPIO_ACTIVE_HIGH>;
+-		output-high;
+-		line-name = "TSN0-PRE-MUX";
+-	};
+-
+-	tsn0_mux: tsn0-mux {
+-		gpio-hog;
+-		gpios = <6 GPIO_ACTIVE_HIGH>;
+-		/* For tsn0_phy_2g5 */
+-		/* output-low; */
+-		/* For tsn0_phy_1g */
+-		output-high;
+-		line-name = "TSN0-MUX";
+-	};
+-
+-	tsn1_mux: tsn1-mux {
+-		gpio-hog;
+-		gpios = <14 GPIO_ACTIVE_HIGH>;
+-		/* For tsn1_phy_2g5 */
+-		/* output-low; */
+-		/* For tsn1_phy_1g */
+-		output-high;
+-		line-name = "TSN0-MUX";
+-	};
+-
+-	tsn2-mux {
+-		gpio-hog;
+-		gpios = <7 GPIO_ACTIVE_HIGH>;
+-		/* For tsn2_phy_1g_rh */
+-		/* output-low; */
+-		/* For tsn2_phy_1g */
+-		output-high;
+-		line-name = "TSN2-MUX";
+-	};
+-};
+-
+ &i2c1 {
+ 	status = "okay";
+ 
+@@ -403,7 +364,7 @@ ports {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 
+-		port@0 {
++		tsn0: port@0 {
+ 			reg = <0>;
+ 
+ 			/* normally port MAC address comes from EEPROM ... */
+@@ -412,25 +373,10 @@ port@0 {
+ 			/* ... but EEPROM setting could be overridden */
+ 			mac-address = [00 00 00 00 00 00];
+ 
+-			/* phy-mode = "usxgmii"; */
+-			/* phy-handle = <&tsn0_phy_2g5>; */
+-			phy-mode = "sgmii";
+-			phy-handle = <&tsn0_phy_1g>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			tsn0_phy_2g5: ethernet-phy@0 {
+-				reg = <0>;
+-				compatible = "ethernet-phy-id0000.0000";
+-				status = "disabled";
+-			};
+-			tsn0_phy_1g: ethernet-phy@3 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-id002B.0218";
+-				status = "okay";
+-			};
++			/* phy settings moved to overlays */
+ 		};
+ 
+-		port@1 {
++		tsn1: port@1 {
+ 			reg = <1>;
+ 
+ 			/* normally port MAC address comes from EEPROM ... */
+@@ -439,25 +385,10 @@ port@1 {
+ 			/* ... but EEPROM setting could be overridden */
+ 			mac-address = [00 00 00 00 00 00];
+ 
+-			/* phy-mode = "usxgmii"; */
+-			/* phy-handle = <&tsn1_phy_2g5>; */
+-			phy-mode = "sgmii";
+-			phy-handle = <&tsn1_phy_1g>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			tsn1_phy_2g5: ethernet-phy@0 {
+-				reg = <0>;
+-				compatible = "ethernet-phy-id0000.0000";
+-				status = "disabled";
+-			};
+-			tsn1_phy_1g: ethernet-phy@3 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-id002B.0218";
+-				status = "okay";
+-			};
++			/* phy settings moved to overlays */
+ 		};
+ 
+-		port@2 {
++		tsn2: port@2 {
+ 			reg = <2>;
+ 
+ 			/* normally port MAC address comes from EEPROM ... */
+@@ -466,21 +397,7 @@ port@2 {
+ 			/* ... but EEPROM setting could be overridden */
+ 			mac-address = [00 00 00 00 00 00];
+ 
+-			phy-mode = "sgmii";
+-			/* phy-handle = <&tsn2_phy_1g_rh>; */
+-			phy-handle = <&tsn2_phy_1g>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-			tsn2_phy_1g_rh: ethernet-phy@1 {
+-				reg = <1>;
+-				compatible = "ethernet-phy-ieee802.3-c45";
+-				status = "disabled";
+-			};
+-			tsn2_phy_1g: ethernet-phy@3 {
+-				reg = <3>;
+-				compatible = "ethernet-phy-id002B.0218";
+-				status = "okay";
+-			};
++			/* phy settings moved to overlays */
+ 		};
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-ctrl-domain.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-ctrl-domain.dts
+index e23fda06556b..129e23e7c7f6 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-ctrl-domain.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-ctrl-domain.dts
+@@ -24,56 +24,6 @@ &mmc0 {
+ 	vqmcc-supply = <&vccq_sdhi>;
+ };
+ 
+-/* TSN0_SEL_1_25 is at GPIO4_06 */
+-
+-&gpio4 {
+-	tsn0-mux {
+-		gpio-hog;
+-		gpios = <6 GPIO_ACTIVE_HIGH>;
+-		/* For tsn0_phy_2g5 */
+-		/* output-low; */
+-		/* For tsn0_phy_1g */
+-		output-high;
+-		line-name = "TSN0-MUX";
+-	};
+-};
+-
+-/* TSN1_SEL_1_25 is at GPIO4_07 */
+-
+-&gpio4 {
+-	tsn1-mux {
+-		gpio-hog;
+-		gpios = <7 GPIO_ACTIVE_HIGH>;
+-		/* For tsn1_phy_2g5 */
+-		/* output-low; */
+-		/* For tsn1_phy_1g */
+-		output-high;
+-		line-name = "TSN1-MUX";
+-	};
+-};
+-
+-/* TSN0_WAKE is at GPIO6_22. When using tsn0_phy_2g5, keep high */
+-
+-&gpio6 {
+-	/* tsn0-no-wake {
+-		gpio-hog;
+-		gpios = <22 GPIO_ACTIVE_HIGH>;
+-		output-high;
+-		line-name = "TSN0-NO-WAKE";
+-	}; */
+-};
+-
+-/* TSN1_WAKE is at GPIO6_21. When using tsn1_phy_2g5, keep high */
+-
+-&gpio6 {
+-	/* tsn1-no-wake {
+-		gpio-hog;
+-		gpios = <21 GPIO_ACTIVE_HIGH>;
+-		output-high;
+-		line-name = "TSN1-NO-WAKE";
+-	}; */
+-};
+-
+ /* SEL_CAN_SENT is at GPIO3_06 */
+ 
+ &gpio6 {
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn0-phy-1g.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn0-phy-1g.dtso
+new file mode 100644
+index 000000000000..218bff5cb0bf
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn0-phy-1g.dtso
+@@ -0,0 +1,16 @@
++#include "r8a779f0-vc4-tsn0-phy-1g.dtso"
++
++/* TSN0_SEL_1_25 is at GPIO4_06 */
++
++&gpio3 {
++	/delete-node/ tsn0-mux;
++};
++
++&gpio4 {
++	tsn0-mux {
++		gpio-hog;
++		gpios = <6 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN0-MUX";
++	};
++};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn0-phy-2g5.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn0-phy-2g5.dtso
+new file mode 100644
+index 000000000000..f2c012dd056e
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn0-phy-2g5.dtso
+@@ -0,0 +1,38 @@
++#include "r8a779f0-vc4-tsn0-phy-2g5.dtso"
++
++/* TSN0_SEL_1_25 is at GPIO4_06 */
++
++&gpio3 {
++	/delete-node/ tsn0-mux;
++};
++
++&gpio4 {
++	tsn0-mux {
++		gpio-hog;
++		gpios = <6 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "TSN0-MUX";
++	};
++};
++
++/* TSN0_SLEEP is at GPIO3_15. When using tsn0_phy_2g5, keep high */
++
++&gpio3 {
++	tsn0-no-sleep {
++		gpio-hog;
++		gpios = <15 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN0-NO-SLEEP";
++	};
++};
++
++/* TSN0_WAKE is at GPIO6_22. When using tsn0_phy_2g5, keep high */
++
++&gpio6 {
++	tsn0-no-wake {
++		gpio-hog;
++		gpios = <22 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN0-NO-WAKE";
++	};
++};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn1-phy-1g.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn1-phy-1g.dtso
+new file mode 100644
+index 000000000000..469200c715b7
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn1-phy-1g.dtso
+@@ -0,0 +1,16 @@
++#include "r8a779f0-vc4-tsn1-phy-1g.dtso"
++
++/* TSN1_SEL_1_25 is at GPIO4_07 */
++
++&gpio3 {
++	/delete-node/ tsn1-mux;
++};
++
++&gpio4 {
++	tsn1-mux {
++		gpio-hog;
++		gpios = <7 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN1-MUX";
++	};
++};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn1-phy-2g5.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn1-phy-2g5.dtso
+new file mode 100644
+index 000000000000..228c025b7776
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn1-phy-2g5.dtso
+@@ -0,0 +1,38 @@
++#include "r8a779f0-vc4-tsn1-phy-2g5.dtso"
++
++/* TSN1_SEL_1_25 is at GPIO4_07 */
++
++&gpio3 {
++	/delete-node/ tsn1-mux;
++};
++
++&gpio4 {
++	tsn1-mux {
++		gpio-hog;
++		gpios = <7 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "TSN1-MUX";
++	};
++};
++
++/* TSN1_SLEEP is at GPIO3_12. When using tsn1_phy_2g5, keep high */
++
++&gpio3 {
++	tsn1-no-sleep {
++		gpio-hog;
++		gpios = <12 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN1-NO-SLEEP";
++	};
++};
++
++/* TSN1_WAKE is at GPIO6_21. When using tsn1_phy_2g5, keep high */
++
++&gpio6 {
++	tsn1-no-wake {
++		gpio-hog;
++		gpios = <21 GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "TSN1-NO-WAKE";
++	};
++};
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn2-phy-1g-rh.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn2-phy-1g-rh.dtso
+new file mode 100644
+index 000000000000..bbd8e30b7e0e
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn2-phy-1g-rh.dtso
+@@ -0,0 +1 @@
++#include "r8a779f0-vc4-tsn2-phy-1g-rh.dtso"
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn2-phy-1g.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn2-phy-1g.dtso
+new file mode 100644
+index 000000000000..e912acad3141
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-tsn2-phy-1g.dtso
+@@ -0,0 +1 @@
++#include "r8a779f0-vc4-tsn2-phy-1g.dtso"
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1.dts
+index 9536a3ad1e62..34202a87c730 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1.dts
+@@ -17,33 +17,3 @@ &vccq_sdhi {
+ &mmc0 {
+ 	vqmcc-supply = <&vcc_sdhi>;
+ };
+-
+-/* TSN0_SEL_1_25 is at GPIO4_06 - n/a without control domain access */
+-
+-/delete-node/ &tsn0_mux;
+-
+-/* TSN1_SEL_1_25 is at GPIO4_07 - n/a without control domain access */
+-
+-/delete-node/ &tsn1_mux;
+-
+-/* TSN0_SLEEP is at GPIO3_15. When using tsn0_phy_2g5, keep high */
+-
+-&gpio3 {
+-	/* tsn0-no-sleep {
+-		gpio-hog;
+-		gpios = <15 GPIO_ACTIVE_HIGH>;
+-		output-high;
+-		line-name = "TSN0-NO-SLEEP";
+-	}; */
+-};
+-
+-/* TSN1_SLEEP is at GPIO3_12. When using tsn1_phy_2g5, keep high */
+-
+-&gpio3 {
+-	/* tsn0-no-sleep {
+-		gpio-hog;
+-		gpios = <12 GPIO_ACTIVE_HIGH>;
+-		output-high;
+-		line-name = "TSN1-NO-SLEEP";
+-	}; */
+-};
+-- 
+2.30.2
+

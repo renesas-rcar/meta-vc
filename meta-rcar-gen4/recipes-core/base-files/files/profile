@@ -88,4 +88,3 @@ export QT_QPA_FONTDIR=/usr/share/fonts/ttf/
 export PATH PS1 OPIEDIR QPEDIR QTDIR EDITOR TERM
 
 umask 022
-
