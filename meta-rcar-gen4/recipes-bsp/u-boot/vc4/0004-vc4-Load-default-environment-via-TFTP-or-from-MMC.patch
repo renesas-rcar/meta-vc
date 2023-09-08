@@ -1,14 +1,14 @@
-From 0154251617dbe343859aab3685d5c62b856343ab Mon Sep 17 00:00:00 2001
+From 339dc8abf72206e5eea2109231ca3747b80b94b8 Mon Sep 17 00:00:00 2001
 From: Dennis Ostermann <dennis.ostermann@renesass.com>
-Date: Thu, 8 Sep 2022 16:20:05 +0200
-Subject: [PATCH 10/11] Load default environment via TFTP or from MMC
+Date: Fri, 11 Aug 2023 12:37:44 +0600
+Subject: [PATCH 4/4] vc4: Load default environment via TFTP or from MMC
 
 ---
  include/configs/vc4.h | 35 +++++++++++++++++++++++++++++++----
  1 file changed, 31 insertions(+), 4 deletions(-)
 
 diff --git a/include/configs/vc4.h b/include/configs/vc4.h
-index e678069dc9..8839f55f50 100644
+index e678069dc9..5e1f1dd441 100644
 --- a/include/configs/vc4.h
 +++ b/include/configs/vc4.h
 @@ -18,10 +18,37 @@
@@ -27,7 +27,7 @@ index e678069dc9..8839f55f50 100644
 +       "netmask=255.255.255.0\0" \
 +       "serverip=192.168.0.1\0" \
 +       "nfsroot=/var/lib/tftpboot/rootfs\0" \
-+       "do_import_env=echo \"Found environment file!\" ; env import -t 0x48080000  ${filesize}; setenv env_imported true; saveenv && echo \"Stored new environment.\"\0" \
++       "do_import_env=echo \"Found environment file!\" ; env import -t 0x48080000  ${filesize}; setenv env_imported true; saveenv && echo \"Stored new environment.\" ; reset\0" \
 +       "load_env=run load_mmc_env && run load_env_cmd || run load_tftp_env && run load_env_cmd\0" \
 +       "load_mmc_env=setenv load_env_cmd \"echo \\\"Trying to import environment from MMC...\\\" ; ext4load mmc 0 0x48080000 /boot/u-boot.env\"\0" \
 +       "load_tftp_env=setenv load_env_cmd \"echo \\\"Trying to import environment via TFTP...\\\" ; tftp 0x48080000 ${nfsroot}/boot/u-boot.env\"\0" \
@@ -54,5 +54,5 @@ index e678069dc9..8839f55f50 100644
  
  #endif /* __VC4_H */
 -- 
-2.17.1
+2.30.2
 
