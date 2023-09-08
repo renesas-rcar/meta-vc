@@ -1,0 +1,60 @@
+From f9350b514363500797dbee9e799ee04fcccd84fa Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesas.com>
+Date: Thu, 22 Jun 2023 09:38:39 +0200
+Subject: [PATCH 84/92] drivers: net: phy: marvell_88q{211x,3344_es}: Fixed
+ parameter bug in log function
+
+---
+ drivers/net/phy/marvell_88q211x.h    | 12 ++++++------
+ drivers/net/phy/marvell_88q3344_es.c | 12 ++++++------
+ 2 files changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/net/phy/marvell_88q211x.h b/drivers/net/phy/marvell_88q211x.h
+index 141a1eba5f35..c78dc37f44bd 100644
+--- a/drivers/net/phy/marvell_88q211x.h
++++ b/drivers/net/phy/marvell_88q211x.h
+@@ -202,12 +202,12 @@ static const struct m88q_mmd_data z1_init_data[] = {
+ #define __THIS_FILE__   ((strrchr(__FILE__, '/') == NULL) ?  ( __FILE__ ) :  (strrchr(__FILE__, '/') + 1))
+ 
+ 
+-#define mrvl_dbg(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_DEBUG, "PHY[%s:%d]%s: " ARG , (__THIS_FILE__), (__LINE__),   ##__VA_ARGS__)
+-#define mrvl_info(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_INFO, "PHY[%s:%d]%s: " ARG , (__THIS_FILE__), (__LINE__),   ##__VA_ARGS__)
+-#define mrvl_notice(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_NOTICE, "PHY[%s:%d]%s: " ARG , (__THIS_FILE__), (__LINE__),  ##__VA_ARGS__)
+-#define mrvl_warn(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_WARNING, "PHY[%s:%d]%s: " ARG , (__THIS_FILE__), (__LINE__),  ##__VA_ARGS__)
+-#define mrvl_err(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_ERR, "PHY[%s:%d]%s: " ARG , (__THIS_FILE__), (__LINE__),  ##__VA_ARGS__)
+-#define mrvl_crit(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_CRIT, "PHY[%s:%d]%s: " ARG , (__THIS_FILE__), (__LINE__),  ##__VA_ARGS__)
++#define mrvl_dbg(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_DEBUG, "PHY[%s:%d]: " ARG , (__THIS_FILE__), (__LINE__),   ##__VA_ARGS__)
++#define mrvl_info(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_INFO, "PHY[%s:%d]: " ARG , (__THIS_FILE__), (__LINE__),   ##__VA_ARGS__)
++#define mrvl_notice(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_NOTICE, "PHY[%s:%d]: " ARG , (__THIS_FILE__), (__LINE__),  ##__VA_ARGS__)
++#define mrvl_warn(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_WARNING, "PHY[%s:%d]: " ARG , (__THIS_FILE__), (__LINE__),  ##__VA_ARGS__)
++#define mrvl_err(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_ERR, "PHY[%s:%d]: " ARG , (__THIS_FILE__), (__LINE__),  ##__VA_ARGS__)
++#define mrvl_crit(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_CRIT, "PHY[%s:%d]: " ARG , (__THIS_FILE__), (__LINE__),  ##__VA_ARGS__)
+ 
+ static inline int _mrvl_pr(struct phy_device *phydev,  int level, const char *fmt, ...) {
+ 	int ret;
+diff --git a/drivers/net/phy/marvell_88q3344_es.c b/drivers/net/phy/marvell_88q3344_es.c
+index 7ebdda797901..69ac405f34d0 100644
+--- a/drivers/net/phy/marvell_88q3344_es.c
++++ b/drivers/net/phy/marvell_88q3344_es.c
+@@ -31,12 +31,12 @@ module_param(log_level,int,0660);
+ 
+ 
+ 
+-#define mrvl_dbg(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_DEBUG, "PHY[%s:%d]%s: " ARG , (__THIS_FILE__), (__LINE__),   ##__VA_ARGS__)
+-#define mrvl_info(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_INFO, "PHY[%s:%d]%s: " ARG , (__THIS_FILE__), (__LINE__),   ##__VA_ARGS__)
+-#define mrvl_notice(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_NOTICE, "PHY[%s:%d]%s: " ARG , (__THIS_FILE__), (__LINE__),  ##__VA_ARGS__)
+-#define mrvl_warn(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_WARNING, "PHY[%s:%d]%s: " ARG , (__THIS_FILE__), (__LINE__),  ##__VA_ARGS__)
+-#define mrvl_err(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_ERR, "PHY[%s:%d]%s: " ARG , (__THIS_FILE__), (__LINE__),  ##__VA_ARGS__)
+-#define mrvl_crit(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_CRIT, "PHY[%s:%d]%s: " ARG , (__THIS_FILE__), (__LINE__),  ##__VA_ARGS__)
++#define mrvl_dbg(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_DEBUG, "PHY[%s:%d]: " ARG , (__THIS_FILE__), (__LINE__),   ##__VA_ARGS__)
++#define mrvl_info(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_INFO, "PHY[%s:%d]: " ARG , (__THIS_FILE__), (__LINE__),   ##__VA_ARGS__)
++#define mrvl_notice(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_NOTICE, "PHY[%s:%d]: " ARG , (__THIS_FILE__), (__LINE__),  ##__VA_ARGS__)
++#define mrvl_warn(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_WARNING, "PHY[%s:%d]: " ARG , (__THIS_FILE__), (__LINE__),  ##__VA_ARGS__)
++#define mrvl_err(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_ERR, "PHY[%s:%d]: " ARG , (__THIS_FILE__), (__LINE__),  ##__VA_ARGS__)
++#define mrvl_crit(ARG, ...)  _mrvl_pr(phydev, LOGLEVEL_CRIT, "PHY[%s:%d]: " ARG , (__THIS_FILE__), (__LINE__),  ##__VA_ARGS__)
+ 
+ static inline int _mrvl_pr(struct phy_device *phydev,  int level, const char *fmt, ...) {
+ 	int ret;
+-- 
+2.30.2
+

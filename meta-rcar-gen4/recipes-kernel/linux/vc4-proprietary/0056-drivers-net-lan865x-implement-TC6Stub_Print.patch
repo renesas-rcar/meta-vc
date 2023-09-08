@@ -1,0 +1,36 @@
+From ac53b048eb79c8c96f1623ca1cd9fb8a6d303f95 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Wed, 17 May 2023 19:17:41 +0600
+Subject: [PATCH 56/92] drivers: net: lan865x: implement TC6Stub_Print()
+
+Since the lan865x uses this to print errors, forward the message
+to dev_err().
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/net/ethernet/microchip/lan865x/lan865x.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/net/ethernet/microchip/lan865x/lan865x.c b/drivers/net/ethernet/microchip/lan865x/lan865x.c
+index 14cebd54db74..24ca15a29d2f 100755
+--- a/drivers/net/ethernet/microchip/lan865x/lan865x.c
++++ b/drivers/net/ethernet/microchip/lan865x/lan865x.c
+@@ -191,6 +191,15 @@ bool Tc6_WriteRegister(struct lan865x_priv *priv, uint32_t addr, uint32_t value)
+ 
+ void TC6Stub_Print(uint8_t idx, void *pGlobalTag, const char *statement, ... )
+ {
++	struct lan865x_priv *priv = pGlobalTag;
++	char buf[128];
++	va_list l;
++
++	va_start(l, statement);
++	vsnprintf(buf, sizeof(buf), statement, l);
++	va_end(l);
++
++	dev_err(&priv->spi->dev, "%s\n", buf);
+ }
+ 
+ void TC6_CB_OnRxEthernetSlice(TC6_t *pInst, const uint8_t *pRx, uint16_t offset, uint16_t len, void *pGlobalTag)
+-- 
+2.30.2
+

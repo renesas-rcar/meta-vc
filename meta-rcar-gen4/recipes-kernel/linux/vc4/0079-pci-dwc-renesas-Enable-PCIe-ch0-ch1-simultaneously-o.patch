@@ -1,0 +1,76 @@
+From de0aec1121c747776e66b430cbb99392f5dc5a48 Mon Sep 17 00:00:00 2001
+From: Tin Tran <tin.tran.xk@renesas.com>
+Date: Wed, 15 Mar 2023 18:39:41 +0700
+Subject: [PATCH 79/92] pci: dwc: renesas: Enable PCIe ch0 ch1 simultaneously
+ on RC
+
+Signed-off-by: Tin Tran <tin.tran.xk@renesas.com>
+---
+ drivers/pci/controller/dwc/pcie-renesas.c | 28 +----------------------
+ 1 file changed, 1 insertion(+), 27 deletions(-)
+
+diff --git a/drivers/pci/controller/dwc/pcie-renesas.c b/drivers/pci/controller/dwc/pcie-renesas.c
+index cc3a23f81b49..9949eb0d251c 100644
+--- a/drivers/pci/controller/dwc/pcie-renesas.c
++++ b/drivers/pci/controller/dwc/pcie-renesas.c
+@@ -99,7 +99,6 @@ struct renesas_pcie {
+ 	struct clk			*bus_clk;
+ 	struct reset_control		*rst;
+ 	struct gpio_desc		*clkreq;
+-	void __iomem			*base_shared;
+ 	struct clk			*clk_shared;
+ };
+ 
+@@ -115,16 +114,6 @@ static void renesas_pcie_writel(struct renesas_pcie *pcie, u32 reg, u32 val)
+ 	writel(val, pcie->base + reg);
+ }
+ 
+-static u32 renesas_pcie_shared_readl(struct renesas_pcie *pcie, u32 reg)
+-{
+-	return readl(pcie->base_shared + reg);
+-}
+-
+-static void renesas_pcie_shared_writel(struct renesas_pcie *pcie, u32 reg, u32 val)
+-{
+-	writel(val, pcie->base_shared + reg);
+-}
+-
+ static void renesas_pcie_ltssm_enable(struct renesas_pcie *pcie,
+ 				      bool enable)
+ {
+@@ -300,17 +289,9 @@ static void renesas_pcie_init_rc(struct renesas_pcie *pcie)
+ 
+ 	/* Device type selection - Root Complex */
+ 	val = renesas_pcie_readl(pcie, PCIEMSR0);
+-	val |= DEVICE_TYPE_RC;
++	val |= DEVICE_TYPE_RC | BIFUR_MOD_SET_ON;
+ 	renesas_pcie_writel(pcie, PCIEMSR0, val);
+ 
+-	if (pcie->base_shared) {
+-		clk_prepare_enable(pcie->clk_shared);
+-		val = renesas_pcie_shared_readl(pcie, PCIEMSR0);
+-		val |= BIFUR_MOD_SET_ON;
+-		renesas_pcie_shared_writel(pcie, PCIEMSR0, val);
+-		clk_disable_unprepare(pcie->clk_shared);
+-	}
+-
+ 	/* Enable SRIS mode */
+ 	val = renesas_pcie_readl(pcie, PCIEMSR0);
+ 	val |= APP_SRIS_MODE;
+@@ -465,13 +446,6 @@ static int renesas_pcie_get_resources(struct renesas_pcie *pcie,
+ 	if (IS_ERR(pcie->clkreq))
+ 		pcie->clkreq = NULL;
+ 
+-	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "shared");
+-	if (res) {
+-		pcie->base_shared = devm_ioremap_resource(&pdev->dev, res);
+-		if (IS_ERR(pcie->base_shared))
+-			pcie->base_shared = NULL;
+-	}
+-
+ 	pcie->clk_shared = devm_clk_get(dev, "shared");
+ 	if (IS_ERR(pcie->clk_shared))
+ 		pcie->clk_shared = NULL;
+-- 
+2.30.2
+

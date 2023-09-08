@@ -1,0 +1,2173 @@
+From 6ee6558b1dcb5d59e044d2e8ef22c46ab495d509 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesas.com>
+Date: Fri, 10 Mar 2023 14:59:13 +0100
+Subject: [PATCH 70/92] Updated microchip LAN865x driver to v0.70
+
+---
+ .../net/ethernet/microchip/lan865x/Makefile   |   2 +-
+ .../net/ethernet/microchip/lan865x/lan865x.c  | 317 +++++++-----
+ .../net/ethernet/microchip/lan865x/tc6-conf.h | 126 -----
+ .../ethernet/microchip/lan865x/tc6-queue.h    | 252 ---------
+ .../net/ethernet/microchip/lan865x/tc6-regs.c |  64 ---
+ .../net/ethernet/microchip/lan865x/tc6-regs.h |  44 --
+ drivers/net/ethernet/microchip/lan865x/tc6.c  | 482 +++++++++---------
+ drivers/net/ethernet/microchip/lan865x/tc6.h  | 201 +++++++-
+ 8 files changed, 614 insertions(+), 874 deletions(-)
+ delete mode 100755 drivers/net/ethernet/microchip/lan865x/tc6-conf.h
+ delete mode 100755 drivers/net/ethernet/microchip/lan865x/tc6-queue.h
+ delete mode 100755 drivers/net/ethernet/microchip/lan865x/tc6-regs.c
+ delete mode 100755 drivers/net/ethernet/microchip/lan865x/tc6-regs.h
+
+diff --git a/drivers/net/ethernet/microchip/lan865x/Makefile b/drivers/net/ethernet/microchip/lan865x/Makefile
+index 16ed44aa0a56..794a1a588275 100644
+--- a/drivers/net/ethernet/microchip/lan865x/Makefile
++++ b/drivers/net/ethernet/microchip/lan865x/Makefile
+@@ -1,2 +1,2 @@
+ obj-$(CONFIG_LAN865X) += lan865x_mod.o
+-lan865x_mod-objs := lan865x.o tc6.o tc6-regs.o
++lan865x_mod-objs := lan865x.o tc6.o
+diff --git a/drivers/net/ethernet/microchip/lan865x/lan865x.c b/drivers/net/ethernet/microchip/lan865x/lan865x.c
+index f4f564e6f78d..e2eb72522fdf 100755
+--- a/drivers/net/ethernet/microchip/lan865x/lan865x.c
++++ b/drivers/net/ethernet/microchip/lan865x/lan865x.c
+@@ -24,10 +24,9 @@
+ #include <linux/jiffies.h>
+ 
+ #include "tc6.h"
+-#include "tc6-regs.h"
+ 
+ #define DRV_NAME		"LAN865x"
+-#define DRV_VERSION		"0.6"
++#define DRV_VERSION		"0.7"
+ 
+ #define REG_STDR_CONFIG0	0x1
+ #define REG_STDR_STATUS0	0x2
+@@ -57,6 +56,8 @@
+ #define TX_TIMEOUT		(4 * HZ)
+ #define TC6_SECURE		(false)
+ 
++#define ENABLE_COLLISION_DETECTION  0
++
+ #define LAN865X_MSG_DEFAULT	\
+ 	(NETIF_MSG_PROBE | NETIF_MSG_IFUP | NETIF_MSG_IFDOWN | NETIF_MSG_LINK)
+ 
+@@ -66,19 +67,14 @@ struct lan865x_priv {
+ 	struct spi_device *spi;
+ 	struct spi_message msg;
+ 	struct spi_transfer transfer;
+-	u8 spi_tx_buf[ETH_BUF_LEN];
+-	u8 spi_rx_buf[ETH_BUF_LEN];
++	struct TC6_t tc6;
+ 	u8 eth_rx_buf[ETH_BUF_LEN];
+-	u8 *pRx;
+ 	u32 msg_enable;
+-	TC6_t *tc6;
+ 	bool spiBusy;
+ 	bool Eth_RxInvalid;
+ 	uint16_t Eth_RxLength;
+-	struct task_struct *tc6_task;
+-	wait_queue_head_t tc6_wq;
+-	bool tc6NeedService;
+-	bool tc6IntActive;
++	wait_queue_head_t irq_wq;
++	wait_queue_head_t ns_wq;
+ 	uint32_t read_value;
+ 	bool enable_data;
+ 	struct completion tc6_completion;
+@@ -86,9 +82,39 @@ struct lan865x_priv {
+ 	u8 plca_node_id;
+ 	u8 plca_node_count;
+ 	u8 tx_cut_thr_mode;
+-	uint8_t idx;
++	struct mutex lock;
++	struct timer_list tc6_timer;
++	struct task_struct *ns_task;
++	struct task_struct *irq_task;
++	bool irq_flag;
++	bool ns_flag;
++};
++
++#define TIMEOUT 1000    //milliseconds
++
++const MemoryMap_t TC6_MEMMAP[] = {
++    {  .address = 0x00000001,  .value=0x00004000,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
++    {  .address = 0x000130D0,  .value=0x000030EA,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
++    {  .address = 0x000130D1,  .value=0x00000800,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
++#if (ENABLE_COLLISION_DETECTION)
++    {  .address = 0x00013084,  .value=0x0000338F,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
++    {  .address = 0x00013087,  .value=0x0000901F,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
++#else
++    {  .address = 0x00013084,  .value=0x0000320F,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
++    {  .address = 0x00013087,  .value=0x0000101F,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
++#endif
++    {  .address = 0x00013085,  .value=0x00000006,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
++    {  .address = 0x0001308A,  .value=0x0000C0FF,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
++    {  .address = 0x00013088,  .value=0x0000633F,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
++    {  .address = 0x0001308B,  .value=0x00000404,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
++    {  .address = 0x00013080,  .value=0x00000680,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
++    {  .address = 0x000130F1,  .value=0x00002440,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
++    {  .address = 0x00013096,  .value=0x00002000,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
++    {  .address = 0x00013099,  .value=0x00007F80,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
+ };
+ 
++const uint32_t TC6_MEMMAP_LENGTH = (sizeof(TC6_MEMMAP) / sizeof(MemoryMap_t));
++
+ /* use ethtool to change the level for any given device */
+ static struct {
+ 	u32 msg_enable;
+@@ -107,10 +133,11 @@ static u8 plca_node_count = 8;
+ ******************************************************************************/
+ void Tc6_Read_Callback(TC6_t *pInst, bool success, uint32_t addr, uint32_t value, void *pTag, void *pGlobalTag)
+ {
+-	struct lan865x_priv *priv = pTag;
++	struct lan865x_priv *priv = container_of(pInst, struct lan865x_priv, tc6);
+ 
+ 	priv->read_value = value;
+ 	complete(&priv->tc6_completion);
++	TC6_EnableData(&priv->tc6, true);
+ }
+ 
+ /******************************************************************************
+@@ -119,7 +146,7 @@ void Tc6_Read_Callback(TC6_t *pInst, bool success, uint32_t addr, uint32_t value
+ ******************************************************************************/
+ void Tc6_Write_Callback(TC6_t *pInst, bool success, uint32_t addr, uint32_t value, void *pTag, void *pGlobalTag)
+ {
+-	struct lan865x_priv *priv = pTag;
++	struct lan865x_priv *priv = container_of(pInst, struct lan865x_priv, tc6);
+ 
+ 	complete(&priv->tc6_completion);
+ }
+@@ -134,24 +161,22 @@ bool Tc6_ReadRegister(struct lan865x_priv *priv, uint32_t addr, uint32_t *value)
+ 	long wait_remaining;
+ 
+ 	reinit_completion(&priv->tc6_completion);
+-	ret = TC6_ReadRegister(priv->tc6, addr, TC6_SECURE, Tc6_Read_Callback, priv);
++	ret = TC6_ReadRegister(&priv->tc6, addr, TC6_SECURE, Tc6_Read_Callback, priv);
+ 	if (ret) {
+-		priv->tc6NeedService = true;
+-		wake_up_interruptible(&priv->tc6_wq);
++		priv->ns_flag = true;
++		wake_up_interruptible(&priv->ns_wq);
+ 		wait_remaining = wait_for_completion_interruptible_timeout(&priv->tc6_completion,
+ 						   			   msecs_to_jiffies(100));
+-		if (wait_remaining == 0) {
+-			dev_err(&priv->spi->dev, "SPI read register timeout for addr: %x\n", addr);
+-			ret = false;
+-		} else if (wait_remaining == -ERESTARTSYS) {
+-			dev_err(&priv->spi->dev, "Retry SPI read register is required addr: %x\n", addr);
++		if ((wait_remaining == 0) || (wait_remaining == -ERESTARTSYS)) {
+ 			ret = false;
+ 		} else {
+ 			*value = priv->read_value;
+ 			ret = true;
+ 		}
+-	} else {
+-		dev_err(&priv->spi->dev, "SPI read register failed for addr: %x\n", addr);
++	}
++	if (!ret) {
++		if (printk_ratelimit())
++			dev_err(&priv->spi->dev, "SPI read register failed for addr: %x\n", addr);
+ 	}
+ 	return ret;
+ }
+@@ -166,54 +191,40 @@ bool Tc6_WriteRegister(struct lan865x_priv *priv, uint32_t addr, uint32_t value)
+ 	long wait_remaining;
+ 
+ 	reinit_completion(&priv->tc6_completion);
+-	ret = TC6_WriteRegister(priv->tc6, addr, value, TC6_SECURE, Tc6_Write_Callback, priv);
++	ret = TC6_WriteRegister(&priv->tc6, addr, value, TC6_SECURE, Tc6_Write_Callback, priv);
+ 	if (ret) {
+-		priv->tc6NeedService = true;
+-		wake_up_interruptible(&priv->tc6_wq);
++		priv->ns_flag = true;
++		wake_up_interruptible(&priv->ns_wq);
+ 		wait_remaining = wait_for_completion_interruptible_timeout(&priv->tc6_completion,
+ 						   			   msecs_to_jiffies(100));
+-		if (wait_remaining == 0) {
+-			dev_err(&priv->spi->dev, "SPI write register timeout for addr: %x\n", addr);
+-			ret = false;
+-		}
+-		else if (wait_remaining == -ERESTARTSYS) {
+-			dev_err(&priv->spi->dev, "Retry SPI write register is required for addr: %x\n", addr);
++		if ((wait_remaining == 0) || (wait_remaining == -ERESTARTSYS))
+ 			ret = false;
+-		}
+-		else {
++		else
+ 			ret = true;
+-		}
+-	} else {
+-		dev_err(&priv->spi->dev, "SPI write register failed for addr: %x\n", addr);
++	}
++	if (!ret) {
++		if (printk_ratelimit())
++			dev_err(&priv->spi->dev, "SPI write register failed for addr: %x\n", addr);
+ 	}
+ 	return ret;
+ }
+ 
+-void TC6Stub_Print(uint8_t idx, void *pGlobalTag, const char *statement, ... )
++void TC6Stub_Print(TC6_t *pInst, void *pGlobalTag, const char *statement, ... )
+ {
+-	struct lan865x_priv *priv = pGlobalTag;
+-	char buf[128];
+-	va_list l;
+-
+-	va_start(l, statement);
+-	vsnprintf(buf, sizeof(buf), statement, l);
+-	va_end(l);
++	struct lan865x_priv *priv = container_of(pInst, struct lan865x_priv, tc6);
+ 
+-	dev_err(&priv->spi->dev, "%s\n", buf);
++	if (printk_ratelimit())
++		dev_info(&priv->spi->dev, "TC6Stub_Print: %s\n", statement);
+ }
+ 
+ void TC6_CB_OnRxEthernetSlice(TC6_t *pInst, const uint8_t *pRx, uint16_t offset, uint16_t len, void *pGlobalTag)
+ {
+-	struct lan865x_priv *priv = pGlobalTag;
++	struct lan865x_priv *priv = container_of(pInst, struct lan865x_priv, tc6);
+ 
+ 	if (priv->Eth_RxInvalid)
+-	{
+-		dev_err(&priv->spi->dev, "on_rx_slice: ignoring invalid marked. offset: %d\n\r", offset);
+ 		return;
+-	}
+ 	if (offset + len > ETH_BUF_LEN)
+ 	{
+-		dev_err(&priv->spi->dev, "on_rx_slice:packet greater than MTU: %d\n\r", offset + len);
+ 		priv->Eth_RxInvalid = true;
+ 		return;
+ 	}
+@@ -243,8 +254,10 @@ void static send_rx_eth_pkt(struct lan865x_priv *priv, u8 *buf, u16 len)
+ 
+ 	skb = netdev_alloc_skb(priv->netdev, len + NET_IP_ALIGN);
+ 	if (!skb) {
+-		if (netif_msg_rx_err(priv))
+-			netdev_err(priv->netdev, "out of memory for Rx'd frame\n");
++		if (netif_msg_rx_err(priv)) {
++			if (printk_ratelimit())
++				netdev_err(priv->netdev, "Out of memory for Rx'd frame\n");
++		}
+ 		priv->netdev->stats.rx_dropped++;
+ 	} else {
+ 		skb_reserve(skb, NET_IP_ALIGN);
+@@ -260,23 +273,25 @@ void static send_rx_eth_pkt(struct lan865x_priv *priv, u8 *buf, u16 len)
+ 
+ void TC6_CB_OnRxEthernetPacket(TC6_t *pInst, bool success, uint16_t len, void *pGlobalTag)
+ {
+-	struct lan865x_priv *priv = pGlobalTag;
++	struct lan865x_priv *priv = container_of(pInst, struct lan865x_priv, tc6);
+ 
+-	if (!success || priv->Eth_RxInvalid || !priv->Eth_RxLength)
+-	{
+-		dev_err(&priv->spi->dev, "on_rx_eth_ready: packet drop\n\r");
+-		goto end;
++	if (len > ETH_BUF_LEN) {
++		if (printk_ratelimit())
++			dev_err(&priv->spi->dev, "Packet length greater than MTU: %d\n\r", len);
+ 	}
+ 
+-	if (priv->Eth_RxLength != len)
++	if (!success || priv->Eth_RxInvalid || !priv->Eth_RxLength)
+ 	{
+-		dev_err(&priv->spi->dev, "on_rx_eth_ready: size mismatch\n\r");
++		if (printk_ratelimit())
++			dev_err(&priv->spi->dev, "Packet drop\n\r");
++		priv->netdev->stats.rx_dropped++;
+ 		goto end;
+ 	}
+-
+ 	if (len < ETH_MIN_HEADER_LEN)
+ 	{
+-		dev_err(&priv->spi->dev, "on_rx_eth_ready: received invalid small packet len: %d\n\r", len);
++		if (printk_ratelimit())
++			dev_err(&priv->spi->dev, "Received invalid small packet length: %d\n\r", len);
++		priv->netdev->stats.rx_dropped++;
+ 		goto end;
+ 	}
+ 	send_rx_eth_pkt(priv, priv->eth_rx_buf, len);
+@@ -288,7 +303,7 @@ void TC6_CB_OnRxEthernetPacket(TC6_t *pInst, bool success, uint16_t len, void *p
+ 
+ void TC6_CB_OnError(TC6_t *pInst, TC6_Error_t err, void *pGlobalTag)
+ {
+-	struct lan865x_priv *priv = pGlobalTag;
++	struct lan865x_priv *priv = container_of(pInst, struct lan865x_priv, tc6);
+ 
+ 	if (printk_ratelimit())
+ 		dev_err(&priv->spi->dev, "tc6 err = %x\n", err);
+@@ -297,17 +312,16 @@ void TC6_CB_OnError(TC6_t *pInst, TC6_Error_t err, void *pGlobalTag)
+ static void lan865x_spi_transfer_complete(void *context)
+ {
+ 	struct lan865x_priv *priv = context;
+-	uint8_t idx;
+ 
+-	idx = priv->idx;
+-	memcpy(priv->pRx, priv->spi_rx_buf, priv->transfer.len);
+ 	priv->spiBusy = false;
+-	TC6Stub_CB_OnSpiBufferDone(idx, true);
++	mutex_lock(&priv->lock);
++	TC6Stub_CB_OnSpiBufferDone(&priv->tc6, true);
++	mutex_unlock(&priv->lock);
+ }
+ 
+-bool TC6Stub_SpiTransaction(uint8_t idx, const uint8_t *pTx, uint8_t *pRx, uint16_t len, void *pGlobalTag)
++bool TC6Stub_SpiTransaction(TC6_t *pInst, const uint8_t *pTx, uint8_t *pRx, uint16_t len, void *pGlobalTag)
+ {
+-	struct lan865x_priv *priv = pGlobalTag;
++	struct lan865x_priv *priv = container_of(pInst, struct lan865x_priv, tc6);
+ 	int status = 0;
+ 
+ 	if (priv->spiBusy)
+@@ -315,18 +329,14 @@ bool TC6Stub_SpiTransaction(uint8_t idx, const uint8_t *pTx, uint8_t *pRx, uint1
+ 
+ 	priv->spiBusy = true;
+ 
+-	memcpy(priv->spi_tx_buf, pTx, len);
+-	priv->pRx = pRx;
+-	priv->idx = idx;
+-
+ 	spi_message_init(&priv->msg);
+ 
+ 	priv->transfer.tx_nbits = 1; /* 1 MOSI line */
+ 	priv->transfer.rx_nbits = 1; /* 1 MISO line */
+ 	priv->transfer.speed_hz = 0; /* Use device setting */
+ 	priv->transfer.bits_per_word = 0; /* Use device setting */
+-	priv->transfer.tx_buf = priv->spi_tx_buf;
+-	priv->transfer.rx_buf = priv->spi_rx_buf;
++	priv->transfer.tx_buf = pTx;
++	priv->transfer.rx_buf = pRx;
+ 	priv->transfer.delay.value = 0;
+ 	priv->transfer.delay.unit = SPI_DELAY_UNIT_USECS;
+ 	priv->transfer.cs_change = 0;
+@@ -337,7 +347,8 @@ bool TC6Stub_SpiTransaction(uint8_t idx, const uint8_t *pTx, uint8_t *pRx, uint1
+ 	spi_message_add_tail(&priv->transfer, &priv->msg);
+ 	status = spi_async(priv->spi, &priv->msg);
+ 	if (status < 0) {
+-		dev_err(&priv->spi->dev, "spy_async failed, status: %d\n", status);
++		if (printk_ratelimit())
++			dev_err(&priv->spi->dev, "spy_async failed, status: %d\n", status);
+ 		return false;
+ 	}
+ 	return true;
+@@ -345,17 +356,22 @@ bool TC6Stub_SpiTransaction(uint8_t idx, const uint8_t *pTx, uint8_t *pRx, uint1
+ 
+ void OnStatus0(TC6_t *pInst, bool success, uint32_t addr, uint32_t value, void *pTag, void *pGlobalTag)
+ {
++	struct lan865x_priv *priv = container_of(pInst, struct lan865x_priv, tc6);
++
++	if (printk_ratelimit())
++		dev_err(&priv->spi->dev, "Ext sts0: %d\n", value);
++		
+ 	TC6_UnlockExtendedStatus(pInst);
+ }
+ 
+ void TC6_CB_OnExtendedStatus(TC6_t *g, void *pGlobalTag)
+ {
+-	struct lan865x_priv *priv = pGlobalTag;
++	struct lan865x_priv *priv = container_of(g, struct lan865x_priv, tc6);
+ 
+ 	TC6_ReadRegister(g, REG_STDR_STATUS0, TC6_SECURE, OnStatus0, priv);
+ }
+ 
+-void TC6Stub_InitializeSpi(uint8_t idx, void *pGlobalTag)
++void TC6Stub_InitializeSpi(TC6_t *pInst, void *pGlobalTag)
+ {
+ }
+ 
+@@ -364,20 +380,13 @@ static bool lan865x_init(struct lan865x_priv *priv)
+ 	uint32_t regVal;
+ 	bool success = true;
+ 	uint32_t i = 0;
+-	struct spi_device *spi = priv->spi;
+ 
+-	priv->tc6 = TC6_Init(priv);
+-	if (!priv->tc6) {
+-		dev_err(&spi->dev, "TC6 lib init failed\n");
+-		success = false;
+-	}
++	TC6_Init(&priv->tc6);
+ 	if (success) {
+ 		while (i < TC6_MEMMAP_LENGTH) {
+ 			success = Tc6_WriteRegister(priv, TC6_MEMMAP[i].address, TC6_MEMMAP[i].value);
+-			if (!success) {
+-				dev_err(&priv->spi->dev, "Initial register write failed at %d\n", i);
++			if (!success)
+ 				break;
+-			}
+ 			i++;
+ 		}
+ 	}
+@@ -402,7 +411,7 @@ static bool lan865x_init(struct lan865x_priv *priv)
+ 	}
+ 	if (success) {
+ 		success = Tc6_ReadRegister(priv, REG_STDR_STATUS0, &regVal);
+-		pr_info("STATUS0: %x\n", regVal);
++		dev_info(&priv->spi->dev, "STS0: %d\n", regVal);
+ 		if (regVal != MACPHY_HW_READY)
+ 			success = false;
+ 	}
+@@ -444,24 +453,32 @@ static int lan865x_set_hw_macaddr(struct net_device *netdev)
+ 	return 0;
+ }
+ 
+-static int tc6_handler(void *data)
++static int ns_handler(void *data)
+ {
+ 	struct lan865x_priv *priv = data;
+ 
+ 	while (likely(!kthread_should_stop())) {
+-		wait_event_interruptible(priv->tc6_wq,  priv->tc6IntActive ||
+-							priv->tc6NeedService ||
++		wait_event_interruptible(priv->ns_wq,  priv->ns_flag ||
+ 							kthread_should_stop());
+-		if (priv->tc6IntActive)
+-		{
+-			priv->tc6IntActive = false;
+-			TC6_Service(priv->tc6, false);
+-		}
+-		else if (priv->tc6NeedService)
+-		{
+-			priv->tc6NeedService = false;
+-			TC6_Service(priv->tc6, true);
+-		}
++		priv->ns_flag = false;
++		mutex_lock(&priv->lock);
++		TC6_Service(&priv->tc6, true);
++		mutex_unlock(&priv->lock);
++	}
++	return 0;
++}
++
++static int irq_handler(void *data)
++{
++	struct lan865x_priv *priv = data;
++
++	while (likely(!kthread_should_stop())) {
++		wait_event_interruptible(priv->irq_wq,  priv->irq_flag ||
++							kthread_should_stop());
++		priv->irq_flag = false;
++		mutex_lock(&priv->lock);
++		TC6_Service(&priv->tc6, false);
++		mutex_unlock(&priv->lock);
+ 	}
+ 	return 0;
+ }
+@@ -470,9 +487,9 @@ static irqreturn_t lan865x_irq(int irq, void *dev_id)
+ {
+ 	struct lan865x_priv *priv = dev_id;
+ 
+-	if (priv->tc6 && priv->enable_data) {
+-		priv->tc6IntActive = true;
+-		wake_up_interruptible(&priv->tc6_wq);
++	if (&priv->tc6 && priv->enable_data) {
++		priv->irq_flag = true;
++		wake_up_interruptible(&priv->irq_wq);
+ 	}
+ 
+ 	return IRQ_HANDLED;
+@@ -480,17 +497,17 @@ static irqreturn_t lan865x_irq(int irq, void *dev_id)
+ 
+ void TC6_CB_OnNeedService(TC6_t *pInst, void *pGlobalTag)
+ {
+-	struct lan865x_priv *priv = pGlobalTag;
++	struct lan865x_priv *priv = container_of(pInst, struct lan865x_priv, tc6);
+ 
+-	priv->tc6NeedService = true;
+-	wake_up_interruptible(&priv->tc6_wq);
++	priv->ns_flag = true;
++	wake_up_interruptible(&priv->ns_wq);
+ }
+ 
+ static int lan865x_hw_enable(struct lan865x_priv *priv)
+ {
+ 	if (!Tc6_WriteRegister(priv, REG_MAC_NW_CTRL, 0xC))
+ 		return -EIO;
+-	TC6_EnableData(priv->tc6, true);
++
+ 	priv->enable_data = true;
+ 
+ 	return 0;
+@@ -500,7 +517,7 @@ static int lan865x_hw_disble(struct lan865x_priv *priv)
+ {
+ 	if (!Tc6_WriteRegister(priv, REG_MAC_NW_CTRL, 0x0))
+ 		return -EIO;
+-	TC6_EnableData(priv->tc6, false);
++
+ 	priv->enable_data = false;
+ 
+ 	return 0;
+@@ -517,7 +534,7 @@ lan865x_set_link_ksettings(struct net_device *netdev,
+ 		if ((cmd->base.autoneg != AUTONEG_DISABLE) || (cmd->base.speed != SPEED_10) ||
+ 				(cmd->base.duplex != DUPLEX_HALF)) {
+ 			if (netif_msg_link(priv))
+-				netdev_warn(netdev, "unsupported link setting\n");
++				netdev_warn(netdev, "Unsupported link setting\n");
+ 			ret = -EOPNOTSUPP;
+ 		}
+ 	} else {
+@@ -626,12 +643,12 @@ static void lan865x_set_multicast_list(struct net_device *netdev)
+ 			else
+ 				hash_lo |= mask;
+ 		}
+-		if (!TC6_WriteRegister(priv->tc6, REG_MAC_HASHH, hash_hi, TC6_SECURE, NULL, NULL)) {
++		if (!TC6_WriteRegister(&priv->tc6, REG_MAC_HASHH, hash_hi, TC6_SECURE, NULL, NULL)) {
+ 			if (netif_msg_timer(priv)) {
+ 				netdev_err(netdev, "Failed to write REG_HASHH\n");
+ 			}
+ 		}
+-		if (!TC6_WriteRegister(priv->tc6, REG_MAC_HASHL, hash_lo, TC6_SECURE, NULL, NULL)) {
++		if (!TC6_WriteRegister(&priv->tc6, REG_MAC_HASHL, hash_lo, TC6_SECURE, NULL, NULL)) {
+ 			if (netif_msg_timer(priv)) {
+ 				netdev_err(netdev, "Failed to write REG_HASHL\n");
+ 			}
+@@ -641,12 +658,12 @@ static void lan865x_set_multicast_list(struct net_device *netdev)
+ 		regVal |= MAC_UNICAST_MODE;
+ 	} else {
+ 		/* Enabling local MAC address only */
+-		if (!TC6_WriteRegister(priv->tc6, REG_MAC_HASHH, 0, TC6_SECURE, NULL, NULL)) {
++		if (!TC6_WriteRegister(&priv->tc6, REG_MAC_HASHH, 0, TC6_SECURE, NULL, NULL)) {
+ 			if (netif_msg_timer(priv)) {
+ 				netdev_err(netdev, "Failed to write REG_HASHH\n");
+ 			}
+ 		}
+-		if (!TC6_WriteRegister(priv->tc6, REG_MAC_HASHL, 0, TC6_SECURE, NULL, NULL)) {
++		if (!TC6_WriteRegister(&priv->tc6, REG_MAC_HASHL, 0, TC6_SECURE, NULL, NULL)) {
+ 			if (netif_msg_timer(priv)) {
+ 				netdev_err(netdev, "Failed to write REG_HASHL\n");
+ 			}
+@@ -655,7 +672,7 @@ static void lan865x_set_multicast_list(struct net_device *netdev)
+ 		regVal &= (~MAC_MULTICAST_MODE);
+ 		regVal &= (~MAC_UNICAST_MODE);
+ 	}
+-	if (!TC6_WriteRegister(priv->tc6, REG_MAC_NW_CONFIG, regVal, TC6_SECURE, NULL, NULL)) {
++	if (!TC6_WriteRegister(&priv->tc6, REG_MAC_NW_CONFIG, regVal, TC6_SECURE, NULL, NULL)) {
+ 		if (netif_msg_timer(priv)) {
+ 			netdev_err(netdev, "Failed to enable promiscuous mode\n");
+ 		}
+@@ -664,7 +681,7 @@ static void lan865x_set_multicast_list(struct net_device *netdev)
+ 
+ void OnRawTx(TC6_t *pInst, const uint8_t *pTx, uint16_t len, void *pTag, void *pGlobalTag)
+ {
+-	struct lan865x_priv *priv = pGlobalTag;
++	struct lan865x_priv *priv = container_of(pInst, struct lan865x_priv, tc6);
+ 	struct sk_buff *tx_skb = pTag;
+ 
+ 	priv->netdev->stats.tx_packets++;
+@@ -680,7 +697,7 @@ static netdev_tx_t lan865x_send_packet(struct sk_buff *skb,
+ 	struct lan865x_priv *priv = netdev_priv(netdev);
+ 	bool ret;
+ 
+-	ret = TC6_SendRawEthernetPacket(priv->tc6, skb->data, skb->len, OnRawTx, skb);
++	ret = TC6_SendRawEthernetPacket(&priv->tc6, skb->data, skb->len, OnRawTx, skb);
+ 	if (!ret) {
+ 		netif_stop_queue(priv->netdev);
+ 		return NETDEV_TX_BUSY;
+@@ -689,6 +706,16 @@ static netdev_tx_t lan865x_send_packet(struct sk_buff *skb,
+ 	return NETDEV_TX_OK;
+ }
+ 
++void timer_callback(struct timer_list * data)
++{
++	struct lan865x_priv *priv = from_timer(priv, data, tc6_timer);
++
++	priv->irq_flag = true;
++	wake_up_interruptible(&priv->irq_wq);
++
++	mod_timer(&priv->tc6_timer, jiffies + msecs_to_jiffies(TIMEOUT));
++}
++
+ static int lan865x_net_close(struct net_device *netdev)
+ {
+ 	struct lan865x_priv *priv = netdev_priv(netdev);
+@@ -710,7 +737,7 @@ static int lan865x_net_open(struct net_device *netdev)
+ 
+ 	if (!is_valid_ether_addr(netdev->dev_addr)) {
+ 		if (netif_msg_ifup(priv))
+-			netdev_err(netdev, "invalid MAC address %pM\n", netdev->dev_addr);
++			netdev_err(netdev, "Invalid MAC address %pM\n", netdev->dev_addr);
+ 		return -EADDRNOTAVAIL;
+ 	}
+ 	ret = lan865x_set_hw_macaddr(netdev);
+@@ -729,20 +756,13 @@ static int lan865x_net_open(struct net_device *netdev)
+ static void lan865x_tx_timeout(struct net_device *netdev, unsigned int txqueue)
+ {
+ 	struct lan865x_priv *priv = netdev_priv(netdev);
+-	int ret;
+ 
+-	if (netif_msg_timer(priv))
+-		netdev_err(netdev, "tx timeout\n");
++	if (netif_msg_timer(priv)) {
++		if (printk_ratelimit())
++			netdev_err(netdev, "tx timeout\n");
++	}
+ 
+ 	netdev->stats.tx_errors++;
+-	if (netif_running(netdev)) {
+-		lan865x_net_close(netdev);
+-		ret = lan865x_net_open(netdev);
+-		if (unlikely(ret)) {
+-			netdev_info(netdev, "could not restart %d\n", ret);
+-			dev_close(netdev);
+-		}
+-	}
+ }
+ 
+ static const struct net_device_ops lan865x_netdev_ops = {
+@@ -837,6 +857,7 @@ static int lan865x_probe(struct spi_device *spi)
+ 	priv->netdev = netdev;	/* priv to netdev reference */
+ 	priv->spi = spi;	/* priv to spi reference */
+ 	priv->msg_enable = netif_msg_init(debug.msg_enable, LAN865X_MSG_DEFAULT);
++	mutex_init(&priv->lock);
+ 	spi_set_drvdata(spi, priv);	/* spi to priv reference */
+ 	SET_NETDEV_DEV(netdev, &spi->dev);
+ 
+@@ -846,7 +867,8 @@ static int lan865x_probe(struct spi_device *spi)
+ 	priv->plca_node_count = plca_node_count;
+ 
+ 	init_completion(&priv->tc6_completion);
+-	init_waitqueue_head(&priv->tc6_wq);
++	init_waitqueue_head(&priv->irq_wq);
++	init_waitqueue_head(&priv->ns_wq);
+ 
+ #ifdef CONFIG_OF
+ 	ret = lan865x_get_of_data(priv);
+@@ -861,13 +883,22 @@ static int lan865x_probe(struct spi_device *spi)
+ 		goto error_platform_data;
+ 	}
+ 
+-	priv->tc6_task = kthread_run(tc6_handler, priv, "tc6_task %s",
+-				     dev_name(&spi->dev));
+-	if (IS_ERR(priv->tc6_task)) {
+-		ret = PTR_ERR(priv->tc6_task);
+-		goto error_tc6_task;
++	timer_setup(&priv->tc6_timer, timer_callback, 0);
++	mod_timer(&priv->tc6_timer, jiffies + msecs_to_jiffies(TIMEOUT));
++
++	priv->irq_task = kthread_run(irq_handler, priv, "irq_task");
++	if (IS_ERR(priv->irq_task)) {
++		ret = PTR_ERR(priv->irq_task);
++		goto error_irq_task;
+ 	}
+-	sched_set_fifo(priv->tc6_task);
++	sched_set_fifo(priv->irq_task);
++
++	priv->ns_task = kthread_run(ns_handler, priv, "ns_task");
++	if (IS_ERR(priv->ns_task)) {
++		ret = PTR_ERR(priv->ns_task);
++		goto error_ns_task;
++	}
++	sched_set_fifo(priv->ns_task);
+ 
+ 	ret = lan865x_init(priv);
+ 	if (!ret) {
+@@ -892,7 +923,7 @@ static int lan865x_probe(struct spi_device *spi)
+ 					dev_name(&spi->dev), priv);
+ 	if ((ret != -ENOTCONN) && (ret < 0)) {
+ 		dev_err(&spi->dev, "error attaching irq %d\n", ret);
+-		goto error_init;
++		goto error_request_irq;
+ 	}
+ 
+ 	netdev->if_port = IF_PORT_10BASET;
+@@ -921,8 +952,12 @@ static int lan865x_probe(struct spi_device *spi)
+ error_netdev_register:
+ 	devm_free_irq(&spi->dev, spi->irq, priv);
+ error_init:
+-	kthread_stop(priv->tc6_task);
+-error_tc6_task:
++error_request_irq:
++	kthread_stop(priv->ns_task);
++error_ns_task:
++	kthread_stop(priv->irq_task);
++error_irq_task:
++	del_timer(&priv->tc6_timer);
+ error_platform_data:
+ 	free_netdev(netdev);
+ error_alloc:
+@@ -933,10 +968,12 @@ static int lan865x_remove(struct spi_device *spi)
+ {
+ 	struct lan865x_priv *priv = spi_get_drvdata(spi);
+ 
++	del_timer(&priv->tc6_timer);
+ 	unregister_netdev(priv->netdev);
+ 	if (spi->irq > 0)
+ 		devm_free_irq(&spi->dev, spi->irq, priv);
+-	kthread_stop(priv->tc6_task);
++	kthread_stop(priv->irq_task);
++	kthread_stop(priv->ns_task);
+ 	free_netdev(priv->netdev);
+ 
+ 	return 0;
+diff --git a/drivers/net/ethernet/microchip/lan865x/tc6-conf.h b/drivers/net/ethernet/microchip/lan865x/tc6-conf.h
+deleted file mode 100755
+index ccade6abbbff..000000000000
+--- a/drivers/net/ethernet/microchip/lan865x/tc6-conf.h
++++ /dev/null
+@@ -1,126 +0,0 @@
+-/*------------------------------------------------------------------------------------------------*/
+-/* Configuration of Low Level Driver for OpenAlliance TC6 10BASE-T1S MACPHY via SPI protocol      */
+-/* Copyright 2021, Microchip Technology Inc. and its subsidiaries.                                */
+-/*                                                                                                */
+-/* Redistribution and use in source and binary forms, with or without                             */
+-/* modification, are permitted provided that the following conditions are met:                    */
+-/*                                                                                                */
+-/* 1. Redistributions of source code must retain the above copyright notice, this                 */
+-/*    list of conditions and the following disclaimer.                                            */
+-/*                                                                                                */
+-/* 2. Redistributions in binary form must reproduce the above copyright notice,                   */
+-/*    this list of conditions and the following disclaimer in the documentation                   */
+-/*    and/or other materials provided with the distribution.                                      */
+-/*                                                                                                */
+-/* 3. Neither the name of the copyright holder nor the names of its                               */
+-/*    contributors may be used to endorse or promote products derived from                        */
+-/*    this software without specific prior written permission.                                    */
+-/*                                                                                                */
+-/* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"                    */
+-/* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE                      */
+-/* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE                 */
+-/* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE                   */
+-/* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL                     */
+-/* DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR                     */
+-/* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER                     */
+-/* CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,                  */
+-/* OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE                  */
+-/* OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                           */
+-/*------------------------------------------------------------------------------------------------*/
+-#ifndef TC6_CONFIG_H_
+-#define TC6_CONFIG_H_
+-
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+-#include <asm-generic/bug.h>
+-
+-/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+-/*                          USER ADJUSTABLE                             */
+-/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+-
+-/**
+- * \brief Platform specific assertion call. Maybe defined to nothing
+- */
+-#ifndef TC6_ASSERT
+-#define TC6_ASSERT(condition)  BUG_ON(condition?false:true)
+-#endif
+-
+-/**
+- * \brief Set the maximum amount of parallel TC6 instances. 1 means a single MACPHY hardware is attached
+- */
+-#ifndef TC6_MAX_INSTANCES
+-#define TC6_MAX_INSTANCES   (3)
+-#endif
+-
+-/**
+- * \brief Defines the additional payload caused by the TC6 protocol (Footer or Header)
+- * \note This value is defined by the Open Alliance, do not modify.
+- */
+-#ifndef TC6_HEADER_SIZE
+-#define TC6_HEADER_SIZE     (4)
+-#endif
+-
+-/**
+- * \brief Defines the data payload length of a single TC6 chunk
+- * \note The only valid values are either 32 or 64
+- */
+-#ifndef TC6_CHUNK_SIZE
+-#define TC6_CHUNK_SIZE      (64)
+-#endif
+-
+-/**
+- * \brief Defines the entire payload length of a single TC6 chunk including header / footer.
+- * \note Do not modify.
+- */
+-#ifndef TC6_CHUNK_BUF_SIZE
+-#define TC6_CHUNK_BUF_SIZE  (TC6_CHUNK_SIZE + TC6_HEADER_SIZE)
+-#endif
+-
+-/**
+- * \brief Set the queue length for control data
+- * \note Given length must be power of 2 (2^n).
+- */
+-#ifndef REG_OP_ARRAY_SIZE
+-#define REG_OP_ARRAY_SIZE   (12)
+-#endif
+-
+-/**
+- * \brief Defines the maximum burst length of an SPI transfer. Meaning number of TC6 chunks with a single SPI transaction.
+- * \note Depending on the situation, less chunks maybe transfered within a single transaction.
+- */
+-#ifndef TC6_CHUNKS_XACT
+-#define TC6_CHUNKS_XACT     (22)
+-#endif
+-/**
+- * \brief Defines the queue size for holding entire MOSI and MISO data
+- */
+-#ifndef SPI_FULL_BUFFERS
+-#define SPI_FULL_BUFFERS    (4)
+-#endif
+-
+-/**
+- * \brief Defines the queue size for holding pointer to Ethernet frames coming out of the TCP/IP stack.
+- * \note Only a reference to the payload is stored, not the entire payload it self.
+- */
+-#ifndef TC6_TX_ETH_QSIZE
+-#define TC6_TX_ETH_QSIZE    (4)
+-#endif
+-
+-/**
+- * \brief Defines the maximum amount of simultaneous control register operations
+- * \note Do not modify.
+- */
+-#ifndef TC6_MAX_CNTRL_VARS
+-#define TC6_MAX_CNTRL_VARS  (1)
+-#endif
+-
+-/**
+- * \brief Defines the length of the history buffer used to calculate the next average receive length
+- */
+-#ifndef AVG_ARRAY_LEN
+-#define AVG_ARRAY_LEN       (5)
+-#endif
+-
+-#endif /* TC6_CONFIG_H_ */
+diff --git a/drivers/net/ethernet/microchip/lan865x/tc6-queue.h b/drivers/net/ethernet/microchip/lan865x/tc6-queue.h
+deleted file mode 100755
+index 318eef14f7c5..000000000000
+--- a/drivers/net/ethernet/microchip/lan865x/tc6-queue.h
++++ /dev/null
+@@ -1,252 +0,0 @@
+-#ifndef TC6_QUEUE_
+-#define TC6_QUEUE_
+-
+-/* DO NOT MODIFY: generated from tc6-queue.conf */
+-/*------------------------------------------------------------------------------------------------*/
+-/* Low Level Driver for OpenAlliance TC6 10BASE-T1S MACPHY via SPI protocol                       */
+-/* Copyright 2021, Microchip Technology Inc. and its subsidiaries.                                */
+-/*                                                                                                */
+-/* Redistribution and use in source and binary forms, with or without                             */
+-/* modification, are permitted provided that the following conditions are met:                    */
+-/*                                                                                                */
+-/* 1. Redistributions of source code must retain the above copyright notice, this                 */
+-/*    list of conditions and the following disclaimer.                                            */
+-/*                                                                                                */
+-/* 2. Redistributions in binary form must reproduce the above copyright notice,                   */
+-/*    this list of conditions and the following disclaimer in the documentation                   */
+-/*    and/or other materials provided with the distribution.                                      */
+-/*                                                                                                */
+-/* 3. Neither the name of the copyright holder nor the names of its                               */
+-/*    contributors may be used to endorse or promote products derived from                        */
+-/*    this software without specific prior written permission.                                    */
+-/*                                                                                                */
+-/* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"                    */
+-/* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE                      */
+-/* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE                 */
+-/* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE                   */
+-/* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL                     */
+-/* DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR                     */
+-/* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER                     */
+-/* CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,                  */
+-/* OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE                  */
+-/* OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                           */
+-/*------------------------------------------------------------------------------------------------*/
+-
+-#include <linux/types.h>
+-
+-struct qtxeth {
+-    void *priv;
+-    TC6_RawTxCallback_t txCallback;
+-    const uint8_t *ptr;
+-    uint16_t len;
+-};
+-
+-#define TC6_CNTRL_BUF_SIZE  ((2 + (TC6_MAX_CNTRL_VARS * 2)) * 4)
+-#define TC6_SPI_BUF_SIZE    (TC6_CHUNKS_XACT * TC6_CHUNK_BUF_SIZE)
+-
+-struct qspibuf {
+-    uint8_t txBuff[TC6_SPI_BUF_SIZE];
+-    uint8_t rxBuff[TC6_SPI_BUF_SIZE];
+-    uint16_t length;
+-};
+-
+-enum register_op_type
+-{
+-    REGISTER_OP_INVALLID,
+-    REGISTER_OP_WRITE,
+-    REGISTER_OP_READ,
+-    REGISTER_OP_READWRITE_STAGE1,
+-    REGISTER_OP_READWRITE_STAGE2
+-};
+-
+-struct register_operation {
+-    uint8_t tx_buf[TC6_CNTRL_BUF_SIZE];
+-    uint8_t rx_buf[TC6_CNTRL_BUF_SIZE];
+-    TC6_RegCallback_t callback;
+-    void *tag;
+-    enum register_op_type op;
+-    uint32_t modifyValue;
+-    uint32_t modifyMask;
+-    uint32_t regAddr;
+-    uint16_t length;
+-    bool secure;
+-};
+-
+-/*
+- * namespace: qtxeth
+- * type: "struct qtxeth"
+- * stages: enqueue convert
+- */
+-
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+-struct qtxeth_queue {
+-    struct qtxeth *buffer_;
+-    unsigned size_;
+-    unsigned enqueue_, convert_;
+-};
+-
+-static inline void init_qtxeth_queue(struct qtxeth_queue *q, struct qtxeth *buffer, unsigned size)
+-    { q->buffer_ = buffer; q->size_ = size; q->enqueue_ = 0u; q->convert_ = 0u; }
+-
+-/* enqueue */
+-static inline bool qtxeth_enqueue_ready(struct qtxeth_queue const *q) {
+-    return 0u != ((q->enqueue_ - q->convert_) < q->size_); }
+-static inline struct qtxeth *qtxeth_enqueue_ptr(struct qtxeth_queue const *q) {
+-    return &q->buffer_[(q->enqueue_ & (q->size_ - 1u))]; }
+-static inline void qtxeth_enqueue_done(struct qtxeth_queue *q) {
+-    ++q->enqueue_; }
+-static inline void qtxeth_enqueue_undo(struct qtxeth_queue *q) {
+-    --q->enqueue_; }
+-static inline unsigned qtxeth_enqueue_cap(struct qtxeth_queue const *q) {
+-    return q->convert_ + q->size_ - q->enqueue_; }
+-
+-/* convert */
+-static inline bool qtxeth_convert_ready(struct qtxeth_queue const *q) {
+-    return (q->enqueue_ - q->convert_ - 1u) < q->size_; }
+-static inline struct qtxeth *qtxeth_convert_ptr(struct qtxeth_queue const *q) {
+-    return &q->buffer_[(q->convert_ & (q->size_ - 1u))]; }
+-static inline void qtxeth_convert_done(struct qtxeth_queue *q) {
+-    ++q->convert_; }
+-static inline void qtxeth_convert_undo(struct qtxeth_queue *q) {
+-    --q->convert_; }
+-static inline unsigned qtxeth_convert_cap(struct qtxeth_queue const *q) {
+-    return q->enqueue_ - q->convert_; }
+-
+-#ifdef __cplusplus
+-}
+-#endif
+-
+-/*
+- * namespace: qspibuf
+- * type: "struct qspibuf"
+- * stages: stage1_transfer stage2_int stage3_process
+- */
+-
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+-struct qspibuf_queue {
+-    struct qspibuf *buffer_;
+-    unsigned size_;
+-    unsigned stage1_transfer_, stage2_int_, stage3_process_;
+-};
+-
+-static inline void init_qspibuf_queue(struct qspibuf_queue *q, struct qspibuf *buffer, unsigned size)
+-    { q->buffer_ = buffer; q->size_ = size; q->stage1_transfer_ = 0u; q->stage2_int_ = 0u; q->stage3_process_ = 0u; }
+-
+-/* stage1_transfer */
+-static inline bool qspibuf_stage1_transfer_ready(struct qspibuf_queue const *q) {
+-    return 0u != ((q->stage1_transfer_ - q->stage3_process_) < q->size_); }
+-static inline struct qspibuf *qspibuf_stage1_transfer_ptr(struct qspibuf_queue const *q) {
+-    return &q->buffer_[(q->stage1_transfer_ & (q->size_ - 1u))]; }
+-static inline void qspibuf_stage1_transfer_done(struct qspibuf_queue *q) {
+-    ++q->stage1_transfer_; }
+-static inline void qspibuf_stage1_transfer_undo(struct qspibuf_queue *q) {
+-    --q->stage1_transfer_; }
+-static inline unsigned qspibuf_stage1_transfer_cap(struct qspibuf_queue const *q) {
+-    return q->stage3_process_ + q->size_ - q->stage1_transfer_; }
+-
+-/* stage2_int */
+-static inline bool qspibuf_stage2_int_ready(struct qspibuf_queue const *q) {
+-    return (q->stage1_transfer_ - q->stage2_int_ - 1u) < q->size_; }
+-static inline struct qspibuf *qspibuf_stage2_int_ptr(struct qspibuf_queue const *q) {
+-    return &q->buffer_[(q->stage2_int_ & (q->size_ - 1u))]; }
+-static inline void qspibuf_stage2_int_done(struct qspibuf_queue *q) {
+-    ++q->stage2_int_; }
+-static inline void qspibuf_stage2_int_undo(struct qspibuf_queue *q) {
+-    --q->stage2_int_; }
+-static inline unsigned qspibuf_stage2_int_cap(struct qspibuf_queue const *q) {
+-    return q->stage1_transfer_ - q->stage2_int_; }
+-
+-/* stage3_process */
+-static inline bool qspibuf_stage3_process_ready(struct qspibuf_queue const *q) {
+-    return (q->stage2_int_ - q->stage3_process_ - 1u) < q->size_; }
+-static inline struct qspibuf *qspibuf_stage3_process_ptr(struct qspibuf_queue const *q) {
+-    return &q->buffer_[(q->stage3_process_ & (q->size_ - 1u))]; }
+-static inline void qspibuf_stage3_process_done(struct qspibuf_queue *q) {
+-    ++q->stage3_process_; }
+-static inline void qspibuf_stage3_process_undo(struct qspibuf_queue *q) {
+-    --q->stage3_process_; }
+-static inline unsigned qspibuf_stage3_process_cap(struct qspibuf_queue const *q) {
+-    return q->stage2_int_ - q->stage3_process_; }
+-
+-#ifdef __cplusplus
+-}
+-#endif
+-
+-/*
+- * namespace: regop
+- * type: "struct register_operation"
+- * stages: enqueue send int event
+- */
+-
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+-struct regop_queue {
+-    struct register_operation *buffer_;
+-    unsigned size_;
+-    unsigned enqueue_, send_, int_, event_;
+-};
+-
+-static inline void init_regop_queue(struct regop_queue *q, struct register_operation *buffer, unsigned size)
+-    { q->buffer_ = buffer; q->size_ = size; q->enqueue_ = 0u; q->send_ = 0u; q->int_ = 0u; q->event_ = 0u; }
+-
+-/* enqueue */
+-static inline bool regop_enqueue_ready(struct regop_queue const *q) {
+-    return 0u != ((q->enqueue_ - q->event_) < q->size_); }
+-static inline struct register_operation *regop_enqueue_ptr(struct regop_queue const *q) {
+-    return &q->buffer_[(q->enqueue_ & (q->size_ - 1u))]; }
+-static inline void regop_enqueue_done(struct regop_queue *q) {
+-    ++q->enqueue_; }
+-static inline void regop_enqueue_undo(struct regop_queue *q) {
+-    --q->enqueue_; }
+-static inline unsigned regop_enqueue_cap(struct regop_queue const *q) {
+-    return q->event_ + q->size_ - q->enqueue_; }
+-
+-/* send */
+-static inline bool regop_send_ready(struct regop_queue const *q) {
+-    return (q->enqueue_ - q->send_ - 1u) < q->size_; }
+-static inline struct register_operation *regop_send_ptr(struct regop_queue const *q) {
+-    return &q->buffer_[(q->send_ & (q->size_ - 1u))]; }
+-static inline void regop_send_done(struct regop_queue *q) {
+-    ++q->send_; }
+-static inline void regop_send_undo(struct regop_queue *q) {
+-    --q->send_; }
+-static inline unsigned regop_send_cap(struct regop_queue const *q) {
+-    return q->enqueue_ - q->send_; }
+-
+-/* int */
+-static inline bool regop_int_ready(struct regop_queue const *q) {
+-    return (q->send_ - q->int_ - 1u) < q->size_; }
+-static inline struct register_operation *regop_int_ptr(struct regop_queue const *q) {
+-    return &q->buffer_[(q->int_ & (q->size_ - 1u))]; }
+-static inline void regop_int_done(struct regop_queue *q) {
+-    ++q->int_; }
+-static inline void regop_int_undo(struct regop_queue *q) {
+-    --q->int_; }
+-static inline unsigned regop_int_cap(struct regop_queue const *q) {
+-    return q->send_ - q->int_; }
+-
+-/* event */
+-static inline bool regop_event_ready(struct regop_queue const *q) {
+-    return (q->int_ - q->event_ - 1u) < q->size_; }
+-static inline struct register_operation *regop_event_ptr(struct regop_queue const *q) {
+-    return &q->buffer_[(q->event_ & (q->size_ - 1u))]; }
+-static inline void regop_event_done(struct regop_queue *q) {
+-    ++q->event_; }
+-static inline void regop_event_undo(struct regop_queue *q) {
+-    --q->event_; }
+-static inline unsigned regop_event_cap(struct regop_queue const *q) {
+-    return q->int_ - q->event_; }
+-
+-#ifdef __cplusplus
+-}
+-#endif
+-
+-#endif /* TC6_QUEUE_ */
+diff --git a/drivers/net/ethernet/microchip/lan865x/tc6-regs.c b/drivers/net/ethernet/microchip/lan865x/tc6-regs.c
+deleted file mode 100755
+index 55a95cfbe2dd..000000000000
+--- a/drivers/net/ethernet/microchip/lan865x/tc6-regs.c
++++ /dev/null
+@@ -1,64 +0,0 @@
+-/*------------------------------------------------------------------------------------------------*/
+-/* Default Register Settings for OpenAlliance TC6 10BASE-T1S MACPHY via SPI protocol              */
+-/* Copyright 2021, Microchip Technology Inc. and its subsidiaries.                                */
+-/*                                                                                                */
+-/* Redistribution and use in source and binary forms, with or without                             */
+-/* modification, are permitted provided that the following conditions are met:                    */
+-/*                                                                                                */
+-/* 1. Redistributions of source code must retain the above copyright notice, this                 */
+-/*    list of conditions and the following disclaimer.                                            */
+-/*                                                                                                */
+-/* 2. Redistributions in binary form must reproduce the above copyright notice,                   */
+-/*    this list of conditions and the following disclaimer in the documentation                   */
+-/*    and/or other materials provided with the distribution.                                      */
+-/*                                                                                                */
+-/* 3. Neither the name of the copyright holder nor the names of its                               */
+-/*    contributors may be used to endorse or promote products derived from                        */
+-/*    this software without specific prior written permission.                                    */
+-/*                                                                                                */
+-/* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"                    */
+-/* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE                      */
+-/* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE                 */
+-/* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE                   */
+-/* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL                     */
+-/* DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR                     */
+-/* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER                     */
+-/* CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,                  */
+-/* OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE                  */
+-/* OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                           */
+-/*------------------------------------------------------------------------------------------------*/
+-
+-#include "tc6-regs.h"
+-
+-/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+-/*                          USER ADJUSTABLE                             */
+-/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+-
+-#define ENABLE_COLLISION_DETECTION  0
+-
+-/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+-/*                          AUTO GENERATED DEFINES                      */
+-/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+-
+-const MemoryMap_t TC6_MEMMAP[] = {
+-    {  .address = 0x00000001,  .value=0x00004000,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
+-    {  .address = 0x000130D0,  .value=0x000030EA,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
+-    {  .address = 0x000130D1,  .value=0x00000800,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
+-#if (ENABLE_COLLISION_DETECTION)
+-    {  .address = 0x00013084,  .value=0x0000338F,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
+-    {  .address = 0x00013087,  .value=0x0000901F,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
+-#else
+-    {  .address = 0x00013084,  .value=0x0000320F,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
+-    {  .address = 0x00013087,  .value=0x0000101F,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
+-#endif
+-    {  .address = 0x00013085,  .value=0x00000006,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
+-    {  .address = 0x0001308A,  .value=0x0000C0FF,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
+-    {  .address = 0x00013088,  .value=0x0000633F,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
+-    {  .address = 0x0001308B,  .value=0x00000404,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
+-    {  .address = 0x00013080,  .value=0x00000680,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
+-    {  .address = 0x000130F1,  .value=0x00002440,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
+-    {  .address = 0x00013096,  .value=0x00002000,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
+-    {  .address = 0x00013099,  .value=0x00007F80,  .mask=0x00000000,  .op=MemOp_Write,  .secure=false  },
+-};
+-
+-const uint32_t TC6_MEMMAP_LENGTH = (sizeof(TC6_MEMMAP) / sizeof(MemoryMap_t));
+diff --git a/drivers/net/ethernet/microchip/lan865x/tc6-regs.h b/drivers/net/ethernet/microchip/lan865x/tc6-regs.h
+deleted file mode 100755
+index ac999fd39f6c..000000000000
+--- a/drivers/net/ethernet/microchip/lan865x/tc6-regs.h
++++ /dev/null
+@@ -1,44 +0,0 @@
+-/*------------------------------------------------------------------------------------------------*/
+-/* Default Register Settings for OpenAlliance TC6 10BASE-T1S MACPHY via SPI protocol              */
+-/* Copyright 2021, Microchip Technology Inc. and its subsidiaries.                                */
+-/*                                                                                                */
+-/* Redistribution and use in source and binary forms, with or without                             */
+-/* modification, are permitted provided that the following conditions are met:                    */
+-/*                                                                                                */
+-/* 1. Redistributions of source code must retain the above copyright notice, this                 */
+-/*    list of conditions and the following disclaimer.                                            */
+-/*                                                                                                */
+-/* 2. Redistributions in binary form must reproduce the above copyright notice,                   */
+-/*    this list of conditions and the following disclaimer in the documentation                   */
+-/*    and/or other materials provided with the distribution.                                      */
+-/*                                                                                                */
+-/* 3. Neither the name of the copyright holder nor the names of its                               */
+-/*    contributors may be used to endorse or promote products derived from                        */
+-/*    this software without specific prior written permission.                                    */
+-/*                                                                                                */
+-/* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"                    */
+-/* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE                      */
+-/* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE                 */
+-/* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE                   */
+-/* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL                     */
+-/* DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR                     */
+-/* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER                     */
+-/* CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,                  */
+-/* OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE                  */
+-/* OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                           */
+-/*------------------------------------------------------------------------------------------------*/
+-#ifndef TC6_REGS_H_
+-#define TC6_REGS_H_
+-
+-#include <linux/types.h>
+-#include "tc6.h"
+-
+-/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+-/*                          AUTO GENERATED DEFINES                      */
+-/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+-
+-extern const uint32_t TC6_MEMMAP_LENGTH;
+-
+-extern const MemoryMap_t TC6_MEMMAP[];
+-
+-#endif /* TC6_REGS_H_ */
+diff --git a/drivers/net/ethernet/microchip/lan865x/tc6.c b/drivers/net/ethernet/microchip/lan865x/tc6.c
+index aa1d9ade56a9..d81d512d3638 100755
+--- a/drivers/net/ethernet/microchip/lan865x/tc6.c
++++ b/drivers/net/ethernet/microchip/lan865x/tc6.c
+@@ -30,9 +30,7 @@
+ 
+ #include <linux/types.h>
+ #include <linux/string.h>
+-#include "tc6-conf.h"
+ #include "tc6.h"
+-#include "tc6-queue.h"
+ 
+ /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+ /*                          USER ADJUSTABLE                             */
+@@ -112,63 +110,6 @@
+ #define FTR_DATA_MASK  \
+     (MK_MASK(FTR_SV, 1u) | MK_MASK(FTR_DV, 1u) | MK_MASK(FTR_EV, 1u))
+ 
+-/* Internal structures {{{ */
+-
+-struct spi_prot {
+-    struct qtxeth tx_eth_buffer[TC6_TX_ETH_QSIZE];
+-    struct qtxeth_queue eth_q;
+-    uint16_t offsetEth;
+-    uint16_t offsetRx;
+-    uint8_t seq_num;
+-    uint8_t txc;
+-    bool synced;
+-    bool exst_locked;
+-    bool eth_started;
+-    bool eth_error;
+-    bool rda;
+-};
+-
+-/* }}} */
+-
+-typedef enum
+-{ SPI_OP_INVALID,
+-  SPI_OP_DATA,
+-  SPI_OP_REG
+-} SpiOp_t;
+-
+-struct average_rx_length
+-{
+-    uint16_t length[AVG_ARRAY_LEN];
+-    uint16_t remainingTrail;
+-    uint8_t pos;
+-};
+-
+-/** Integrator needs to allocate this structure. But the elements must not be accessed.
+- *  They are getting filled via function calls only.
+- */
+-struct TC6_t
+-{
+-    struct qspibuf spiBuf[SPI_FULL_BUFFERS];
+-    struct qspibuf_queue qSpi;
+-    struct register_operation regop_storage[REG_OP_ARRAY_SIZE];
+-    struct regop_queue regop_q;
+-    struct spi_prot prot;
+-    struct average_rx_length avg;
+-    void *gTag;
+-    volatile SpiOp_t currentOp;
+-    uint32_t magic;
+-    uint8_t instance;
+-    uint8_t remainingTrail;
+-    bool alreadyInControlService;
+-    bool alreadyInDataService;
+-    bool initDone;
+-    bool enableData;
+-    bool intContext;
+-};
+-
+-static struct TC6_t m_tc6[TC6_MAX_INSTANCES];
+-static bool m_tc6Valid[TC6_MAX_INSTANCES] = { 0 };
+-
+ /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+ /*                      PRIVATE FUNCTION PROTOTYPES                     */
+ /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+@@ -195,42 +136,154 @@ static uint16_t mk_data_tx(TC6_t *g, uint8_t *tx_buf, uint16_t tx_buf_len);
+ static void enqueue_rx_spi(TC6_t *g, const uint8_t *buff, uint16_t buf_len);
+ static void update_credit_cnt(TC6_t *g, const uint8_t *buff, uint16_t buf_len);
+ 
++static inline void init_qtxeth_queue(struct qtxeth_queue *q, struct qtxeth *buffer, unsigned size)
++    { q->buffer_ = buffer; q->size_ = size; q->enqueue_ = 0u; q->convert_ = 0u; }
++
++/* enqueue */
++static inline bool qtxeth_enqueue_ready(struct qtxeth_queue const *q) {
++    return 0u != ((q->enqueue_ - q->convert_) < q->size_); }
++static inline struct qtxeth *qtxeth_enqueue_ptr(struct qtxeth_queue const *q) {
++    return &q->buffer_[(q->enqueue_ & (q->size_ - 1u))]; }
++static inline void qtxeth_enqueue_done(struct qtxeth_queue *q) {
++    ++q->enqueue_; }
++static inline void qtxeth_enqueue_undo(struct qtxeth_queue *q) {
++    --q->enqueue_; }
++static inline unsigned qtxeth_enqueue_cap(struct qtxeth_queue const *q) {
++    return q->convert_ + q->size_ - q->enqueue_; }
++
++/* convert */
++static inline bool qtxeth_convert_ready(struct qtxeth_queue const *q) {
++    return (q->enqueue_ - q->convert_ - 1u) < q->size_; }
++static inline struct qtxeth *qtxeth_convert_ptr(struct qtxeth_queue const *q) {
++    return &q->buffer_[(q->convert_ & (q->size_ - 1u))]; }
++static inline void qtxeth_convert_done(struct qtxeth_queue *q) {
++    ++q->convert_; }
++static inline void qtxeth_convert_undo(struct qtxeth_queue *q) {
++    --q->convert_; }
++static inline unsigned qtxeth_convert_cap(struct qtxeth_queue const *q) {
++    return q->enqueue_ - q->convert_; }
++
++/*
++ * namespace: qspibuf
++ * type: "struct qspibuf"
++ * stages: stage1_transfer stage2_int stage3_process
++ */
++
++static inline void init_qspibuf_queue(struct qspibuf_queue *q, struct qspibuf *buffer, unsigned size)
++    { q->buffer_ = buffer; q->size_ = size; q->stage1_transfer_ = 0u; q->stage2_int_ = 0u; q->stage3_process_ = 0u; }
++
++/* stage1_transfer */
++static inline bool qspibuf_stage1_transfer_ready(struct qspibuf_queue const *q) {
++    return 0u != ((q->stage1_transfer_ - q->stage3_process_) < q->size_); }
++static inline struct qspibuf *qspibuf_stage1_transfer_ptr(struct qspibuf_queue const *q) {
++    return &q->buffer_[(q->stage1_transfer_ & (q->size_ - 1u))]; }
++static inline void qspibuf_stage1_transfer_done(struct qspibuf_queue *q) {
++    ++q->stage1_transfer_; }
++static inline void qspibuf_stage1_transfer_undo(struct qspibuf_queue *q) {
++    --q->stage1_transfer_; }
++static inline unsigned qspibuf_stage1_transfer_cap(struct qspibuf_queue const *q) {
++    return q->stage3_process_ + q->size_ - q->stage1_transfer_; }
++
++/* stage2_int */
++static inline bool qspibuf_stage2_int_ready(struct qspibuf_queue const *q) {
++    return (q->stage1_transfer_ - q->stage2_int_ - 1u) < q->size_; }
++static inline struct qspibuf *qspibuf_stage2_int_ptr(struct qspibuf_queue const *q) {
++    return &q->buffer_[(q->stage2_int_ & (q->size_ - 1u))]; }
++static inline void qspibuf_stage2_int_done(struct qspibuf_queue *q) {
++    ++q->stage2_int_; }
++static inline void qspibuf_stage2_int_undo(struct qspibuf_queue *q) {
++    --q->stage2_int_; }
++static inline unsigned qspibuf_stage2_int_cap(struct qspibuf_queue const *q) {
++    return q->stage1_transfer_ - q->stage2_int_; }
++
++/* stage3_process */
++static inline bool qspibuf_stage3_process_ready(struct qspibuf_queue const *q) {
++    return (q->stage2_int_ - q->stage3_process_ - 1u) < q->size_; }
++static inline struct qspibuf *qspibuf_stage3_process_ptr(struct qspibuf_queue const *q) {
++    return &q->buffer_[(q->stage3_process_ & (q->size_ - 1u))]; }
++static inline void qspibuf_stage3_process_done(struct qspibuf_queue *q) {
++    ++q->stage3_process_; }
++static inline void qspibuf_stage3_process_undo(struct qspibuf_queue *q) {
++    --q->stage3_process_; }
++static inline unsigned qspibuf_stage3_process_cap(struct qspibuf_queue const *q) {
++    return q->stage2_int_ - q->stage3_process_; }
++
++/*
++ * namespace: regop
++ * type: "struct register_operation"
++ * stages: enqueue send int event
++ */
++
++static inline void init_regop_queue(struct regop_queue *q, struct register_operation *buffer, unsigned size)
++    { q->buffer_ = buffer; q->size_ = size; q->enqueue_ = 0u; q->send_ = 0u; q->int_ = 0u; q->event_ = 0u; }
++
++/* enqueue */
++static inline bool regop_enqueue_ready(struct regop_queue const *q) {
++    return 0u != ((q->enqueue_ - q->event_) < q->size_); }
++static inline struct register_operation *regop_enqueue_ptr(struct regop_queue const *q) {
++    return &q->buffer_[(q->enqueue_ & (q->size_ - 1u))]; }
++static inline void regop_enqueue_done(struct regop_queue *q) {
++    ++q->enqueue_; }
++static inline void regop_enqueue_undo(struct regop_queue *q) {
++    --q->enqueue_; }
++static inline unsigned regop_enqueue_cap(struct regop_queue const *q) {
++    return q->event_ + q->size_ - q->enqueue_; }
++
++/* send */
++static inline bool regop_send_ready(struct regop_queue const *q) {
++    return (q->enqueue_ - q->send_ - 1u) < q->size_; }
++static inline struct register_operation *regop_send_ptr(struct regop_queue const *q) {
++    return &q->buffer_[(q->send_ & (q->size_ - 1u))]; }
++static inline void regop_send_done(struct regop_queue *q) {
++    ++q->send_; }
++static inline void regop_send_undo(struct regop_queue *q) {
++    --q->send_; }
++static inline unsigned regop_send_cap(struct regop_queue const *q) {
++    return q->enqueue_ - q->send_; }
++
++/* int */
++static inline bool regop_int_ready(struct regop_queue const *q) {
++    return (q->send_ - q->int_ - 1u) < q->size_; }
++static inline struct register_operation *regop_int_ptr(struct regop_queue const *q) {
++    return &q->buffer_[(q->int_ & (q->size_ - 1u))]; }
++static inline void regop_int_done(struct regop_queue *q) {
++    ++q->int_; }
++static inline void regop_int_undo(struct regop_queue *q) {
++    --q->int_; }
++static inline unsigned regop_int_cap(struct regop_queue const *q) {
++    return q->send_ - q->int_; }
++
++/* event */
++static inline bool regop_event_ready(struct regop_queue const *q) {
++    return (q->int_ - q->event_ - 1u) < q->size_; }
++static inline struct register_operation *regop_event_ptr(struct regop_queue const *q) {
++    return &q->buffer_[(q->event_ & (q->size_ - 1u))]; }
++static inline void regop_event_done(struct regop_queue *q) {
++    ++q->event_; }
++static inline void regop_event_undo(struct regop_queue *q) {
++    --q->event_; }
++static inline unsigned regop_event_cap(struct regop_queue const *q) {
++    return q->int_ - q->event_; }
++
++
+ /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+ /*                         PUBLIC FUNCTIONS                             */
+ /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+ 
+-TC6_t *TC6_Init(void *pGlobalTag)
++void TC6_Init(TC6_t *g)
+ {
+-    uint8_t i;
+-    struct TC6_t *g = NULL;
+-    for (i = 0; i < TC6_MAX_INSTANCES; i++) {
+-        if (!m_tc6Valid[i]) {
+-            /* Setup memory */
+-            m_tc6Valid[i] = true;
+-            g = &m_tc6[i];
+-            (void)memset(g, 0, sizeof(TC6_t));
+-            avgInitialize(g);
+-            g->instance = i;
+-            g->magic = TC6_MAGIC;
+-            g->prot.txc = 24;
+-            g->gTag = pGlobalTag;
+-            init_qtxeth_queue(&g->prot.eth_q, g->prot.tx_eth_buffer, TC6_TX_ETH_QSIZE);
+-            init_qspibuf_queue(&g->qSpi, g->spiBuf, SPI_FULL_BUFFERS);
+-            init_regop_queue(&g->regop_q, g->regop_storage, REG_OP_ARRAY_SIZE);
+-            break;
+-        }
+-    }
+-    if (!g) {
+-        TC6_ASSERT(false);
+-    }
+-    return g;
++	(void)memset(g, 0, sizeof(TC6_t));
++	avgInitialize(g);
++	g->prot.txc = 24;
++	init_qtxeth_queue(&g->prot.eth_q, g->prot.tx_eth_buffer, TC6_TX_ETH_QSIZE);
++	init_qspibuf_queue(&g->qSpi, g->spiBuf, SPI_FULL_BUFFERS);
++	init_regop_queue(&g->regop_q, g->regop_storage, REG_OP_ARRAY_SIZE);
+ }
+ 
+ void TC6_Reset(TC6_t *g)
+ {
+     struct qtxeth_queue *qEth = &g->prot.eth_q;
+     struct regop_queue *qReg = &g->regop_q;
+-    TC6_ASSERT(g && (TC6_MAGIC == g->magic));
+ 
+     /* Wait for pending SPI transactions */
+     while(SPI_OP_INVALID != g->currentOp) {};
+@@ -272,7 +325,6 @@ void TC6_Reset(TC6_t *g)
+ 
+ void TC6_Service(TC6_t *g, bool interruptLevel)
+ {
+-    TC6_ASSERT(g && (TC6_MAGIC == g->magic));
+     if (!g->intContext) {
+         serviceControl(g);
+         if (g->enableData) {
+@@ -285,22 +337,17 @@ void TC6_Service(TC6_t *g, bool interruptLevel)
+ 
+ void TC6_EnableData(TC6_t *g, bool enable)
+ {
+-    TC6_ASSERT(g && (TC6_MAGIC == g->magic));
+     g->enableData = enable;
+-    if (g->enableData && !g->intContext) {
+-        serviceData(g, true);
+-    }
++    TC6_CB_OnNeedService(g, g->gTag);
+ }
+ 
+ uint8_t TC6_GetInstance(TC6_t *g)
+ {
+-    TC6_ASSERT(g && (TC6_MAGIC == g->magic));
+     return g ? g->instance : 0xFFu;
+ }
+ 
+ void TC6_GetState(TC6_t *g, uint8_t *pTxCredit, uint8_t *pRxCredit, bool *pSynced)
+ {
+-   TC6_ASSERT(g && (TC6_MAGIC == g->magic));
+    if (NULL != pTxCredit) {
+       *pTxCredit = g->prot.txc;
+    }
+@@ -315,12 +362,11 @@ void TC6_GetState(TC6_t *g, uint8_t *pTxCredit, uint8_t *pRxCredit, bool *pSynce
+ bool TC6_SendRawEthernetPacket(TC6_t *g, const uint8_t *pTx, uint16_t len, TC6_RawTxCallback_t txCallback, void *pTag)
+ {
+     bool success = true;
+-    TC6_ASSERT(g && (TC6_MAGIC == g->magic));
++
+     if (!g || !pTx || !len) {
+-        TC6_ASSERT(false);
+         success = false;
+     }
+-    if (success && g->enableData && g->initDone) {
++    if (success && g->enableData) {
+         struct qtxeth_queue *q = &g->prot.eth_q;
+         struct qtxeth *entry;
+         success = false;
+@@ -333,9 +379,7 @@ bool TC6_SendRawEthernetPacket(TC6_t *g, const uint8_t *pTx, uint16_t len, TC6_R
+             entry->priv = pTag;
+             qtxeth_enqueue_done(q);
+ 
+-            if (!g->intContext) {
+-                serviceData(g, false);
+-            }
++	    TC6_CB_OnNeedService(g, g->gTag);
+             success = true;
+         }
+     }
+@@ -419,7 +463,6 @@ uint16_t TC6_MultipleRegisterAccess(TC6_t *g, const MemoryMap_t *pMap, uint16_t
+ 				}
+ 				break;
+ 			default:
+-				TC6_ASSERT(false);
+ 				i = 0;
+ 				full = true;
+ 				break;
+@@ -439,7 +482,6 @@ void TC6_UnlockExtendedStatus(TC6_t *g)
+ 
+ static void initializeSpiEntry(struct qspibuf *newEntry)
+ {
+-    TC6_ASSERT(newEntry);
+     newEntry->length = 0;
+ #ifdef DEBUG
+     (void)memset(newEntry->txBuff, 0xCC, sizeof(newEntry->txBuff));
+@@ -480,101 +522,80 @@ static void addEmptyChunks(TC6_t *g, struct qspibuf *entry, bool enqueueEmpty)
+             g->remainingTrail = 0;
+         }
+     }
+-    TC6_ASSERT(!enqueueEmpty || entry->length);
+-    TC6_ASSERT(entry->length <= sizeof(entry->rxBuff));
+ }
+ 
+ static void serviceData(TC6_t *g, bool enqueueEmpty)
+ {
+-    TC6_ASSERT(g && (TC6_MAGIC == g->magic));
+-    if (!g->alreadyInDataService) {
+-        /* Protect against reentrant call */
+-        g->alreadyInDataService = true;
+-
+-        if (g->enableData && g->initDone && (SPI_OP_INVALID == g->currentOp) && (qspibuf_stage1_transfer_ready(&g->qSpi))) {
+-            uint16_t maxTxLen;
+-            /**********************************/
+-            /* Try to enqueue Ethernet chunks */
+-            /**********************************/
+-            struct qspibuf *entry = qspibuf_stage1_transfer_ptr(&g->qSpi);
+-            initializeSpiEntry(entry);
+-
+-            /**************************************/
+-            /* TX Data is getting generated here: */
+-            /**************************************/
+-            maxTxLen = g->prot.txc * TC6_CHUNK_BUF_SIZE;
+-            if (maxTxLen > sizeof(entry->txBuff)) {
+-                maxTxLen = sizeof(entry->txBuff);
+-            }
+-            entry->length = mk_data_tx(g, entry->txBuff, maxTxLen);
+-            addEmptyChunks(g, entry, (enqueueEmpty || g->prot.rda));
+-
+-            if (entry->length) {
+-                TC6_ASSERT(0 == (entry->length % TC6_CHUNK_BUF_SIZE));
+-                /* Call enqueue before actual SPI transfer to avoid race error with Interrupt handler */
+-                qspibuf_stage1_transfer_done(&g->qSpi);
+-                if (!spiTransaction(g, entry->txBuff, entry->rxBuff, entry->length, SPI_OP_DATA)) {
+-                    /* SPI driver is currently busy, restore previous states */
+-                    qspibuf_stage1_transfer_undo(&g->qSpi);
+-                }
+-            }
+-        }
+-        g->alreadyInDataService = false;
+-    }
++	if (g->enableData && (SPI_OP_INVALID == g->currentOp) && (qspibuf_stage1_transfer_ready(&g->qSpi))) {
++		uint16_t maxTxLen;
++		/**********************************/
++		/* Try to enqueue Ethernet chunks */
++		/**********************************/
++		struct qspibuf *entry = qspibuf_stage1_transfer_ptr(&g->qSpi);
++		initializeSpiEntry(entry);
++
++		/**************************************/
++		/* TX Data is getting generated here: */
++		/**************************************/
++		maxTxLen = g->prot.txc * TC6_CHUNK_BUF_SIZE;
++		if (maxTxLen > sizeof(entry->txBuff)) {
++			maxTxLen = sizeof(entry->txBuff);
++		}
++		entry->length = mk_data_tx(g, entry->txBuff, maxTxLen);
++		addEmptyChunks(g, entry, (enqueueEmpty || g->prot.rda));
++
++		if (entry->length) {
++			/* Call enqueue before actual SPI transfer to avoid race error with Interrupt handler */
++			qspibuf_stage1_transfer_done(&g->qSpi);
++			if (!spiTransaction(g, entry->txBuff, entry->rxBuff, entry->length, SPI_OP_DATA)) {
++				/* SPI driver is currently busy, restore previous states */
++				qspibuf_stage1_transfer_undo(&g->qSpi);
++			}
++		}
++	}
+ }
+ 
+ static void serviceControl(TC6_t *g)
+ {
+-    TC6_ASSERT(g && (TC6_MAGIC == g->magic));
+-    if (!g->alreadyInControlService) {
+-        /* Protect against reentrant call */
+-        g->alreadyInControlService = true;
+-
+-        /***************/
+-        /* Control TX  */
+-        /***************/
+-        if (SPI_OP_INVALID == g->currentOp) {
+-            if (regop_send_ready(&g->regop_q)) {
+-                /**************/
+-                /* CONTROL TX */
+-                /**************/
+-                struct register_operation *reg_op = regop_send_ptr(&g->regop_q);
+-
+-                /* Call enqueue before actual SPI transfer to avoid race error with Interrupt handler */
+-                regop_send_done(&g->regop_q);
+-
+-                g->currentOp = SPI_OP_REG;
+-                if (!TC6Stub_SpiTransaction(g->instance, reg_op->tx_buf, reg_op->rx_buf, reg_op->length, g->gTag)) {
+-                    g->currentOp = SPI_OP_INVALID;
+-                    regop_send_undo(&g->regop_q);
+-                }
+-            }
+-        }
++	/***************/
++	/* Control TX  */
++	/***************/
++	if (SPI_OP_INVALID == g->currentOp) {
++		if (regop_send_ready(&g->regop_q)) {
++			/**************/
++			/* CONTROL TX */
++			/**************/
++			struct register_operation *reg_op = regop_send_ptr(&g->regop_q);
++
++			/* Call enqueue before actual SPI transfer to avoid race error with Interrupt handler */
++			regop_send_done(&g->regop_q);
++
++			g->currentOp = SPI_OP_REG;
++			if (!TC6Stub_SpiTransaction(g, reg_op->tx_buf, reg_op->rx_buf, reg_op->length, g->gTag)) {
++				g->currentOp = SPI_OP_INVALID;
++				regop_send_undo(&g->regop_q);
++			}
++		}
++	}
+ 
+-        /****************************************/
+-        /* CONTROL RX and callback higher layer */
+-        /****************************************/
+-        while(regop_event_ready(&g->regop_q)) {
+-            struct register_operation *reg_op;
+-            uint32_t regVal = 0xFFFFFFFF;
+-            uint16_t num;
+-            reg_op = regop_event_ptr(&g->regop_q);
+-            num = read_rx_ctrl_buffer(reg_op->rx_buf, reg_op->length, &regVal, sizeof(regVal), reg_op->secure);
+-            if (REGISTER_OP_READWRITE_STAGE1 == reg_op->op) {
+-                modifyCallback(g, reg_op, (0u != num), reg_op->regAddr, regVal);
+-            } else if (NULL != reg_op->callback) {
+-                reg_op->callback(g, (0u != num), reg_op->regAddr, regVal, reg_op->tag, g->gTag);
+-            } else if (0u == num) {
+-                TC6_CB_OnError(g, TC6Error_NoHardware, g->gTag);
+-            } else {} /* MISRA enforced termination */
+-            regop_event_done(&g->regop_q);
+-            if (!g->initDone && g->enableData && !regop_send_ready(&g->regop_q)) {
+-                /* No further registers to be sent, init is finished */
+-                g->initDone = true;
+-            }
+-        }
+-        g->alreadyInControlService = false;
+-    }
++	/****************************************/
++	/* CONTROL RX and callback higher layer */
++	/****************************************/
++	while(regop_event_ready(&g->regop_q)) {
++		struct register_operation *reg_op;
++		uint32_t regVal = 0xFFFFFFFF;
++		uint16_t num;
++		reg_op = regop_event_ptr(&g->regop_q);
++		num = read_rx_ctrl_buffer(reg_op->rx_buf, reg_op->length, &regVal, sizeof(regVal), reg_op->secure);
++		if (REGISTER_OP_READWRITE_STAGE1 == reg_op->op) {
++			modifyCallback(g, reg_op, (0u != num), reg_op->regAddr, regVal);
++		} else if (NULL != reg_op->callback) {
++			reg_op->callback(g, (0u != num), reg_op->regAddr, regVal, reg_op->tag, g->gTag);
++		} else if (0u == num) {
++			TC6_CB_OnError(g, TC6Error_NoHardware, g->gTag);
++		} else {} /* MISRA enforced termination */
++		regop_event_done(&g->regop_q);
++	}
+ }
+ 
+ static bool spiTransaction(TC6_t *g, const uint8_t *pTx, uint8_t *pRx, uint16_t len, SpiOp_t op)
+@@ -582,7 +603,7 @@ static bool spiTransaction(TC6_t *g, const uint8_t *pTx, uint8_t *pRx, uint16_t
+     bool success = false;
+     if (g->currentOp == SPI_OP_INVALID) {
+         g->currentOp = op;
+-        success = TC6Stub_SpiTransaction(g->instance, pTx, pRx, len, g->gTag);
++        success = TC6Stub_SpiTransaction(g, pTx, pRx, len, g->gTag);
+         if (!success) {
+             g->currentOp = SPI_OP_INVALID;
+         }
+@@ -601,7 +622,7 @@ static void modifyCallback(TC6_t *g, struct register_operation *reg_op, bool suc
+                             , 0    /* mask */
+                             , reg_op->callback
+                             , reg_op->tag)) {
+-            TC6Stub_Print(g->instance, g->gTag, "ReadModifyWrite out of memory, increase REG_OP_ARRAY_SIZE\r\n");
++            TC6Stub_Print(g, g->gTag, "ReadModifyWrite out of memory, increase REG_OP_ARRAY_SIZE\r\n");
+         }
+     } else {
+         if (NULL != reg_op->callback) {
+@@ -616,8 +637,7 @@ static bool accessRegisters(TC6_t *g, enum register_op_type op, uint32_t addr, u
+     uint16_t payloadSize = 0;
+     bool write = true;
+     bool success = false;
+-    TC6_ASSERT(g && (TC6_MAGIC == g->magic));
+-    TC6_ASSERT(REGISTER_OP_INVALLID != op);
++
+     if (regop_enqueue_ready(&g->regop_q)) {
+         success = true;
+         switch(op) {
+@@ -635,7 +655,6 @@ static bool accessRegisters(TC6_t *g, enum register_op_type op, uint32_t addr, u
+             break;
+         case REGISTER_OP_INVALLID:
+         default:
+-            TC6_ASSERT(false);
+             success = false;
+             break;
+         }
+@@ -652,13 +671,11 @@ static bool accessRegisters(TC6_t *g, enum register_op_type op, uint32_t addr, u
+             payloadSize = mk_ctrl_req(write, false /* autoIncrement */, addr, 1 /* Array Len */, &value, reg_op->tx_buf, sizeof(reg_op->tx_buf));
+         }
+         if (payloadSize == 0u) {
+-            TC6Stub_Print(g->instance, g->gTag, "mk_xx_ctrl_req failed\r\n");
+-            TC6_ASSERT(false);
++            TC6Stub_Print(g, g->gTag, "mk_xx_ctrl_req failed\r\n");
+             success = false;
+         }
+     }
+     if (success) {
+-        TC6_ASSERT((unsigned)payloadSize <= sizeof(reg_op->tx_buf));
+         reg_op->regAddr = addr;
+         reg_op->length = payloadSize;
+         reg_op->op = op;
+@@ -669,9 +686,7 @@ static bool accessRegisters(TC6_t *g, enum register_op_type op, uint32_t addr, u
+         reg_op->modifyMask = modifyMask;
+ 
+         regop_enqueue_done(&g->regop_q);
+-        if (!g->intContext) {
+-            serviceControl(g);
+-        }
++		TC6_CB_OnNeedService(g, g->gTag);
+     }
+     return success;
+ }
+@@ -711,7 +726,7 @@ static void processDataRx(TC6_t *g)
+     /*******************************/
+     while (qspibuf_stage3_process_ready(&g->qSpi)) {
+         struct qspibuf *entry = qspibuf_stage3_process_ptr(&g->qSpi);
+-        TC6_ASSERT(0 == (entry->length % TC6_CHUNK_BUF_SIZE));
++
+         enqueue_rx_spi(g, entry->rxBuff, entry->length);
+         qspibuf_stage3_process_done(&g->qSpi);
+     }
+@@ -723,8 +738,6 @@ static void processDataRx(TC6_t *g)
+ 
+ static void on_tx_eth_done(TC6_t *g, const uint8_t *ptr, uint16_t len, TC6_RawTxCallback_t txCallback, void *priv)
+ {
+-    TC6_ASSERT(ptr && len);
+-
+     if (NULL != txCallback) {
+         txCallback(g, ptr, len, priv, g->gTag);
+     }
+@@ -952,8 +965,6 @@ static uint16_t process_tx(TC6_t *g, uint8_t *tx_buf)
+ #ifdef DEBUG
+         (void)memset(tx_buf, 0xCD, TC6_CHUNK_BUF_SIZE);
+ #endif
+-        TC6_ASSERT(g->prot.offsetEth <= entry->len);
+-
+         header |= MK_MASK(HDR_SEQ, g->prot.seq_num++);
+         if (!g->prot.offsetEth) {
+             header |= MK_MASK(HDR_SV, 1) | MK_MASK(HDR_SWO, 0);
+@@ -968,7 +979,6 @@ static uint16_t process_tx(TC6_t *g, uint8_t *tx_buf)
+ 		(void)memset(&tx_buf[TC6_HEADER_SIZE + tocopy_len], 0x0, padded_len);
+         }
+         g->prot.offsetEth += tocopy_len;
+-        TC6_ASSERT(g->prot.offsetEth <= entry->len);
+         if (g->prot.offsetEth == entry->len) {
+             if (entry->len < TC6_CHUNK_SIZE) {
+                 /* Test hack to round up tiny Ethernet frames to full chunk size. */
+@@ -993,7 +1003,6 @@ static uint16_t mk_data_tx(TC6_t *g, uint8_t *tx_buf, uint16_t tx_buf_len)
+     uint16_t result;
+     while (pos < tx_buf_len) {
+         result = process_tx(g, &tx_buf[pos]);
+-        TC6_ASSERT(0 == (result % TC6_CHUNK_BUF_SIZE));
+         if (!result) {
+             break;
+         }
+@@ -1094,7 +1103,6 @@ static void enqueue_rx_spi(TC6_t *g, const uint8_t *buff, uint16_t buf_len)
+     uint32_t processed;
+     bool success = true;
+     if (!buf_len || (buf_len % TC6_CHUNK_BUF_SIZE)) {
+-        TC6_ASSERT(false); /* integration error */
+         success = false;
+     }
+     for (processed = 0; success && (processed < buf_len); processed += TC6_CHUNK_BUF_SIZE) {
+@@ -1139,8 +1147,6 @@ static void update_credit_cnt(TC6_t *g, const uint8_t *buff, uint16_t buf_len)
+     uint32_t footer = net2value(last_fptr);
+     bool success = true;
+ 
+-    TC6_ASSERT(buf_len && (0 == (buf_len % (TC6_CHUNK_SIZE + 4))));
+-
+     if (0u != get_parity(footer)) {
+         success = false;
+     }
+@@ -1165,42 +1171,34 @@ static void update_credit_cnt(TC6_t *g, const uint8_t *buff, uint16_t buf_len)
+ /*
+  * This function is called from the interrupt.
+  */
+-void TC6Stub_CB_OnSpiBufferDone(uint8_t tc6instance, bool success)
++void TC6Stub_CB_OnSpiBufferDone(TC6_t *g, bool success)
+ {
+-    struct qspibuf *entry;
+-    TC6_t *g;
+-    if (tc6instance < TC6_MAX_INSTANCES) {
+-        g = &m_tc6[tc6instance];
+-        g->intContext = true;
+-        if (!success) {
+-            signal_rx_error(g, TC6Error_SpiError);
+-        }
+-        switch (g->currentOp) {
+-        case SPI_OP_DATA:
+-            if (!qspibuf_stage2_int_ready(&g->qSpi)) {
+-                TC6_ASSERT(false);
+-                break;
+-            }
+-            entry = qspibuf_stage2_int_ptr(&g->qSpi);
+-            update_credit_cnt(g, entry->rxBuff, entry->length);
+-            qspibuf_stage2_int_done(&g->qSpi);
+-            break;
+-        case SPI_OP_REG:
+-            if(!regop_int_ready(&g->regop_q)) {
+-                TC6_ASSERT(false);
+-                break;
+-            }
+-            regop_int_done(&g->regop_q);
+-            break;
+-        case SPI_OP_INVALID:
+-        default:
+-            TC6_ASSERT(false);
+-            break;
+-        }
+-        g->currentOp = SPI_OP_INVALID;
+-        g->intContext = false;
++	struct qspibuf *entry;
++
++	g->intContext = true;
++	if (!success) {
++		signal_rx_error(g, TC6Error_SpiError);
++	}
++	switch (g->currentOp) {
++		case SPI_OP_DATA:
++			if (!qspibuf_stage2_int_ready(&g->qSpi)) {
++				break;
++			}
++			entry = qspibuf_stage2_int_ptr(&g->qSpi);
++			update_credit_cnt(g, entry->rxBuff, entry->length);
++			qspibuf_stage2_int_done(&g->qSpi);
++			break;
++		case SPI_OP_REG:
++			if(!regop_int_ready(&g->regop_q)) {
++				break;
++			}
++			regop_int_done(&g->regop_q);
++			break;
++		case SPI_OP_INVALID:
++		default:
++			break;
++	}
++	g->currentOp = SPI_OP_INVALID;
++	g->intContext = false;
+ 	TC6_CB_OnNeedService(g, g->gTag);
+-    } else {
+-        TC6_ASSERT(false);
+-    }
+ }
+diff --git a/drivers/net/ethernet/microchip/lan865x/tc6.h b/drivers/net/ethernet/microchip/lan865x/tc6.h
+index 3d1f1492720a..1f43e8218a72 100755
+--- a/drivers/net/ethernet/microchip/lan865x/tc6.h
++++ b/drivers/net/ethernet/microchip/lan865x/tc6.h
+@@ -30,6 +30,7 @@
+ #ifndef TC6_H_
+ #define TC6_H_
+ 
++#include <asm-generic/bug.h>
+ #include <linux/types.h>
+ 
+ #ifdef __cplusplus
+@@ -40,6 +41,89 @@ extern "C" {
+ /*                            DEFINITIONS                               */
+ /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+ 
++/**
++ * \brief Platform specific assertion call. Maybe defined to nothing
++ */
++#ifndef TC6_ASSERT
++#define TC6_ASSERT(condition)  BUG_ON(condition?false:true)
++#endif
++
++/**
++ * \brief Set the maximum amount of parallel TC6 instances. 1 means a single MACPHY hardware is attached
++ */
++#ifndef TC6_MAX_INSTANCES
++#define TC6_MAX_INSTANCES   (3)
++#endif
++
++/**
++ * \brief Defines the additional payload caused by the TC6 protocol (Footer or Header)
++ * \note This value is defined by the Open Alliance, do not modify.
++ */
++#ifndef TC6_HEADER_SIZE
++#define TC6_HEADER_SIZE     (4)
++#endif
++
++/**
++ * \brief Defines the data payload length of a single TC6 chunk
++ * \note The only valid values are either 32 or 64
++ */
++#ifndef TC6_CHUNK_SIZE
++#define TC6_CHUNK_SIZE      (64)
++#endif
++
++/**
++ * \brief Defines the entire payload length of a single TC6 chunk including header / footer.
++ * \note Do not modify.
++ */
++#ifndef TC6_CHUNK_BUF_SIZE
++#define TC6_CHUNK_BUF_SIZE  (TC6_CHUNK_SIZE + TC6_HEADER_SIZE)
++#endif
++
++/**
++ * \brief Set the queue length for control data
++ * \note Given length must be power of 2 (2^n).
++ */
++#ifndef REG_OP_ARRAY_SIZE
++#define REG_OP_ARRAY_SIZE   (12)
++#endif
++
++/**
++ * \brief Defines the maximum burst length of an SPI transfer. Meaning number of TC6 chunks with a single SPI transaction.
++ * \note Depending on the situation, less chunks maybe transfered within a single transaction.
++ */
++#ifndef TC6_CHUNKS_XACT
++#define TC6_CHUNKS_XACT     (22)
++#endif
++/**
++ * \brief Defines the queue size for holding entire MOSI and MISO data
++ */
++#ifndef SPI_FULL_BUFFERS
++#define SPI_FULL_BUFFERS    (4)
++#endif
++
++/**
++ * \brief Defines the queue size for holding pointer to Ethernet frames coming out of the TCP/IP stack.
++ * \note Only a reference to the payload is stored, not the entire payload it self.
++ */
++#ifndef TC6_TX_ETH_QSIZE
++#define TC6_TX_ETH_QSIZE    (1024)
++#endif
++
++/**
++ * \brief Defines the maximum amount of simultaneous control register operations
++ * \note Do not modify.
++ */
++#ifndef TC6_MAX_CNTRL_VARS
++#define TC6_MAX_CNTRL_VARS  (1)
++#endif
++
++/**
++ * \brief Defines the length of the history buffer used to calculate the next average receive length
++ */
++#ifndef AVG_ARRAY_LEN
++#define AVG_ARRAY_LEN       (5)
++#endif
++
+ struct TC6_t;
+ typedef struct TC6_t TC6_t;
+ 
+@@ -83,6 +167,44 @@ typedef void (*TC6_RawTxCallback_t)(TC6_t *pInst, const uint8_t *pTx, uint16_t l
+  */
+ typedef void (*TC6_RegCallback_t)(TC6_t *pInst, bool success, uint32_t addr, uint32_t value, void *pTag, void *pGlobalTag);
+ 
++struct qtxeth {
++	void *priv;
++	TC6_RawTxCallback_t txCallback;
++	const uint8_t *ptr;
++	uint16_t len;
++};
++
++#define TC6_CNTRL_BUF_SIZE  ((2 + (TC6_MAX_CNTRL_VARS * 2)) * 4)
++#define TC6_SPI_BUF_SIZE    (TC6_CHUNKS_XACT * TC6_CHUNK_BUF_SIZE)
++
++struct qspibuf {
++    uint8_t txBuff[TC6_SPI_BUF_SIZE];
++    uint8_t rxBuff[TC6_SPI_BUF_SIZE];
++    uint16_t length;
++};
++
++enum register_op_type
++{
++    REGISTER_OP_INVALLID,
++    REGISTER_OP_WRITE,
++    REGISTER_OP_READ,
++    REGISTER_OP_READWRITE_STAGE1,
++    REGISTER_OP_READWRITE_STAGE2
++};
++
++struct register_operation {
++    uint8_t tx_buf[TC6_CNTRL_BUF_SIZE];
++    uint8_t rx_buf[TC6_CNTRL_BUF_SIZE];
++    TC6_RegCallback_t callback;
++    void *tag;
++    enum register_op_type op;
++    uint32_t modifyValue;
++    uint32_t modifyMask;
++    uint32_t regAddr;
++    uint16_t length;
++    bool secure;
++};
++
+ typedef enum {
+     MemOp_Write = 0,
+     MemOp_ReadModifyWrite = 1,
+@@ -100,6 +222,75 @@ typedef struct {
+     bool secure;
+ } MemoryMap_t;
+ 
++struct qtxeth_queue {
++    struct qtxeth *buffer_;
++    unsigned size_;
++    unsigned enqueue_, convert_;
++};
++
++struct qspibuf_queue {
++    struct qspibuf *buffer_;
++    unsigned size_;
++    unsigned stage1_transfer_, stage2_int_, stage3_process_;
++};
++
++struct regop_queue {
++    struct register_operation *buffer_;
++    unsigned size_;
++    unsigned enqueue_, send_, int_, event_;
++};
++
++/* Internal structures {{{ */
++
++struct spi_prot {
++    struct qtxeth tx_eth_buffer[TC6_TX_ETH_QSIZE];
++    struct qtxeth_queue eth_q;
++    uint16_t offsetEth;
++    uint16_t offsetRx;
++    uint8_t seq_num;
++    uint8_t txc;
++    bool synced;
++    bool exst_locked;
++    bool eth_started;
++    bool eth_error;
++    bool rda;
++};
++
++/* }}} */
++
++typedef enum
++{ SPI_OP_INVALID,
++  SPI_OP_DATA,
++  SPI_OP_REG
++} SpiOp_t;
++
++struct average_rx_length
++{
++    uint16_t length[AVG_ARRAY_LEN];
++    uint16_t remainingTrail;
++    uint8_t pos;
++};
++
++/** Integrator needs to allocate this structure. But the elements must not be accessed.
++ *  They are getting filled via function calls only.
++ */
++struct TC6_t
++{
++    struct qspibuf spiBuf[SPI_FULL_BUFFERS];
++    struct qspibuf_queue qSpi;
++    struct register_operation regop_storage[REG_OP_ARRAY_SIZE];
++    struct regop_queue regop_q;
++    struct spi_prot prot;
++    struct average_rx_length avg;
++    void *gTag;
++    volatile SpiOp_t currentOp;
++    uint32_t magic;
++    uint8_t instance;
++    uint8_t remainingTrail;
++    bool enableData;
++    bool intContext;
++};
++
+ /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+ /*                            PUBLIC API                                */
+ /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+@@ -109,7 +300,7 @@ typedef struct {
+  *  \note Must be called before any other functions of this component.
+  *  \return Filled structure for further usage with other functions of this component. Or NULL, if there was an error.
+  */
+-TC6_t *TC6_Init(void *pGlobalTag);
++void TC6_Init(TC6_t *pInst);
+ 
+ /** \brief Reset all internal state machines and queues
+  *  \param pInst - The pointer returned by TC6_Init.
+@@ -265,14 +456,14 @@ extern void TC6_CB_OnExtendedStatus(TC6_t *pInst, void *pGlobalTag);
+  * \param tc6instance - The instance number of the hardware. Starting with 0 for the first.
+  * \param pGlobalTag - The exact same pointer, which was given along with the TC6_Init() function.
+  */
+-extern void TC6Stub_InitializeSpi(uint8_t tc6instance, void *pGlobalTag);
++extern void TC6Stub_InitializeSpi(TC6_t *pInst, void *pGlobalTag);
+ #ifdef TC6PRINT_DEBUG_INFO
+ /**
+  * \brief Users implementation of printing function. It may print to UART/Console/Network or may be implemented empty, so messages are getting discarded.
+  * \param tc6instance - The instance number of the hardware. Starting with 0 for the first.
+  * \param pGlobalTag - The exact same pointer, which was given along with the TC6_Init() function.
+  */
+-extern void TC6Stub_Print(uint8_t tc6instance, void *pGlobalTag, const char *statement, ... ) __attribute__ ((format (gnu_printf, 3, 4)));
++extern void TC6Stub_Print(TC6_t *pInst, void *pGlobalTag, const char *statement, ... ) __attribute__ ((format (gnu_printf, 3, 4)));
+ #endif
+ /**
+  * \brief Users implementation of SPI transfer function.
+@@ -284,7 +475,7 @@ extern void TC6Stub_Print(uint8_t tc6instance, void *pGlobalTag, const char *sta
+  * \param pGlobalTag - The exact same pointer, which was given along with the TC6_Init() function.
+  * \return true, if the SPI data was enqueued/transfered. false, there was an error.
+  */
+-extern bool TC6Stub_SpiTransaction(uint8_t tc6instance, const uint8_t *pTx, uint8_t *pRx, uint16_t len, void *pGlobalTag);
++extern bool TC6Stub_SpiTransaction(TC6_t *pInst, const uint8_t *pTx, uint8_t *pRx, uint16_t len, void *pGlobalTag);
+ 
+ /*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+ /*                        CALLBACK SECTION                              */
+@@ -296,7 +487,7 @@ extern bool TC6Stub_SpiTransaction(uint8_t tc6instance, const uint8_t *pTx, uint
+  * \param tc6instance - The instance number of the hardware. Starting with 0 for the first.
+  * \param success - true, if SPI transaction was successful. false, otherwise.
+  */
+-extern void TC6Stub_CB_OnSpiBufferDone(uint8_t tc6instance, bool success);
++extern void TC6Stub_CB_OnSpiBufferDone(TC6_t *pInst, bool success);
+ 
+ #ifdef __cplusplus
+ }
+-- 
+2.30.2
+

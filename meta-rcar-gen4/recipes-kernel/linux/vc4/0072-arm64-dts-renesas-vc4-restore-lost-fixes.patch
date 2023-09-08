@@ -1,0 +1,55 @@
+From 92a135a6aa87e72aacf31c980d292615b8176a0f Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Fri, 7 Jul 2023 09:16:07 +0600
+Subject: [PATCH 72/92] arm64: dts: renesas: vc4: restore lost fixes
+
+[This is a lost change caused by importing wrong branch as vc4-on-3.13,
+on 3.14 port it shall be amended into "arm64: dts: renesas: add device
+trees for vc4" commit]
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts               | 5 ++---
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-ctrl-domain.dts | 3 +--
+ 2 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+index ac6930dbe20b..7f23bfa6d41f 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+@@ -177,7 +177,7 @@ &mmc0 {
+ 	pinctrl-names = "default", "state_uhs";
+ 
+ 	vmmc-supply = <&vcc_sdhi>;
+-	vqmmc-supply = <&vcc_sdhi>;
++	vqmmc-supply = <&vccq_sdhi>;
+ 	cd-gpios = <&gpio1 23 GPIO_ACTIVE_LOW>;
+ 	bus-width = <4>;
+ };
+@@ -266,8 +266,7 @@ &pciec0 {
+ };
+ 
+ &pciec1 {
+-	// Previously, enabling this caused a hang
+-	status = "disabled";
++	status = "okay";
+ };
+ 
+ &pcie_bus_clk {
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-ctrl-domain.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-ctrl-domain.dts
+index 129e23e7c7f6..d8eb746acfff 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-ctrl-domain.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-ctrl-domain.dts
+@@ -10,8 +10,7 @@
+  * Copyright (C) 2021-2023 Renesas Electronics Corp.
+  */
+ 
+-#include "r8a779f0-vc4V1.dts"
+-#include "r8a779f0-ctrl-domain.dtsi"
++#include "r8a779f0-vc4-ctrl-domain.dts"
+ 
+ /* SDHI_PWR_SEL is at GPIO4_05 */
+ 
+-- 
+2.30.2
+

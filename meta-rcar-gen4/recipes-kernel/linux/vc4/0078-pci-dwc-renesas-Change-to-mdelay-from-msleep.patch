@@ -1,0 +1,26 @@
+From 648b6cded36ea00e506ea58bac811f46704e808c Mon Sep 17 00:00:00 2001
+From: Tho Vu <tho.vu.wh@renesas.com>
+Date: Wed, 14 Jun 2023 18:28:07 +0700
+Subject: [PATCH 78/92] pci: dwc: renesas: Change to mdelay() from msleep()
+
+Signed-off-by: Tho Vu <tho.vu.wh@renesas.com>
+---
+ drivers/pci/controller/dwc/pcie-renesas.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/pci/controller/dwc/pcie-renesas.c b/drivers/pci/controller/dwc/pcie-renesas.c
+index eeef6e665a71..cc3a23f81b49 100644
+--- a/drivers/pci/controller/dwc/pcie-renesas.c
++++ b/drivers/pci/controller/dwc/pcie-renesas.c
+@@ -156,7 +156,7 @@ static void renesas_pcie_retrain_link(struct dw_pcie *pci)
+ 		/* Check retrain flag */
+ 		if (!(lnksta & PCI_EXP_LNKSTA_LT))
+ 			break;
+-		msleep(1);
++		mdelay(1);
+ 	}
+ }
+ 
+-- 
+2.30.2
+

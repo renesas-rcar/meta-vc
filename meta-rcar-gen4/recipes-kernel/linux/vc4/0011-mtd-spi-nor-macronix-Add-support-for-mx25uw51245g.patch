@@ -1,0 +1,29 @@
+From a4a655f65d92d7999c53b589b766553536994d01 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Sun, 13 Mar 2022 22:52:24 +0300
+Subject: [PATCH 11/92] mtd: spi-nor: macronix: Add support for mx25uw51245g
+
+Use the same settings as for mx25u51245g, just different JEDEC ID.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/mtd/spi-nor/macronix.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/mtd/spi-nor/macronix.c b/drivers/mtd/spi-nor/macronix.c
+index 662b212787d4..6b789eb17c10 100644
+--- a/drivers/mtd/spi-nor/macronix.c
++++ b/drivers/mtd/spi-nor/macronix.c
+@@ -69,6 +69,9 @@ static const struct flash_info macronix_parts[] = {
+ 	{ "mx25u51245g", INFO(0xc2253a, 0, 64 * 1024, 1024,
+ 			      SECT_4K | SPI_NOR_DUAL_READ |
+ 			      SPI_NOR_QUAD_READ | SPI_NOR_4B_OPCODES) },
++	{ "mx25uw51245g", INFO(0xc2813a, 0, 64 * 1024, 1024,
++			      SECT_4K | SPI_NOR_DUAL_READ |
++			      SPI_NOR_QUAD_READ | SPI_NOR_4B_OPCODES) },
+ 	{ "mx25v8035f",  INFO(0xc22314, 0, 64 * 1024,  16,
+ 			      SECT_4K | SPI_NOR_DUAL_READ |
+ 			      SPI_NOR_QUAD_READ) },
+-- 
+2.30.2
+

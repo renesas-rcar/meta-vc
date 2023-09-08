@@ -1,0 +1,63 @@
+From 17e086cbe69a4f3e7a6e37436bb32e3a0c654f9a Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Thu, 25 May 2023 10:42:30 +0600
+Subject: [PATCH 07/92] net: ethernet: renesas: rswitch: enable rtsn_ptp by
+ dedicated Kconfig key
+
+This is needed because rtsn_ptp is used not only by rtsn but also by
+rswitch.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/net/ethernet/renesas/Kconfig  | 6 ++++++
+ drivers/net/ethernet/renesas/Makefile | 6 ++----
+ 2 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/ethernet/renesas/Kconfig b/drivers/net/ethernet/renesas/Kconfig
+index 497a5874a6c3..04acc0333c44 100644
+--- a/drivers/net/ethernet/renesas/Kconfig
++++ b/drivers/net/ethernet/renesas/Kconfig
+@@ -42,12 +42,17 @@ config RAVB
+ 	  This driver supports the following SoCs:
+ 		- R8A779x.
+ 
++config RTSN_PTP
++	tristate
++	default n
++
+ config RENESAS_ETHER_SWITCH
+ 	tristate "Renesas Ethernet Switch support"
+ 	depends on ARCH_RENESAS || COMPILE_TEST
+ 	select CRC32
+ 	select MII
+ 	select PHYLIB
++	select RTSN_PTP
+ 	help
+ 	  Renesas Ethernet Switch device driver.
+ 	  This driver supports the following SoCs:
+@@ -59,6 +64,7 @@ config RTSN
+         select CRC32
+         select MII
+         select PHYLIB
++	select RTSN_PTP
+         help
+           Renesas Ethernet-TSN device driver.
+           This driver supports the following SoCs:
+diff --git a/drivers/net/ethernet/renesas/Makefile b/drivers/net/ethernet/renesas/Makefile
+index d52ae998fc6b..1848c370a555 100644
+--- a/drivers/net/ethernet/renesas/Makefile
++++ b/drivers/net/ethernet/renesas/Makefile
+@@ -9,8 +9,6 @@ ravb-objs := ravb_main.o ravb_ptp.o
+ 
+ obj-$(CONFIG_RAVB) += ravb.o
+ 
++obj-$(CONFIG_RTSN_PTP) += rtsn_ptp.o
++obj-$(CONFIG_RTSN) += rtsn.o
+ obj-$(CONFIG_RENESAS_ETHER_SWITCH) += rswitch.o
+-
+-rtsn_drv-objs := rtsn.o rtsn_ptp.o
+-
+-obj-$(CONFIG_RTSN) += rtsn_drv.o
+-- 
+2.30.2
+
