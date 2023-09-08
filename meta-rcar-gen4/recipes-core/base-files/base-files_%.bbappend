@@ -1,5 +1,5 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-PR .= ".1"
+PR .= ".vc1"
 
 SRC_URI += "file://blacklist.conf \
             file://motd \
@@ -18,13 +18,3 @@ do_install_append () {
 #    # change the default hostname
 #    echo vc99 > ${D}${sysconfdir}/hostname
 }
-
-
-
-
-
-
-
-
-
-
