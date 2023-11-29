@@ -1,0 +1,29 @@
+From 60467c555aa3abfda3ba29eb2407dfccfe6d4dbd Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Mon, 6 Nov 2023 11:05:09 +0600
+Subject: [PATCH 18/19] r8a779f0-vc4.dts: add UFS device
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ arch/arm/dts/r8a779f0-vc4.dts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm/dts/r8a779f0-vc4.dts b/arch/arm/dts/r8a779f0-vc4.dts
+index d7e57a50afb..6a8456a0bb9 100644
+--- a/arch/arm/dts/r8a779f0-vc4.dts
++++ b/arch/arm/dts/r8a779f0-vc4.dts
+@@ -292,3 +292,11 @@
+ 
+ 	clock-frequency = <24000000>;
+ };
++
++&ufs {
++	status = "okay";
++};
++
++&ufs30_clk {
++	clock-frequency = <38400000>;
++};
+-- 
+2.39.2
+

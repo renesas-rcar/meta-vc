@@ -1,7 +1,7 @@
-From c2755e3fd7048feb5c50db809a1ee736e4d82fb3 Mon Sep 17 00:00:00 2001
+From f438fd5984d6fd2a968ab7f1e2408a1a7a62369b Mon Sep 17 00:00:00 2001
 From: "Paul E. McKenney" <paulmck@kernel.org>
 Date: Thu, 19 Nov 2020 10:13:06 -0800
-Subject: [PATCH 02/92] rcu: Add lockdep_assert_irqs_disabled() to
+Subject: [PATCH 02/85] rcu: Add lockdep_assert_irqs_disabled() to
  rcu_sched_clock_irq() and callees
 
 [ Upstream commit a649d25dcc671a33b9cc3176411920fdc5fbd98e ]
@@ -117,5 +117,5 @@ index f626c6d13ace..3e98dc517847 100644
  	    !rcu_gp_in_progress())
  		return;
 -- 
-2.30.2
+2.39.2
 

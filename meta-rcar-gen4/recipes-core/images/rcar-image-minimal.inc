@@ -24,6 +24,7 @@ IMAGE_INSTALL_append = " \
     linuxptp \
     gptp-avnu \
     sshfs-fuse \
+    mka-daemon \
 "
 
 # Development tools
@@ -54,12 +55,12 @@ IMAGE_INSTALL_append = " \
     tcl \
     python3-scapy \
     stress \
+    perf \
     dtc \
 "
 
 # Prebuild binary packages
 IMAGE_INSTALL_append = " \
-     marvell-88q211x \
      marvell-88q3344-es \
      lan865x \
 "

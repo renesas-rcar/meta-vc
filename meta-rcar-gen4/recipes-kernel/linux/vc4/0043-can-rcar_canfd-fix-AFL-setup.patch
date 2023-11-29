@@ -1,7 +1,7 @@
-From 053f32540607b4f2d02393ac58b3514a863fe6d2 Mon Sep 17 00:00:00 2001
+From 22487e99fcdea981b5d23fb9761694a53fc4e16b Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Wed, 25 May 2022 00:00:36 +0300
-Subject: [PATCH 43/92] can: rcar_canfd: fix AFL setup
+Subject: [PATCH 43/85] can: rcar_canfd: fix AFL setup
 
 - ensure writing to RNC field for all channels, including disabled
 
@@ -15,7 +15,7 @@ Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
  1 file changed, 62 insertions(+), 36 deletions(-)
 
 diff --git a/drivers/net/can/rcar/rcar_canfd.c b/drivers/net/can/rcar/rcar_canfd.c
-index 69e94c755032..6a5a80f9dabf 100644
+index 862eb0722725..0a45921312e7 100644
 --- a/drivers/net/can/rcar/rcar_canfd.c
 +++ b/drivers/net/can/rcar/rcar_canfd.c
 @@ -95,11 +95,11 @@
@@ -183,5 +183,5 @@ index 69e94c755032..6a5a80f9dabf 100644
  
  static void rcar_canfd_configure_rx(struct rcar_canfd_global *gpriv, u32 ch)
 -- 
-2.30.2
+2.39.2
 

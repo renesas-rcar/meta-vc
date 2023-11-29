@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PROP_RE='drivers/net/ethernet/microchip/lan865x|drivers/net/phy/marvell_88q211x.c|drivers/net/phy/marvell_88q3344_es.c'
+PROP_RE='drivers/net/ethernet/microchip/lan865x|drivers/net/phy/marvell_88q3344_es.c'
 
 inc=vc4_kernel_patches.inc
 inc_prop=vc4_kernel_patches_proprietary.inc
@@ -21,7 +21,7 @@ if [ ! -d "$kdir/kernel" -o ! -d "$kdir/drivers" ]; then
 	exit 1
 fi
 
-base=$(awk -F'"' '/SRCREV/ {print($2)}' linux-renesas_5.10.bb)
+base=$(awk -F'"' '/SRCREV/ {print($2)}' linux-renesas-source.inc)
 count=$(cd $kdir && git log --oneline $base.. | wc -l)
 if [ "$count" -eq 0 -o "$count" -gt 300 ]; then
 	echo "Too many patches, is $kdir correct?" >&2

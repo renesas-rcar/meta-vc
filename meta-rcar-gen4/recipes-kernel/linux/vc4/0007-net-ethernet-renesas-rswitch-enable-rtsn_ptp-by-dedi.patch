@@ -1,7 +1,7 @@
-From 17e086cbe69a4f3e7a6e37436bb32e3a0c654f9a Mon Sep 17 00:00:00 2001
+From f8361beb2042dbe00fb0f955a229a88f451776dc Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Thu, 25 May 2023 10:42:30 +0600
-Subject: [PATCH 07/92] net: ethernet: renesas: rswitch: enable rtsn_ptp by
+Subject: [PATCH 07/85] net: ethernet: renesas: rswitch: enable rtsn_ptp by
  dedicated Kconfig key
 
 This is needed because rtsn_ptp is used not only by rtsn but also by
@@ -59,5 +59,5 @@ index d52ae998fc6b..1848c370a555 100644
 -
 -obj-$(CONFIG_RTSN) += rtsn_drv.o
 -- 
-2.30.2
+2.39.2
 

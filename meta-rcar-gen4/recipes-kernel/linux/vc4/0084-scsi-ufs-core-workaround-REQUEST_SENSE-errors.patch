@@ -1,0 +1,55 @@
+From a3ddafbd3711569760dfda129ccff25559de2e84 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Tue, 31 Oct 2023 13:03:20 +0600
+Subject: [PATCH 84/85] scsi: ufs: core: workaround REQUEST_SENSE errors
+
+On ufs-renesas with WDC SDINDDH6-64G rev 1724 connected, setting
+buffer size of REQUEST_SENSE command to less than 20 results into
+OCS_MISMATCH_DATA_BUF_SIZE error.
+
+Workaround that by using a buffer of not less than 20 bytes.
+The returned data is not used anyway.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/scsi/ufs/ufshcd.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index 86be4650e562..9f1a411d2b0c 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -8270,23 +8270,27 @@ static void ufshcd_hba_exit(struct ufs_hba *hba)
+ static int
+ ufshcd_send_request_sense(struct ufs_hba *hba, struct scsi_device *sdp)
+ {
++	/* On ufs-renesas with WDC SDINDDH6-64G rev 1724 connected, observe
++	 * REQUEST_SENSE returning OCS_MISMATCH_DATA_BUF_SIZE error if size
++	 * is less than 20 */
++	unsigned char size = max_t(unsigned char, UFS_SENSE_SIZE, 20);
+ 	unsigned char cmd[6] = {REQUEST_SENSE,
+ 				0,
+ 				0,
+ 				0,
+-				UFS_SENSE_SIZE,
++				size,
+ 				0};
+ 	char *buffer;
+ 	int ret;
+ 
+-	buffer = kzalloc(UFS_SENSE_SIZE, GFP_KERNEL);
++	buffer = kzalloc(size, GFP_KERNEL);
+ 	if (!buffer) {
+ 		ret = -ENOMEM;
+ 		goto out;
+ 	}
+ 
+ 	ret = scsi_execute(sdp, cmd, DMA_FROM_DEVICE, buffer,
+-			UFS_SENSE_SIZE, NULL, NULL,
++			size, NULL, NULL,
+ 			msecs_to_jiffies(1000), 3, 0, RQF_PM, NULL);
+ 	if (ret)
+ 		pr_err("%s: failed with err %d\n", __func__, ret);
+-- 
+2.39.2
+

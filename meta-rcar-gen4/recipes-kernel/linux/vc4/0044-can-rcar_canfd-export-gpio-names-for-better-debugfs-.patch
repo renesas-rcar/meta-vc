@@ -1,7 +1,7 @@
-From 91129abbb205894eceebdf69a003a439b36b69b0 Mon Sep 17 00:00:00 2001
+From 7102966a457c55cdfbdad2928af3b02ad0b29de7 Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Thu, 13 Oct 2022 12:22:57 +0600
-Subject: [PATCH 44/92] can: rcar_canfd: export gpio names for better debugfs
+Subject: [PATCH 44/85] can: rcar_canfd: export gpio names for better debugfs
  output
 
 At gpio request time, gpio device name is not yet known. So passing
@@ -18,7 +18,7 @@ Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
  1 file changed, 19 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/net/can/rcar/rcar_canfd.c b/drivers/net/can/rcar/rcar_canfd.c
-index 6a5a80f9dabf..01ebe748db6b 100644
+index 0a45921312e7..e3274b8f50ff 100644
 --- a/drivers/net/can/rcar/rcar_canfd.c
 +++ b/drivers/net/can/rcar/rcar_canfd.c
 @@ -1993,7 +1993,7 @@ static int rcar_canfd_channel_probe(struct rcar_canfd_global *gpriv, u32 ch,
@@ -56,5 +56,5 @@ index 6a5a80f9dabf..01ebe748db6b 100644
  	return 0;
  
 -- 
-2.30.2
+2.39.2
 

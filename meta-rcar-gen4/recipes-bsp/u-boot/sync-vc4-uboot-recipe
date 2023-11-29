@@ -2,7 +2,7 @@
 
 # Keep this in sync with SRCREV from
 # meta-renesas/meta-rcar-gateway/recipes-bsp/u-boot/u-boot_2020.10.bb
-base=d6d9868e0a93f015993afc3d1542528e6d4bfa46
+base=697b542c4f15b472130b246e2156b89ed25398ee
 
 inc=vc4_u-boot_patches.inc
 dir=vc4

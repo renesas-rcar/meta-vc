@@ -1,0 +1,223 @@
+From a35180a6e1d4321b693519a0fdaffa4cb466eb94 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Fri, 25 Mar 2022 08:27:04 +0300
+Subject: [PATCH 27/85] irqchip: renesas-intswcd: move S4 defs into a separate
+ file
+
+Move SoC-specific definitions out of the main driver file.
+
+This is preparation for adding full interrupt table.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/irqchip/Kconfig                |  3 ++
+ drivers/irqchip/Makefile               |  1 +
+ drivers/irqchip/irq-r8a779f0-intswcd.c | 39 ++++++++++++++++
+ drivers/irqchip/irq-renesas-intswcd.c  | 62 ++------------------------
+ drivers/irqchip/irq-renesas-intswcd.h  | 36 +++++++++++++++
+ 5 files changed, 82 insertions(+), 59 deletions(-)
+ create mode 100644 drivers/irqchip/irq-r8a779f0-intswcd.c
+ create mode 100644 drivers/irqchip/irq-renesas-intswcd.h
+
+diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+index 0f9c63fd51d1..f695a0e89ad0 100644
+--- a/drivers/irqchip/Kconfig
++++ b/drivers/irqchip/Kconfig
+@@ -238,6 +238,9 @@ config RENESAS_INTSWCD
+ 	  Enable support for the Renesas INTSWCD controller that forwards
+ 	  interrupts from SoC control domain to SoC application domain.
+ 
++config R8A779F0_INTSWCD
++	def_bool RENESAS_INTSWCD && ARCH_R8A779F0
++
+ config RENESAS_IRQC
+ 	bool "Renesas R-Mobile APE6, R-Car Gen{2,3} and RZ/G{1,2} IRQC support" if COMPILE_TEST
+ 	select GENERIC_IRQ_CHIP
+diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+index 6d08d00ba0fd..9c4ecf06282b 100644
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@ -50,6 +50,7 @@ obj-$(CONFIG_JCORE_AIC)			+= irq-jcore-aic.o
+ obj-$(CONFIG_RDA_INTC)			+= irq-rda-intc.o
+ obj-$(CONFIG_RENESAS_INTC_IRQPIN)	+= irq-renesas-intc-irqpin.o
+ obj-$(CONFIG_RENESAS_INTSWCD)		+= irq-renesas-intswcd.o
++obj-$(CONFIG_R8A779F0_INTSWCD)		+= irq-r8a779f0-intswcd.o
+ obj-$(CONFIG_RENESAS_IRQC)		+= irq-renesas-irqc.o
+ obj-$(CONFIG_RENESAS_RZA1_IRQC)		+= irq-renesas-rza1.o
+ obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
+diff --git a/drivers/irqchip/irq-r8a779f0-intswcd.c b/drivers/irqchip/irq-r8a779f0-intswcd.c
+new file mode 100644
+index 000000000000..230358fdbb30
+--- /dev/null
++++ b/drivers/irqchip/irq-r8a779f0-intswcd.c
+@@ -0,0 +1,39 @@
++// SPDX-License-Identifier: GPL-2.0
++
++#include <linux/kernel.h>
++#include "irq-renesas-intswcd.h"
++#include <dt-bindings/interrupt-controller/renesas-intswcd-r8a779f0.h>
++
++static const struct intswcd_hwirq_info r8a779f0_ihi[] = {
++#define ENTRY(_name, _type, _irq_offset, _reg, _bit)	\
++	[R8A779F0_INTSWCD_##_name] = {			\
++		.type = INTSWCD_##_type,		\
++		.parent_irq_offset = _irq_offset,	\
++		.reg = _reg,				\
++		.mask = BIT(_bit),			\
++	},
++
++	ENTRY(INTRIIC0EE,  LEVEL, 33,  9, 0)
++	ENTRY(INTRIIC0TEI, LEVEL, 33,  9, 1)
++	ENTRY(INTRIIC0RI,   EDGE, 24, 13, 0)
++	ENTRY(INTRIIC0TI,   EDGE, 24, 13, 1)
++	ENTRY(INTOSTM0TINT, EDGE, 12,  2, 0)
++
++#undef ENTRY
++};
++
++const struct intswcd_info r8a779f0_ii = {
++	.ihi = r8a779f0_ihi,
++	.ihi_nr = ARRAY_SIZE(r8a779f0_ihi),
++	.level_parent_irqs_nr = 51,
++	.edge_parent_irqs_nr = 29,
++	.level_sts_regs_base = 0x000,
++	.level_msk_regs_base = 0x040,
++	.level_regs_nr = 14,
++	.edge_sts_regs_base = 0x200,
++	.edge_msk_regs_base = 0x250,
++	.edge_clr_regs_base = 0x2a0,
++	.edge_regs_nr = 17,
++};
++
++
+diff --git a/drivers/irqchip/irq-renesas-intswcd.c b/drivers/irqchip/irq-renesas-intswcd.c
+index a37812ee30ab..d2161788e9d1 100644
+--- a/drivers/irqchip/irq-renesas-intswcd.c
++++ b/drivers/irqchip/irq-renesas-intswcd.c
+@@ -6,34 +6,8 @@
+ #include <linux/of_device.h>
+ #include <linux/of_irq.h>
+ 
++#include "irq-renesas-intswcd.h"
+ #include <dt-bindings/interrupt-controller/arm-gic.h>
+-#include <dt-bindings/interrupt-controller/renesas-intswcd-r8a779f0.h>
+-
+-enum {
+-	INTSWCD_LEVEL = 1,
+-	INTSWCD_EDGE
+-};
+-
+-struct intswcd_hwirq_info {
+-	unsigned int type;
+-	unsigned int parent_irq_offset;
+-	unsigned int reg;
+-	u32 mask;
+-};
+-
+-struct intswcd_info {
+-	const struct intswcd_hwirq_info *ihi;
+-	unsigned int ihi_nr;
+-	unsigned int level_parent_irqs_nr;
+-	unsigned int edge_parent_irqs_nr;
+-	unsigned int level_sts_regs_base;
+-	unsigned int level_msk_regs_base;
+-	unsigned int level_regs_nr;
+-	unsigned int edge_sts_regs_base;
+-	unsigned int edge_msk_regs_base;
+-	unsigned int edge_clr_regs_base;
+-	unsigned int edge_regs_nr;
+-};
+ 
+ struct intswcd_handler_data;
+ 
+@@ -375,43 +349,13 @@ static int intswcd_probe(struct platform_device *pdev)
+ 	return ret;
+ }
+ 
+-static const struct intswcd_hwirq_info r8a779f0_ihi[] = {
+-#define ENTRY(_name, _type, _irq_offset, _reg, _bit)	\
+-	[R8A779F0_INTSWCD_##_name] = {			\
+-		.type = INTSWCD_##_type,		\
+-		.parent_irq_offset = _irq_offset,	\
+-		.reg = _reg,				\
+-		.mask = BIT(_bit),			\
+-	},
+-
+-	ENTRY(INTRIIC0EE,  LEVEL, 33,  9, 0)
+-	ENTRY(INTRIIC0TEI, LEVEL, 33,  9, 1)
+-	ENTRY(INTRIIC0RI,   EDGE, 24, 13, 0)
+-	ENTRY(INTRIIC0TI,   EDGE, 24, 13, 1)
+-	ENTRY(INTOSTM0TINT, EDGE, 12,  2, 0)
+-
+-#undef ENTRY
+-};
+-
+-static const struct intswcd_info r8a779f0_ii = {
+-	.ihi = r8a779f0_ihi,
+-	.ihi_nr = ARRAY_SIZE(r8a779f0_ihi),
+-	.level_parent_irqs_nr = 51,
+-	.edge_parent_irqs_nr = 29,
+-	.level_sts_regs_base = 0x000,
+-	.level_msk_regs_base = 0x040,
+-	.level_regs_nr = 14,
+-	.edge_sts_regs_base = 0x200,
+-	.edge_msk_regs_base = 0x250,
+-	.edge_clr_regs_base = 0x2a0,
+-	.edge_regs_nr = 17,
+-};
+-
+ static const struct of_device_id intswcd_of_table[] = {
++#if IS_ENABLED(CONFIG_ARCH_R8A779F0)
+ 	{
+ 		.compatible = "renesas,intswcd-r8a779f0",
+ 		.data = &r8a779f0_ii,
+ 	},
++#endif
+ 	{ /* sentinel */ }
+ };
+ MODULE_DEVICE_TABLE(of, intswcd_of_table);
+diff --git a/drivers/irqchip/irq-renesas-intswcd.h b/drivers/irqchip/irq-renesas-intswcd.h
+new file mode 100644
+index 000000000000..69e253668f6c
+--- /dev/null
++++ b/drivers/irqchip/irq-renesas-intswcd.h
+@@ -0,0 +1,36 @@
++// SPDX-License-Identifier: GPL-2.0
++
++#ifndef _IRQ_RENESAS_INTSWCD_H
++#define _IRQ_RENESAS_INTSWCD_H
++
++#include <linux/types.h>
++
++enum {
++	INTSWCD_LEVEL = 1,
++	INTSWCD_EDGE
++};
++
++struct intswcd_hwirq_info {
++	unsigned int type;
++	unsigned int parent_irq_offset;
++	unsigned int reg;
++	u32 mask;
++};
++
++struct intswcd_info {
++	const struct intswcd_hwirq_info *ihi;
++	unsigned int ihi_nr;
++	unsigned int level_parent_irqs_nr;
++	unsigned int edge_parent_irqs_nr;
++	unsigned int level_sts_regs_base;
++	unsigned int level_msk_regs_base;
++	unsigned int level_regs_nr;
++	unsigned int edge_sts_regs_base;
++	unsigned int edge_msk_regs_base;
++	unsigned int edge_clr_regs_base;
++	unsigned int edge_regs_nr;
++};
++
++extern const struct intswcd_info r8a779f0_ii;
++
++#endif /* _IRQ_RENESAS_INTSWCD_H */
+-- 
+2.39.2
+

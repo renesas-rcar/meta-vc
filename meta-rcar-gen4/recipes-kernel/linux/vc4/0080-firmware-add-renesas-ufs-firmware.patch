@@ -1,0 +1,104 @@
+From ea975354274bdc379eccd26a35d27084d51541ba Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Tue, 31 Oct 2023 10:56:16 +0600
+Subject: [PATCH 80/85] firmware: add renesas ufs firmware
+
+Put this firmware into kernel tree to make it possible to embed it into
+kernel and thus boot with root on ufs (and without initrd/initramfs).
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ firmware/.gitignore       |   1 +
+ firmware/r8a779f0_ufs.bin | Bin 0 -> 8192 bytes
+ 2 files changed, 1 insertion(+)
+ create mode 100644 firmware/.gitignore
+ create mode 100644 firmware/r8a779f0_ufs.bin
+
+diff --git a/firmware/.gitignore b/firmware/.gitignore
+new file mode 100644
+index 000000000000..1eb37dcc6d68
+--- /dev/null
++++ b/firmware/.gitignore
+@@ -0,0 +1 @@
++!*.bin
+diff --git a/firmware/r8a779f0_ufs.bin b/firmware/r8a779f0_ufs.bin
+new file mode 100644
+index 0000000000000000000000000000000000000000..d741ec33572fc9a3f9117e1d6ead727ad401a48c
+GIT binary patch
+literal 8192
+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
+
+literal 0
+HcmV?d00001
+
+-- 
+2.39.2
+

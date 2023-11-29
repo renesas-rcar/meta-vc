@@ -1,7 +1,7 @@
-From 93a036e9d30b62b00af6959fcd3f64087f220351 Mon Sep 17 00:00:00 2001
+From 8b094527e5cbcb8799fc540f869b3bbd78964f78 Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Mon, 24 Jan 2022 20:29:01 +0300
-Subject: [PATCH 06/92] soc: renesas: add missed "select SYSC_RCAR"
+Subject: [PATCH 06/85] soc: renesas: add missed "select SYSC_RCAR"
 
 Missed "select SYSC_RCAR" for SYSC_R8A779A0 and SYSC_R8A779F0 are
 causing renesas-sysc driver to be not compiled if support for other
@@ -33,5 +33,5 @@ index b2fad9cbae47..e09c020177cd 100644
  config SYSC_RMOBILE
  	bool "System Controller support for R-Mobile" if COMPILE_TEST
 -- 
-2.30.2
+2.39.2
 

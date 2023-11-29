@@ -1,7 +1,7 @@
-From d327dcdd5e6a92782712fbd843b78f0e9701d35b Mon Sep 17 00:00:00 2001
+From 0dbea3acbd7730a4d13797f3aeefc4edd8083957 Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Wed, 18 May 2022 00:36:55 +0300
-Subject: [PATCH 42/92] can: rcar_canfd: add per-channel gpio control
+Subject: [PATCH 42/85] can: rcar_canfd: add per-channel gpio control
 
 Parse per-channel gpios definitions from device tree.
 
@@ -14,7 +14,7 @@ Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
  1 file changed, 51 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/net/can/rcar/rcar_canfd.c b/drivers/net/can/rcar/rcar_canfd.c
-index bb319605628f..69e94c755032 100644
+index 6745f40ffaa9..862eb0722725 100644
 --- a/drivers/net/can/rcar/rcar_canfd.c
 +++ b/drivers/net/can/rcar/rcar_canfd.c
 @@ -34,6 +34,8 @@
@@ -154,5 +154,5 @@ index bb319605628f..69e94c755032 100644
  
  	switch (of_data->chip_id) {
 -- 
-2.30.2
+2.39.2
 

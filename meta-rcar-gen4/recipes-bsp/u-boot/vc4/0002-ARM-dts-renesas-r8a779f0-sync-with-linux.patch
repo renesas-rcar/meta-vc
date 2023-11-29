@@ -1,7 +1,7 @@
-From 92000b380a385b7aa223266a00eb5cead2b3562b Mon Sep 17 00:00:00 2001
+From f042786d5bc9fb7420b00e51b6439e374a0cd2ac Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Fri, 11 Aug 2023 11:51:17 +0600
-Subject: [PATCH 2/4] ARM: dts: renesas: r8a779f0: sync with linux
+Subject: [PATCH 02/19] ARM: dts: renesas: r8a779f0: sync with linux
 
 Use file from linux commit ab6affd8d52588e08c8a94081d17b4e713942775
 (which is v5.10.41/rcar-5.1.7.rc9)
@@ -16,7 +16,7 @@ Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
  create mode 100644 include/dt-bindings/ipmmu/rcar-ipmmu.h
 
 diff --git a/arch/arm/dts/r8a779f0.dtsi b/arch/arm/dts/r8a779f0.dtsi
-index 741ab62e71..bdcadcf1d7 100644
+index 741ab62e711..bdcadcf1d72 100644
 --- a/arch/arm/dts/r8a779f0.dtsi
 +++ b/arch/arm/dts/r8a779f0.dtsi
 @@ -8,7 +8,7 @@
@@ -2626,7 +2626,7 @@ index 741ab62e71..bdcadcf1d7 100644
  };
 diff --git a/include/dt-bindings/ipmmu/rcar-ipmmu-domains.h b/include/dt-bindings/ipmmu/rcar-ipmmu-domains.h
 new file mode 100644
-index 0000000000..266c4b5b1b
+index 00000000000..266c4b5b1b7
 --- /dev/null
 +++ b/include/dt-bindings/ipmmu/rcar-ipmmu-domains.h
 @@ -0,0 +1,38 @@
@@ -2670,7 +2670,7 @@ index 0000000000..266c4b5b1b
 +
 diff --git a/include/dt-bindings/ipmmu/rcar-ipmmu.h b/include/dt-bindings/ipmmu/rcar-ipmmu.h
 new file mode 100644
-index 0000000000..231d350c76
+index 00000000000..231d350c760
 --- /dev/null
 +++ b/include/dt-bindings/ipmmu/rcar-ipmmu.h
 @@ -0,0 +1,15 @@
@@ -2690,5 +2690,5 @@ index 0000000000..231d350c76
 +
 +#endif /* _DT_BINDINGS_RCAR_IPMMU_H */
 -- 
-2.30.2
+2.39.2
 

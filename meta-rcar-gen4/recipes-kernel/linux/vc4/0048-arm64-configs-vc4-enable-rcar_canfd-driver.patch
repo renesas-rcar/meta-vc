@@ -1,7 +1,7 @@
-From f98f2f76a07ffe4030c6b8974463a4444644000e Mon Sep 17 00:00:00 2001
+From ffc9b7051118b4149f2720eb88580464513f7f2e Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Thu, 25 May 2023 10:46:48 +0600
-Subject: [PATCH 48/92] arm64: configs: vc4: enable rcar_canfd driver
+Subject: [PATCH 48/85] arm64: configs: vc4: enable rcar_canfd driver
 
 Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 ---
@@ -9,10 +9,10 @@ Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/arch/arm64/configs/renesas-vc4_defconfig b/arch/arm64/configs/renesas-vc4_defconfig
-index cd41f4e7764e..53597a8c136f 100644
+index 5c969fe72ba4..ae5c672fef85 100644
 --- a/arch/arm64/configs/renesas-vc4_defconfig
 +++ b/arch/arm64/configs/renesas-vc4_defconfig
-@@ -206,6 +206,8 @@ CONFIG_VLAN_8021Q=m
+@@ -214,6 +214,8 @@ CONFIG_VLAN_8021Q=m
  CONFIG_VLAN_8021Q_GVRP=y
  CONFIG_VLAN_8021Q_MVRP=y
  CONFIG_NET_SWITCHDEV=y
@@ -22,5 +22,5 @@ index cd41f4e7764e..53597a8c136f 100644
  CONFIG_PCI=y
  CONFIG_PCIEPORTBUS=y
 -- 
-2.30.2
+2.39.2
 

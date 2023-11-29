@@ -1,7 +1,7 @@
-From a4a655f65d92d7999c53b589b766553536994d01 Mon Sep 17 00:00:00 2001
+From b5d26e0385de746975bfecb2339176cf0136ec44 Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Sun, 13 Mar 2022 22:52:24 +0300
-Subject: [PATCH 11/92] mtd: spi-nor: macronix: Add support for mx25uw51245g
+Subject: [PATCH 11/85] mtd: spi-nor: macronix: Add support for mx25uw51245g
 
 Use the same settings as for mx25u51245g, just different JEDEC ID.
 
@@ -25,5 +25,5 @@ index 662b212787d4..6b789eb17c10 100644
  			      SECT_4K | SPI_NOR_DUAL_READ |
  			      SPI_NOR_QUAD_READ) },
 -- 
-2.30.2
+2.39.2
 

@@ -1,7 +1,7 @@
-From 7d251954cd0b8f74f7246cc35ac8acffeaa61997 Mon Sep 17 00:00:00 2001
+From d724a8e4c2de51ed4c29843beb3f06fabd73dcb2 Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Thu, 25 May 2023 17:41:04 +0600
-Subject: [PATCH 15/92] gpio: rcar: Do not fail initialization if interrupt is
+Subject: [PATCH 15/85] gpio: rcar: Do not fail initialization if interrupt is
  not defined
 
 S4 control domain has gpio instances that do not support interrupt
@@ -80,5 +80,5 @@ index 8abddcfce92c..8b5053e6e352 100644
  	return 0;
  
 -- 
-2.30.2
+2.39.2
 

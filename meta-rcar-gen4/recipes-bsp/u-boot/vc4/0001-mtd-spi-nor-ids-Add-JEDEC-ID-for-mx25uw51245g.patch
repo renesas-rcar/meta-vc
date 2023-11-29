@@ -1,7 +1,7 @@
-From 40367cfc8567e05039da3d1cb452f681289e7188 Mon Sep 17 00:00:00 2001
+From d925f4cb34964539fb64081b45044726e4b4de4f Mon Sep 17 00:00:00 2001
 From: Dennis Ostermann <dennis.ostermann@renesas.com>
 Date: Thu, 25 May 2023 10:13:40 +0200
-Subject: [PATCH 1/4] mtd: spi-nor-ids: Add JEDEC ID for 'mx25uw51245g'
+Subject: [PATCH 01/19] mtd: spi-nor-ids: Add JEDEC ID for 'mx25uw51245g'
 
 The mx25uw51245g used 4Byte addressing scheme for high addresses and has lock bit.
 Tested on Renesas VC4.
@@ -10,7 +10,7 @@ Tested on Renesas VC4.
  1 file changed, 1 insertion(+)
 
 diff --git a/drivers/mtd/spi/spi-nor-ids.c b/drivers/mtd/spi/spi-nor-ids.c
-index fe4370db62..adc61421d1 100644
+index fe4370db628..adc61421d1b 100644
 --- a/drivers/mtd/spi/spi-nor-ids.c
 +++ b/drivers/mtd/spi/spi-nor-ids.c
 @@ -162,6 +162,7 @@ const struct flash_info spi_nor_ids[] = {
@@ -22,5 +22,5 @@ index fe4370db62..adc61421d1 100644
  
  #ifdef CONFIG_SPI_FLASH_STMICRO		/* STMICRO */
 -- 
-2.30.2
+2.39.2
 

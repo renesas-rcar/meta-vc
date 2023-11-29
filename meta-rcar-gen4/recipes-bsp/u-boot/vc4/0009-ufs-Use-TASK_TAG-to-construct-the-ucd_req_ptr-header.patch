@@ -1,0 +1,39 @@
+From 438c594aa9c46627789807ad9b877ad3318fe99d Mon Sep 17 00:00:00 2001
+From: Bhupesh Sharma <bhupesh.sharma@linaro.org>
+Date: Mon, 3 Jul 2023 00:39:12 +0530
+Subject: [PATCH 09/19] ufs: Use 'TASK_TAG' to construct the
+ ucd_req_ptr->header.dword_0
+
+Instead of using the hard-coded value of 0x1f, use 'TASK_TAG'
+macro instead to construct the ucd_req_ptr->header.dword_0
+
+This is in sync with what the Linux UFS driver does, i.e.
+set the byte0 equal to TASK_TAG (see [1]).
+
+Setting it to a fixed value of 0x1f is wrong as we define
+TASK_TAG as 0 inside u-boot ufs framework. So, instead we
+should  use the macro value directly.
+
+[1]. https://github.com/torvalds/linux/blob/master/drivers/ufs/core/ufshcd.c#L2705
+
+Signed-off-by: Bhupesh Sharma <bhupesh.sharma@linaro.org>
+---
+ drivers/ufs/ufs.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/ufs/ufs.c b/drivers/ufs/ufs.c
+index 92b7e9fd7cf..797e030d246 100644
+--- a/drivers/ufs/ufs.c
++++ b/drivers/ufs/ufs.c
+@@ -775,7 +775,7 @@ static inline void ufshcd_prepare_utp_nop_upiu(struct ufs_hba *hba)
+ 
+ 	/* command descriptor fields */
+ 	ucd_req_ptr->header.dword_0 =
+-			UPIU_HEADER_DWORD(UPIU_TRANSACTION_NOP_OUT, 0, 0, 0x1f);
++			UPIU_HEADER_DWORD(UPIU_TRANSACTION_NOP_OUT, 0, 0, TASK_TAG);
+ 	/* clear rest of the fields of basic header */
+ 	ucd_req_ptr->header.dword_1 = 0;
+ 	ucd_req_ptr->header.dword_2 = 0;
+-- 
+2.39.2
+

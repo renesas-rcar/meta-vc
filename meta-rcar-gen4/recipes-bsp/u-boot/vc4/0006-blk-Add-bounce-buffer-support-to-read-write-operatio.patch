@@ -1,0 +1,154 @@
+From d43791c9abe72d74360fd6fda0c8ebfb0d925757 Mon Sep 17 00:00:00 2001
+From: Marek Vasut <marek.vasut+renesas@mailbox.org>
+Date: Mon, 14 Aug 2023 01:49:59 +0200
+Subject: [PATCH 06/19] blk: Add bounce buffer support to read/write operations
+
+Some devices have limited DMA capabilities and require that the
+buffers passed to them fit specific properties. Add new optional
+callback which can be used at driver level to indicate whether a
+buffer alignment is suitable for the device DMA or not, and
+trigger use of generic bounce buffer implementation to help use
+of unsuitable buffers at the expense of performance degradation.
+
+Signed-off-by: Marek Vasut <marek.vasut+renesas@mailbox.org>
+---
+ drivers/block/blk-uclass.c | 66 ++++++++++++++++++++++++++++++++++++--
+ include/blk.h              | 19 +++++++++++
+ 2 files changed, 83 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/block/blk-uclass.c b/drivers/block/blk-uclass.c
+index 2fb9f6b765e..f5155b19098 100644
+--- a/drivers/block/blk-uclass.c
++++ b/drivers/block/blk-uclass.c
+@@ -432,6 +432,26 @@ int blk_get_device(int if_type, int devnum, struct udevice **devp)
+ 	return device_probe(*devp);
+ }
+ 
++struct blk_bounce_buffer {
++	struct udevice		*dev;
++	struct bounce_buffer	state;
++};
++
++static int blk_buffer_aligned(struct bounce_buffer *state)
++{
++#if IS_ENABLED(CONFIG_BOUNCE_BUFFER)
++	struct blk_bounce_buffer *bbstate =
++		container_of(state, struct blk_bounce_buffer, state);
++	struct udevice *dev = bbstate->dev;
++	const struct blk_ops *ops = blk_get_ops(dev);
++
++	if (ops->buffer_aligned)
++		return ops->buffer_aligned(dev, state);
++#endif	/* CONFIG_BOUNCE_BUFFER */
++
++	return 1;	/* Default, any buffer is OK */
++}
++
+ unsigned long blk_dread(struct blk_desc *block_dev, lbaint_t start,
+ 			lbaint_t blkcnt, void *buffer)
+ {
+@@ -445,7 +465,26 @@ unsigned long blk_dread(struct blk_desc *block_dev, lbaint_t start,
+ 	if (blkcache_read(block_dev->if_type, block_dev->devnum,
+ 			  start, blkcnt, block_dev->blksz, buffer))
+ 		return blkcnt;
+-	blks_read = ops->read(dev, start, blkcnt, buffer);
++
++	if (IS_ENABLED(CONFIG_BOUNCE_BUFFER)) {
++		struct blk_bounce_buffer bbstate = { .dev = dev };
++		int ret;
++
++		ret = bounce_buffer_start_extalign(&bbstate.state, buffer,
++						   blkcnt * block_dev->blksz,
++						   GEN_BB_WRITE,
++						   block_dev->blksz,
++						   blk_buffer_aligned);
++		if (ret)
++			return ret;
++
++		blks_read = ops->read(dev, start, blkcnt, bbstate.state.bounce_buffer);
++
++		bounce_buffer_stop(&bbstate.state);
++	} else {
++		blks_read = ops->read(dev, start, blkcnt, buffer);
++	}
++
+ 	if (blks_read == blkcnt)
+ 		blkcache_fill(block_dev->if_type, block_dev->devnum,
+ 			      start, blkcnt, block_dev->blksz, buffer);
+@@ -458,12 +497,35 @@ unsigned long blk_dwrite(struct blk_desc *block_dev, lbaint_t start,
+ {
+ 	struct udevice *dev = block_dev->bdev;
+ 	const struct blk_ops *ops = blk_get_ops(dev);
++	long blks_written;
+ 
+ 	if (!ops->write)
+ 		return -ENOSYS;
+ 
+ 	blkcache_invalidate(block_dev->if_type, block_dev->devnum);
+-	return ops->write(dev, start, blkcnt, buffer);
++
++	if (IS_ENABLED(CONFIG_BOUNCE_BUFFER)) {
++		struct blk_bounce_buffer bbstate = { .dev = dev };
++		int ret;
++
++		ret = bounce_buffer_start_extalign(&bbstate.state,
++						   (void *)buffer,
++						   blkcnt * block_dev->blksz,
++						   GEN_BB_READ,
++						   block_dev->blksz,
++						   blk_buffer_aligned);
++		if (ret)
++			return ret;
++
++		blks_written = ops->write(dev, start, blkcnt,
++					  bbstate.state.bounce_buffer);
++
++		bounce_buffer_stop(&bbstate.state);
++	} else {
++		blks_written = ops->write(dev, start, blkcnt, buffer);
++	}
++
++	return blks_written;
+ }
+ 
+ unsigned long blk_derase(struct blk_desc *block_dev, lbaint_t start,
+diff --git a/include/blk.h b/include/blk.h
+index 9ee10fb80e7..7b2bf1cd014 100644
+--- a/include/blk.h
++++ b/include/blk.h
+@@ -7,6 +7,7 @@
+ #ifndef BLK_H
+ #define BLK_H
+ 
++#include <bouncebuf.h>
+ #include <efi.h>
+ 
+ #ifdef CONFIG_SYS_64BIT_LBA
+@@ -265,6 +266,24 @@ struct blk_ops {
+ 	 * @return 0 if OK, -ve on error
+ 	 */
+ 	int (*select_hwpart)(struct udevice *dev, int hwpart);
++
++#if IS_ENABLED(CONFIG_BOUNCE_BUFFER)
++	/**
++	 * buffer_aligned() - test memory alignment of block operation buffer
++	 *
++	 * Some devices have limited DMA capabilities and require that the
++	 * buffers passed to them fit specific properties. This optional
++	 * callback can be used to indicate whether a buffer alignment is
++	 * suitable for the device DMA or not, and trigger use of generic
++	 * bounce buffer implementation to help use of unsuitable buffers
++	 * at the expense of performance degradation.
++	 *
++	 * @dev:	Block device associated with the request
++	 * @state:	Bounce buffer state
++	 * @return 1 if OK, 0 if unaligned
++	 */
++	int (*buffer_aligned)(struct udevice *dev, struct bounce_buffer *state);
++#endif	/* CONFIG_BOUNCE_BUFFER */
+ };
+ 
+ #define blk_get_ops(dev)	((struct blk_ops *)(dev)->driver->ops)
+-- 
+2.39.2
+

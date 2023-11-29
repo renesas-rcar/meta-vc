@@ -1,0 +1,38 @@
+From 7179f20f0cf4fef250fa357b7e1707e9132857eb Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Mon, 6 Nov 2023 11:04:35 +0600
+Subject: [PATCH 19/19] r8a779f0_vc4_defconfig: enable UFS support
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ configs/r8a779f0_vc4_defconfig | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/configs/r8a779f0_vc4_defconfig b/configs/r8a779f0_vc4_defconfig
+index 641bc9d1f80..a51c841d77d 100644
+--- a/configs/r8a779f0_vc4_defconfig
++++ b/configs/r8a779f0_vc4_defconfig
+@@ -22,6 +22,7 @@ CONFIG_CMD_GPIO=y
+ CONFIG_CMD_I2C=y
+ CONFIG_CMD_MMC=y
+ CONFIG_CMD_SPI=y
++CONFIG_CMD_UFS=y
+ CONFIG_CMD_DHCP=y
+ CONFIG_CMD_MII=y
+ CONFIG_CMD_PING=y
+@@ -57,8 +58,12 @@ CONFIG_RENESAS_ETHER_SWITCH=y
+ CONFIG_DM_REGULATOR=y
+ CONFIG_DM_REGULATOR_FIXED=y
+ CONFIG_DM_REGULATOR_GPIO=y
++CONFIG_SCSI=y
++CONFIG_DM_SCSI=y
+ CONFIG_SCIF_CONSOLE=y
+ CONFIG_SPI=y
+ CONFIG_DM_SPI=y
+ CONFIG_RENESAS_RPC_SPI=y
++CONFIG_UFS=y
++CONFIG_UFS_RENESAS=y
+ CONFIG_OF_LIBFDT_OVERLAY=y
+-- 
+2.39.2
+

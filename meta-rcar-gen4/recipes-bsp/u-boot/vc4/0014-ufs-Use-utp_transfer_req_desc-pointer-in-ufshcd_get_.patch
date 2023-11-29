@@ -1,0 +1,35 @@
+From 75cf1252b598bc14aa6cbefd5c999fe208052c22 Mon Sep 17 00:00:00 2001
+From: Marek Vasut <marek.vasut+renesas@mailbox.org>
+Date: Wed, 16 Aug 2023 17:05:54 +0200
+Subject: [PATCH 14/19] ufs: Use utp_transfer_req_desc pointer in
+ ufshcd_get_tr_ocs
+
+Use utp_transfer_req_desc pointer to reference to utrdl queue
+instead of referencing the queue directly. This makes the code
+more consistent. No functional change.
+
+Signed-off-by: Marek Vasut <marek.vasut+renesas@mailbox.org>
+Reviewed-by: Bhupesh Sharma <bhupesh.sharma@linaro.org>
+Tested-by: Bhupesh Sharma <bhupesh.sharma@linaro.org>
+---
+ drivers/ufs/ufs.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/ufs/ufs.c b/drivers/ufs/ufs.c
+index 9a6e33b84fd..832e50472f7 100644
+--- a/drivers/ufs/ufs.c
++++ b/drivers/ufs/ufs.c
+@@ -858,7 +858,9 @@ static inline int ufshcd_get_req_rsp(struct utp_upiu_rsp *ucd_rsp_ptr)
+  */
+ static inline int ufshcd_get_tr_ocs(struct ufs_hba *hba)
+ {
+-	return le32_to_cpu(hba->utrdl->header.dword_2) & MASK_OCS;
++	struct utp_transfer_req_desc *req_desc = hba->utrdl;
++
++	return le32_to_cpu(req_desc->header.dword_2) & MASK_OCS;
+ }
+ 
+ static inline int ufshcd_get_rsp_upiu_result(struct utp_upiu_rsp *ucd_rsp_ptr)
+-- 
+2.39.2
+

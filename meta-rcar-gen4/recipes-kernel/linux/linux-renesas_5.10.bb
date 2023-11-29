@@ -6,14 +6,7 @@ require recipes-kernel/linux/linux-yocto.inc
 
 COMPATIBLE_MACHINE = "vc4"
 
-PATCHES = ""
-require vc4_kernel_patches.inc
-include vc4_kernel_patches_proprietary.inc
-
-RENESAS_BSP_URL = " \
-    git://github.com/renesas-rcar/linux-bsp.git"
-BRANCH = "v5.10.41/rcar-5.1.7.rc9"
-SRCREV = "ab6affd8d52588e08c8a94081d17b4e713942775"
+require linux-renesas-source.inc
 
 SRC_URI = "${RENESAS_BSP_URL};nocheckout=1;branch=${BRANCH};protocol=https"
 SRC_URI += "${@' '.join(sorted(d.getVar('PATCHES').split()))}"
@@ -29,10 +22,6 @@ SRC_URI += "file://defconfig"
 
 # Allow temporary overrides for development
 include vc4_kernel_devel.inc
-
-LINUX_VERSION ?= "5.10.41"
-PV = "${LINUX_VERSION}+git${SRCPV}"
-PR = "r1"
 
 # Install device tree including control domain functions
 KERNEL_DEVICETREE_append = " \

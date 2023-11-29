@@ -1,0 +1,59 @@
+From 60cb03072eafec8d1231be2aaf9d019d62fb3714 Mon Sep 17 00:00:00 2001
+From: Marek Vasut <marek.vasut+renesas@mailbox.org>
+Date: Wed, 16 Aug 2023 17:05:51 +0200
+Subject: [PATCH 11/19] ufs: Add UFSHCD_QUIRK_HIBERN_FASTAUTO
+
+Add UFSHCD_QUIRK_HIBERN_FASTAUTO quirk for host controllers which supports
+auto-hibernate the capability but only FASTAUTO mode.
+
+Ported from Linux kernel commit
+2f11bbc2c7f3 ("scsi: ufs: core: Add UFSHCD_QUIRK_HIBERN_FASTAUTO")
+
+Signed-off-by: Marek Vasut <marek.vasut+renesas@mailbox.org>
+Reviewed-by: Bhupesh Sharma <bhupesh.sharma@linaro.org>
+Tested-by: Bhupesh Sharma <bhupesh.sharma@linaro.org>
+---
+ drivers/ufs/ufs.c | 9 +++++++--
+ drivers/ufs/ufs.h | 6 ++++++
+ 2 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/ufs/ufs.c b/drivers/ufs/ufs.c
+index 3635d0ab005..27a104e882f 100644
+--- a/drivers/ufs/ufs.c
++++ b/drivers/ufs/ufs.c
+@@ -1631,8 +1631,13 @@ static int ufshcd_get_max_pwr_mode(struct ufs_hba *hba)
+ 	if (hba->max_pwr_info.is_valid)
+ 		return 0;
+ 
+-	pwr_info->pwr_tx = FAST_MODE;
+-	pwr_info->pwr_rx = FAST_MODE;
++	if (hba->quirks & UFSHCD_QUIRK_HIBERN_FASTAUTO) {
++		pwr_info->pwr_tx = FASTAUTO_MODE;
++		pwr_info->pwr_rx = FASTAUTO_MODE;
++	} else {
++		pwr_info->pwr_tx = FAST_MODE;
++		pwr_info->pwr_rx = FAST_MODE;
++	}
+ 	pwr_info->hs_rate = PA_HS_MODE_B;
+ 
+ 	/* Get the connected lane count */
+diff --git a/drivers/ufs/ufs.h b/drivers/ufs/ufs.h
+index d60aa1dca0b..378f77d581a 100644
+--- a/drivers/ufs/ufs.h
++++ b/drivers/ufs/ufs.h
+@@ -725,6 +725,12 @@ struct ufs_hba {
+  */
+ #define UFSHCD_QUIRK_BROKEN_64BIT_ADDRESS		BIT(1)
+ 
++/*
++ * This quirk needs to be enabled if the host controller has
++ * auto-hibernate capability but it's FASTAUTO only.
++ */
++#define UFSHCD_QUIRK_HIBERN_FASTAUTO			BIT(2)
++
+ 	/* Virtual memory reference */
+ 	struct utp_transfer_cmd_desc *ucdl;
+ 	struct utp_transfer_req_desc *utrdl;
+-- 
+2.39.2
+

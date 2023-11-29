@@ -1,0 +1,90 @@
+From f15f4b40e3a3369f6fbf701923a9cf7ddf7571e1 Mon Sep 17 00:00:00 2001
+From: Marek Vasut <marek.vasut+renesas@mailbox.org>
+Date: Mon, 14 Aug 2023 01:50:00 +0200
+Subject: [PATCH 07/19] scsi: Add buffer_aligned check pass-through
+
+Some devices have limited DMA capabilities and require that the
+buffers passed to them fit specific properties. Add new optional
+callback which can be used at driver level to indicate whether a
+buffer alignment is suitable for the device DMA or not. This is
+a pass-through callback from block uclass to drivers.
+
+Signed-off-by: Marek Vasut <marek.vasut+renesas@mailbox.org>
+---
+ drivers/scsi/scsi.c | 15 +++++++++++++++
+ include/scsi.h      | 19 +++++++++++++++++++
+ 2 files changed, 34 insertions(+)
+
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index 0ab1d441f40..953b4108fe7 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -269,6 +269,18 @@ static ulong scsi_write(struct udevice *dev, lbaint_t blknr, lbaint_t blkcnt,
+ 	      __func__, start, smallblks, buf_addr);
+ 	return blkcnt;
+ }
++
++#if IS_ENABLED(CONFIG_BOUNCE_BUFFER)
++static int scsi_buffer_aligned(struct udevice *dev, struct bounce_buffer *state)
++{
++	struct scsi_ops *ops = scsi_get_ops(dev->parent);
++
++	if (ops->buffer_aligned)
++		return ops->buffer_aligned(dev->parent, state);
++
++	return 1;
++}
++#endif	/* CONFIG_BOUNCE_BUFFER */
+ #endif
+ 
+ #if defined(CONFIG_PCI) && !defined(CONFIG_SCSI_AHCI_PLAT) && \
+@@ -692,6 +704,9 @@ int scsi_scan(bool verbose)
+ static const struct blk_ops scsi_blk_ops = {
+ 	.read	= scsi_read,
+ 	.write	= scsi_write,
++#if IS_ENABLED(CONFIG_BOUNCE_BUFFER)
++	.buffer_aligned	= scsi_buffer_aligned,
++#endif	/* CONFIG_BOUNCE_BUFFER */
+ };
+ 
+ U_BOOT_DRIVER(scsi_blk) = {
+diff --git a/include/scsi.h b/include/scsi.h
+index 96cb7266762..1b9027a24ad 100644
+--- a/include/scsi.h
++++ b/include/scsi.h
+@@ -7,6 +7,7 @@
+  #define _SCSI_H
+ 
+ #include <asm/cache.h>
++#include <bouncebuf.h>
+ #include <linux/dma-direction.h>
+ 
+ struct scsi_cmd {
+@@ -194,6 +195,24 @@ struct scsi_ops {
+ 	 * @return 0 if OK, -ve on error
+ 	 */
+ 	int (*bus_reset)(struct udevice *dev);
++
++#if IS_ENABLED(CONFIG_BOUNCE_BUFFER)
++	/**
++	 * buffer_aligned() - test memory alignment of block operation buffer
++	 *
++	 * Some devices have limited DMA capabilities and require that the
++	 * buffers passed to them fit specific properties. This optional
++	 * callback can be used to indicate whether a buffer alignment is
++	 * suitable for the device DMA or not, and trigger use of generic
++	 * bounce buffer implementation to help use of unsuitable buffers
++	 * at the expense of performance degradation.
++	 *
++	 * @dev:	Block device associated with the request
++	 * @state:	Bounce buffer state
++	 * @return 1 if OK, 0 if unaligned
++	 */
++	int (*buffer_aligned)(struct udevice *dev, struct bounce_buffer *state);
++#endif	/* CONFIG_BOUNCE_BUFFER */
+ };
+ 
+ #define scsi_get_ops(dev)        ((struct scsi_ops *)(dev)->driver->ops)
+-- 
+2.39.2
+

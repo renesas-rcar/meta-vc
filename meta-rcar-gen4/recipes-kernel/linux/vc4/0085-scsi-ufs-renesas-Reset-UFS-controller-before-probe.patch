@@ -1,0 +1,51 @@
+From 848a56caedec59d1a7d6f46d187404a06f52418a Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Mon, 13 Nov 2023 11:15:50 +0600
+Subject: [PATCH 85/85] scsi: ufs: renesas: Reset UFS controller before probe
+
+If UFS controller was used by the bootloader, it does not work with the
+kernel driver unless it is reset first.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/scsi/ufs/ufs-renesas.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/drivers/scsi/ufs/ufs-renesas.c b/drivers/scsi/ufs/ufs-renesas.c
+index 4b26f1f36b7c..2fa7b76cf037 100644
+--- a/drivers/scsi/ufs/ufs-renesas.c
++++ b/drivers/scsi/ufs/ufs-renesas.c
+@@ -15,6 +15,7 @@
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+ #include <linux/pm_runtime.h>
++#include <linux/reset.h>
+ #include <linux/sys_soc.h>
+ 
+ #include "ufshcd.h"
+@@ -704,6 +705,22 @@ MODULE_DEVICE_TABLE(of, ufs_renesas_of_match);
+ 
+ static int ufs_renesas_probe(struct platform_device *pdev)
+ {
++	struct reset_control *reset;
++	int ret;
++
++	/* If UFS controller was used by bootloader, driver fails to initialize without
++	 * controller being reset */
++	reset = reset_control_get_exclusive(&pdev->dev, NULL);
++	if (IS_ERR(reset))
++		dev_err(&pdev->dev, "failed ti get reset control\n");
++	else {
++		ret = reset_control_reset(reset);
++		if (ret)
++			dev_err(&pdev->dev, "failed to reset\n");
++
++		reset_control_put(reset);
++	}
++
+ 	return ufshcd_pltfrm_init(pdev, &ufs_renesas_vops);
+ }
+ 
+-- 
+2.39.2
+

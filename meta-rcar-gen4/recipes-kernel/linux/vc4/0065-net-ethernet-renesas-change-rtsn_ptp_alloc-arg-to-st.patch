@@ -1,0 +1,75 @@
+From fc9a4b9a4c073f837692d782f2b8a3f00f914231 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Wed, 17 May 2023 15:53:36 +0600
+Subject: [PATCH 65/85] net: ethernet: renesas: change rtsn_ptp_alloc() arg to
+ struct device
+
+This is needed to share the implementation with rswitch2 driver.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/net/ethernet/renesas/rswitch.c  | 2 +-
+ drivers/net/ethernet/renesas/rtsn.c     | 2 +-
+ drivers/net/ethernet/renesas/rtsn_ptp.c | 4 ++--
+ drivers/net/ethernet/renesas/rtsn_ptp.h | 2 +-
+ 4 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/ethernet/renesas/rswitch.c b/drivers/net/ethernet/renesas/rswitch.c
+index efe4dd4ad061..7e2ea0ecf563 100644
+--- a/drivers/net/ethernet/renesas/rswitch.c
++++ b/drivers/net/ethernet/renesas/rswitch.c
+@@ -3162,7 +3162,7 @@ static int renesas_eth_sw_probe(struct platform_device *pdev)
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
+-	priv->ptp_priv = rtsn_ptp_alloc(pdev);
++	priv->ptp_priv = rtsn_ptp_alloc(&pdev->dev);
+ 	if (!priv->ptp_priv)
+ 		return -ENOMEM;
+ 
+diff --git a/drivers/net/ethernet/renesas/rtsn.c b/drivers/net/ethernet/renesas/rtsn.c
+index 7807d37aebe3..d92deca058fa 100644
+--- a/drivers/net/ethernet/renesas/rtsn.c
++++ b/drivers/net/ethernet/renesas/rtsn.c
+@@ -1149,7 +1149,7 @@ static int rtsn_probe(struct platform_device *pdev)
+ 
+ 	priv = netdev_priv(ndev);
+ 	priv->ndev = ndev;
+-	priv->ptp_priv = rtsn_ptp_alloc(pdev);
++	priv->ptp_priv = rtsn_ptp_alloc(&pdev->dev);
+ 
+ 	priv->addr = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(priv->addr))
+diff --git a/drivers/net/ethernet/renesas/rtsn_ptp.c b/drivers/net/ethernet/renesas/rtsn_ptp.c
+index ceb000b13726..64740045a122 100644
+--- a/drivers/net/ethernet/renesas/rtsn_ptp.c
++++ b/drivers/net/ethernet/renesas/rtsn_ptp.c
+@@ -176,11 +176,11 @@ int rtsn_ptp_unregister(struct rtsn_ptp_private *ptp_priv)
+ 	return 0;
+ }
+ 
+-struct rtsn_ptp_private *rtsn_ptp_alloc(struct platform_device *pdev)
++struct rtsn_ptp_private *rtsn_ptp_alloc(struct device *dev)
+ {
+ 	struct rtsn_ptp_private *ptp;
+ 
+-	ptp = devm_kzalloc(&pdev->dev, sizeof(*ptp), GFP_KERNEL);
++	ptp = devm_kzalloc(dev, sizeof(*ptp), GFP_KERNEL);
+ 	if (!ptp)
+ 		return NULL;
+ 
+diff --git a/drivers/net/ethernet/renesas/rtsn_ptp.h b/drivers/net/ethernet/renesas/rtsn_ptp.h
+index 6c26bf7b1df5..90a445e1cc78 100644
+--- a/drivers/net/ethernet/renesas/rtsn_ptp.h
++++ b/drivers/net/ethernet/renesas/rtsn_ptp.h
+@@ -79,6 +79,6 @@ struct rtsn_ptp_private {
+ 
+ int rtsn_ptp_init(struct rtsn_ptp_private *ptp_priv, enum rtsn_ptp_reg_layout layout, u32 clock);
+ int rtsn_ptp_unregister(struct rtsn_ptp_private *ptp_priv);
+-struct rtsn_ptp_private *rtsn_ptp_alloc(struct platform_device *pdev);
++struct rtsn_ptp_private *rtsn_ptp_alloc(struct device *dev);
+ 
+ #endif
+-- 
+2.39.2
+

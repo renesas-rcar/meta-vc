@@ -1,7 +1,7 @@
-From dffc9a50a2d0a1001a48a9ee24c7f130eef4e92b Mon Sep 17 00:00:00 2001
+From 96b3d9a1ccf1ab4572894e2e81f1ebe289a04069 Mon Sep 17 00:00:00 2001
 From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 Date: Wed, 4 Dec 2013 19:32:00 +0200
-Subject: [PATCH 05/92] OF: DT-Overlay configfs interface (v7)
+Subject: [PATCH 05/85] OF: DT-Overlay configfs interface (v7)
 
 Add a runtime interface to using configfs for generic device tree overlay
 usage. With it its possible to use device tree overlays without having
@@ -407,5 +407,5 @@ index 000000000000..7a6cae074381
 +}
 +late_initcall(of_cfs_init);
 -- 
-2.30.2
+2.39.2
 

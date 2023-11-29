@@ -7,4 +7,19 @@ PATCHES += "\
   file://0002-ARM-dts-renesas-r8a779f0-sync-with-linux.patch \
   file://0003-renesas-Add-VC4-board.patch \
   file://0004-vc4-Load-default-environment-via-TFTP-or-from-MMC.patch \
+  file://0005-ARM-renesas-on-R8A779F0-rev-1.0-automatically-disabl.patch \
+  file://0006-blk-Add-bounce-buffer-support-to-read-write-operatio.patch \
+  file://0007-scsi-Add-buffer_aligned-check-pass-through.patch \
+  file://0008-scsi-Cache-align-temporary-buffer.patch \
+  file://0009-ufs-Use-TASK_TAG-to-construct-the-ucd_req_ptr-header.patch \
+  file://0010-ufs-Add-UFSHCD_QUIRK_BROKEN_64BIT_ADDRESS.patch \
+  file://0011-ufs-Add-UFSHCD_QUIRK_HIBERN_FASTAUTO.patch \
+  file://0012-ufs-Handle-UFS-3.0-controllers.patch \
+  file://0013-ufs-Pass-hba-pointer-to-ufshcd_prepare_req_desc_hdr.patch \
+  file://0014-ufs-Use-utp_transfer_req_desc-pointer-in-ufshcd_get_.patch \
+  file://0015-ufs-Implement-cache-management.patch \
+  file://0016-ufs-ufs-renesas-Add-support-for-Renesas-R-Car-UFS-co.patch \
+  file://0017-scsi-set-dma-direction-to-NONE-for-TEST-UNIT-READY.patch \
+  file://0018-r8a779f0-vc4.dts-add-UFS-device.patch \
+  file://0019-r8a779f0_vc4_defconfig-enable-UFS-support.patch \
 "

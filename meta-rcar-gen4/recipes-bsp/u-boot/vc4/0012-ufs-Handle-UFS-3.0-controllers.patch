@@ -1,0 +1,45 @@
+From 994c8f2872365f441904a26a7983a503e81c40a8 Mon Sep 17 00:00:00 2001
+From: Marek Vasut <marek.vasut+renesas@mailbox.org>
+Date: Wed, 16 Aug 2023 17:05:52 +0200
+Subject: [PATCH 12/19] ufs: Handle UFS 3.0 controllers
+
+Extend the version check to handle UFS 3.0 controllers as well.
+Tested on R-Car S4 UFS 3.0 controller.
+
+Signed-off-by: Marek Vasut <marek.vasut+renesas@mailbox.org>
+Reviewed-by: Bhupesh Sharma <bhupesh.sharma@linaro.org>
+Tested-by: Bhupesh Sharma <bhupesh.sharma@linaro.org>
+---
+ drivers/ufs/ufs.c | 3 ++-
+ drivers/ufs/ufs.h | 1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/ufs/ufs.c b/drivers/ufs/ufs.c
+index 27a104e882f..94f00f94427 100644
+--- a/drivers/ufs/ufs.c
++++ b/drivers/ufs/ufs.c
+@@ -1903,7 +1903,8 @@ int ufshcd_probe(struct udevice *ufs_dev, struct ufs_hba_ops *hba_ops)
+ 	if (hba->version != UFSHCI_VERSION_10 &&
+ 	    hba->version != UFSHCI_VERSION_11 &&
+ 	    hba->version != UFSHCI_VERSION_20 &&
+-	    hba->version != UFSHCI_VERSION_21)
++	    hba->version != UFSHCI_VERSION_21 &&
++	    hba->version != UFSHCI_VERSION_30)
+ 		dev_err(hba->dev, "invalid UFS version 0x%x\n",
+ 			hba->version);
+ 
+diff --git a/drivers/ufs/ufs.h b/drivers/ufs/ufs.h
+index 378f77d581a..891c67589dd 100644
+--- a/drivers/ufs/ufs.h
++++ b/drivers/ufs/ufs.h
+@@ -781,6 +781,7 @@ enum {
+ 	UFSHCI_VERSION_11 = 0x00010100, /* 1.1 */
+ 	UFSHCI_VERSION_20 = 0x00000200, /* 2.0 */
+ 	UFSHCI_VERSION_21 = 0x00000210, /* 2.1 */
++	UFSHCI_VERSION_30 = 0x00000300, /* 3.0 */
+ };
+ 
+ /* Interrupt disable masks */
+-- 
+2.39.2
+

@@ -1,7 +1,7 @@
-From df262913f4304a6b9659ef2de5b0d0ad9b8ee2e8 Mon Sep 17 00:00:00 2001
+From 68a7fcf59960011f98f413244475128f09a3012a Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Wed, 18 May 2022 00:19:29 +0300
-Subject: [PATCH 41/92] can: rcar_canfd: Add support for r8a779f0 SoC
+Subject: [PATCH 41/85] can: rcar_canfd: Add support for r8a779f0 SoC
 
 R-Car S4 CANFD module has register model similar (but not equal) to
 V3U, and interrupt model similar to RZ/G2L.
@@ -12,7 +12,7 @@ Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
  1 file changed, 67 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/net/can/rcar/rcar_canfd.c b/drivers/net/can/rcar/rcar_canfd.c
-index 8f25edd9f957..bb319605628f 100644
+index f2e43ab0ac5f..6745f40ffaa9 100644
 --- a/drivers/net/can/rcar/rcar_canfd.c
 +++ b/drivers/net/can/rcar/rcar_canfd.c
 @@ -574,6 +574,7 @@ struct rcar_canfd_channel {
@@ -215,5 +215,5 @@ index 8f25edd9f957..bb319605628f 100644
  		.compatible = "renesas,r8a779a0-canfd",
  		.data = &of_rcanfd_v3u_compatible,
 -- 
-2.30.2
+2.39.2
 

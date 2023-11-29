@@ -1,14 +1,14 @@
-From 339dc8abf72206e5eea2109231ca3747b80b94b8 Mon Sep 17 00:00:00 2001
+From 9cae79cbe1ff8c4161e474f6ce79c0f13cac6eda Mon Sep 17 00:00:00 2001
 From: Dennis Ostermann <dennis.ostermann@renesass.com>
 Date: Fri, 11 Aug 2023 12:37:44 +0600
-Subject: [PATCH 4/4] vc4: Load default environment via TFTP or from MMC
+Subject: [PATCH 04/19] vc4: Load default environment via TFTP or from MMC
 
 ---
  include/configs/vc4.h | 35 +++++++++++++++++++++++++++++++----
  1 file changed, 31 insertions(+), 4 deletions(-)
 
 diff --git a/include/configs/vc4.h b/include/configs/vc4.h
-index e678069dc9..5e1f1dd441 100644
+index e678069dc95..5e1f1dd4417 100644
 --- a/include/configs/vc4.h
 +++ b/include/configs/vc4.h
 @@ -18,10 +18,37 @@
@@ -54,5 +54,5 @@ index e678069dc9..5e1f1dd441 100644
  
  #endif /* __VC4_H */
 -- 
-2.30.2
+2.39.2
 

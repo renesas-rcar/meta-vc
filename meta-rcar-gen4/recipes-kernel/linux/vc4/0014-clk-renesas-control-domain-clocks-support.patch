@@ -1,7 +1,7 @@
-From e0654558ea3404458bc4ab975e9426c5ac216a0e Mon Sep 17 00:00:00 2001
+From 4cf717e840c4ec628ba71f2102c824ef4897d1a9 Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Mon, 22 May 2023 11:16:26 +0600
-Subject: [PATCH 14/92] clk: renesas: control domain clocks support
+Subject: [PATCH 14/85] clk: renesas: control domain clocks support
 
 This commit adds partial support for control domain clocks:
 - reading rates for some control domain clocks,
@@ -737,5 +737,5 @@ index 7899a5b8c247..e73330b9b1c3 100644
  static inline int rcar_rst_read_mode_pins(u32 *mode) { return -ENODEV; }
  #endif
 -- 
-2.30.2
+2.39.2
 

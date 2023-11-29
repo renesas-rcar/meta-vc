@@ -1,0 +1,30 @@
+From 307873aa7b918bd9bd90e9adbc85d20289a70bb6 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Wed, 17 May 2023 08:56:53 +0600
+Subject: [PATCH 66/85] arm64: dts: renesas: r8a779f0: add rswitch sram
+ resource
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ arch/arm64/boot/dts/renesas/r8a779f0.dtsi | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+index ce42a74f539a..f9ed26caeb6b 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
++++ b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+@@ -598,8 +598,9 @@ rswitch: ethernet@e68c0000 {
+ 			compatible = "renesas,etherswitch-r8a779f0",
+ 				     "renesas,etherswitch";
+ 			reg = <0 0xe68c0000 0 0x00020000>,
+-			      <0 0xe6444000 0 0x2800>;
+-			reg-names = "iobase", "serdes";
++			      <0 0xe6444000 0 0x2800>,
++			      <0 0xe643B000 0 0x800>;
++			reg-names = "iobase", "serdes", "sram";
+ 			interrupts = <GIC_SPI 280 IRQ_TYPE_LEVEL_HIGH>,
+ 				     <GIC_SPI 281 IRQ_TYPE_LEVEL_HIGH>,
+ 				     <GIC_SPI 282 IRQ_TYPE_LEVEL_HIGH>,
+-- 
+2.39.2
+

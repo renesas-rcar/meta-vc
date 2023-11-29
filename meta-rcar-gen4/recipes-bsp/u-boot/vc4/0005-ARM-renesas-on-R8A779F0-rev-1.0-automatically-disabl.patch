@@ -1,0 +1,79 @@
+From 01a0b49f0034fdcf146de6f5885c07c695851000 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Mon, 6 Nov 2023 22:39:29 +0600
+Subject: [PATCH 05/19] ARM: renesas: on R8A779F0 rev 1.0, automatically
+ disable UFS DT node
+
+... because UFS does not work on that revision, and attempt to
+initialize the kernel driver results into a lot of error messages.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ arch/arm/mach-rmobile/Kconfig.64 |  1 +
+ arch/arm/mach-rmobile/Makefile   |  1 +
+ arch/arm/mach-rmobile/fdt.c      | 29 +++++++++++++++++++++++++++++
+ 3 files changed, 31 insertions(+)
+ create mode 100644 arch/arm/mach-rmobile/fdt.c
+
+diff --git a/arch/arm/mach-rmobile/Kconfig.64 b/arch/arm/mach-rmobile/Kconfig.64
+index d1f7349cfce..7fe9e52e739 100644
+--- a/arch/arm/mach-rmobile/Kconfig.64
++++ b/arch/arm/mach-rmobile/Kconfig.64
+@@ -157,6 +157,7 @@ config R8A779F0
+ 	bool "Renesas SoC R8A779F0"
+ 	imply CLK_R8A779F0
+ 	imply PINCTRL_PFC_R8A779F0
++	select OF_SYSTEM_SETUP
+ 
+ config R8A779G0
+ 	bool "Renesas SoC R8A779G0"
+diff --git a/arch/arm/mach-rmobile/Makefile b/arch/arm/mach-rmobile/Makefile
+index 4f952c4d7f0..30de454017f 100644
+--- a/arch/arm/mach-rmobile/Makefile
++++ b/arch/arm/mach-rmobile/Makefile
+@@ -14,6 +14,7 @@ obj-$(CONFIG_R8A7740) += lowlevel_init.o cpu_info-r8a7740.o pfc-r8a7740.o
+ obj-$(CONFIG_RCAR_GEN2) += lowlevel_init_ca15.o cpu_info-rcar.o
+ obj-$(CONFIG_RCAR_GEN3) += lowlevel_init_gen3.o cpu_info-rcar.o memmap-gen3.o
+ obj-$(CONFIG_RCAR_GEN4) += lowlevel_init_gen3.o cpu_info-rcar.o memmap-gen3.o
++obj-$(CONFIG_OF_SYSTEM_SETUP) += fdt.o
+ 
+ ifneq ($(CONFIG_R8A779A0),)
+ obj-$(CONFIG_ARMV8_PSCI) += psci-r8a779a0.o
+diff --git a/arch/arm/mach-rmobile/fdt.c b/arch/arm/mach-rmobile/fdt.c
+new file mode 100644
+index 00000000000..68a60d3eed8
+--- /dev/null
++++ b/arch/arm/mach-rmobile/fdt.c
+@@ -0,0 +1,29 @@
++#include <common.h>
++#include <fdt_support.h>
++#include <log.h>
++
++int ft_system_setup(void *blob, struct bd_info *bd)
++{
++	int ret = 0;
++
++#ifdef CONFIG_R8A779F0
++	if (rmobile_get_cpu_type() == RMOBILE_CPU_TYPE_R8A779F0 &&
++	    rmobile_get_cpu_rev_integer() == 1 &&
++	    rmobile_get_cpu_rev_fraction() == 0) {
++		/* R8A779F0 rev 1.0 has broken UFS */
++		int offs = fdt_path_offset(blob, "/soc/scsi@e6860000");
++		if (offs < 0)
++			debug("failed fo find UFS node\n");
++		if (offs >= 0) {
++			ret = fdt_setprop_string(blob, offs, "status",
++						 "disabled");
++			if (ret) {
++				printf("failed to disable UFS node\n");
++				return ret;
++			} else
++				debug("diabled UFS node for R8A779F0 1.0\n");
++		}
++	}
++#endif
++	return ret;
++}
+-- 
+2.39.2
+

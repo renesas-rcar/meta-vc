@@ -1,7 +1,7 @@
-From 90196f69a63af67da23fd1bcad97a30099ea32ba Mon Sep 17 00:00:00 2001
+From edcddbdcaf25b0d15d3042e6a02ec321314b8586 Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Fri, 11 Aug 2023 12:03:55 +0600
-Subject: [PATCH 3/4] renesas: Add VC4 board
+Subject: [PATCH 03/19] renesas: Add VC4 board
 
 Using device tree from linux, with exception of rpc and rswitch nodes.
 - rpc node added in r8a779f0-vc4-u-boot.dts similar to other boards
@@ -31,13 +31,13 @@ Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
  create mode 100644 include/configs/vc4.h
 
 diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
-index 4934824673..a6522a830d 100644
+index 91c5616625a..d52d17a7aba 100644
 --- a/arch/arm/dts/Makefile
 +++ b/arch/arm/dts/Makefile
-@@ -809,7 +809,8 @@ endif
- 
+@@ -810,7 +810,8 @@ endif
  dtb-$(CONFIG_RCAR_GEN4) += \
  	r8a779f0-spider-u-boot.dtb \
+ 	r8a779f0-s4sk-u-boot.dtb \
 -	r8a779g0-whitehawk-u-boot.dtb
 +	r8a779g0-whitehawk-u-boot.dtb \
 +	r8a779f0-vc4-u-boot.dtb
@@ -46,7 +46,7 @@ index 4934824673..a6522a830d 100644
  DTC_FLAGS += -R 4 -p 0x1000
 diff --git a/arch/arm/dts/r8a779f0-vc4-u-boot.dts b/arch/arm/dts/r8a779f0-vc4-u-boot.dts
 new file mode 100644
-index 0000000000..5f240ada2d
+index 00000000000..5f240ada2da
 --- /dev/null
 +++ b/arch/arm/dts/r8a779f0-vc4-u-boot.dts
 @@ -0,0 +1,42 @@
@@ -94,7 +94,7 @@ index 0000000000..5f240ada2d
 +};
 diff --git a/arch/arm/dts/r8a779f0-vc4.dts b/arch/arm/dts/r8a779f0-vc4.dts
 new file mode 100644
-index 0000000000..d7e57a50af
+index 00000000000..d7e57a50afb
 --- /dev/null
 +++ b/arch/arm/dts/r8a779f0-vc4.dts
 @@ -0,0 +1,294 @@
@@ -393,10 +393,10 @@ index 0000000000..d7e57a50af
 +	clock-frequency = <24000000>;
 +};
 diff --git a/arch/arm/mach-rmobile/Kconfig.64 b/arch/arm/mach-rmobile/Kconfig.64
-index d7ebd8146c..3f78e61e2a 100644
+index 89a77c46db6..d1f7349cfce 100644
 --- a/arch/arm/mach-rmobile/Kconfig.64
 +++ b/arch/arm/mach-rmobile/Kconfig.64
-@@ -181,6 +181,11 @@ config TARGET_WHITEHAWK
+@@ -187,6 +187,11 @@ config TARGET_WHITEHAWK
  	help
  	  Support for Renesas R-Car Gen4 White Hawk platform
  
@@ -408,9 +408,9 @@ index d7ebd8146c..3f78e61e2a 100644
  endchoice
  
  config SYS_SOC
-@@ -188,6 +193,7 @@ config SYS_SOC
- 
+@@ -195,6 +200,7 @@ config SYS_SOC
  source "board/renesas/spider/Kconfig"
+ source "board/renesas/s4sk/Kconfig"
  source "board/renesas/whitehawk/Kconfig"
 +source "board/renesas/vc4/Kconfig"
  
@@ -418,7 +418,7 @@ index d7ebd8146c..3f78e61e2a 100644
  	default 0x8000 if RCAR_GEN4
 diff --git a/board/renesas/vc4/Kconfig b/board/renesas/vc4/Kconfig
 new file mode 100644
-index 0000000000..d2ce644921
+index 00000000000..d2ce6449212
 --- /dev/null
 +++ b/board/renesas/vc4/Kconfig
 @@ -0,0 +1,15 @@
@@ -439,7 +439,7 @@ index 0000000000..d2ce644921
 +endif
 diff --git a/board/renesas/vc4/Makefile b/board/renesas/vc4/Makefile
 new file mode 100644
-index 0000000000..8be8f785fb
+index 00000000000..8be8f785fbc
 --- /dev/null
 +++ b/board/renesas/vc4/Makefile
 @@ -0,0 +1,9 @@
@@ -454,7 +454,7 @@ index 0000000000..8be8f785fb
 +obj-y	:= vc4.o ../rcar-common/gen4-common.o
 diff --git a/board/renesas/vc4/vc4.c b/board/renesas/vc4/vc4.c
 new file mode 100644
-index 0000000000..15e6345366
+index 00000000000..15e6345366f
 --- /dev/null
 +++ b/board/renesas/vc4/vc4.c
 @@ -0,0 +1,80 @@
@@ -540,7 +540,7 @@ index 0000000000..15e6345366
 +}
 diff --git a/configs/r8a779f0_vc4_defconfig b/configs/r8a779f0_vc4_defconfig
 new file mode 100644
-index 0000000000..641bc9d1f8
+index 00000000000..641bc9d1f80
 --- /dev/null
 +++ b/configs/r8a779f0_vc4_defconfig
 @@ -0,0 +1,64 @@
@@ -610,7 +610,7 @@ index 0000000000..641bc9d1f8
 +CONFIG_OF_LIBFDT_OVERLAY=y
 diff --git a/include/configs/vc4.h b/include/configs/vc4.h
 new file mode 100644
-index 0000000000..e678069dc9
+index 00000000000..e678069dc95
 --- /dev/null
 +++ b/include/configs/vc4.h
 @@ -0,0 +1,27 @@
@@ -642,5 +642,5 @@ index 0000000000..e678069dc9
 +
 +#endif /* __VC4_H */
 -- 
-2.30.2
+2.39.2
 

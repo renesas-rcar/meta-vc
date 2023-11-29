@@ -1,0 +1,586 @@
+From 0b8af95087ad200f2b5d3d7e5e28db3c34cca0d8 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Sat, 28 Oct 2023 15:31:15 +0600
+Subject: [PATCH 78/85] net: phy: attach reset suppliers early
+
+Before this patch, phy was looking up it's reset supplier (either gpio
+or other reset control) in mdiobus_register(). That code was executed
+only if mdio device being registered was a phy, and was dependent
+on of_node attached to phy's struct device (or perhaps some other way
+to make getting gpio or reset control for device functional).
+
+Problem is that in some cases, phy must be put out of reset earlier than
+it is registered, namely when phy ids are being probed.
+
+Previous patches added phy_device_initialize() and phy_device_probe_ids()
+functions that implement unresetting phy when ids are probed. But those
+needed reset suppliers to be attached early.
+
+This patch implements that, by:
+
+- moving management of reset suppliers from mdiobus code into explicit
+  functions - mdio_device_attach_suppliers() and
+  mdio_device_release_suppliers(),
+
+- creating of_phy_device_initialize() - a wrapper that calls
+  phy_device_initialize() and populates the returned phydev with
+  information from device tree (which previously was done in
+  of_mdiobus_phy_device_register() - the later function is removed)
+  and also sets phydev's of_node and calls suppliers attach routine,
+
+- converting all in-tree paths that set phydev's of_node to use
+  of_phy_device_initialize() and phy_device_probe_ids().
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/net/mdio/of_mdio.c    |  76 ++++++++++++---------
+ drivers/net/phy/fixed_phy.c   |  20 ++++--
+ drivers/net/phy/mdio_bus.c    | 125 ++++++++--------------------------
+ drivers/net/phy/mdio_device.c |  42 ++++++++++++
+ drivers/net/phy/nxp-tja11xx.c |  18 +++--
+ drivers/net/phy/phy_device.c  |   4 ++
+ include/linux/mdio.h          |   2 +
+ include/linux/of_mdio.h       |  13 ++--
+ include/linux/phy.h           |   5 ++
+ 9 files changed, 158 insertions(+), 147 deletions(-)
+
+diff --git a/drivers/net/mdio/of_mdio.c b/drivers/net/mdio/of_mdio.c
+index 4daf94bb56a5..ec308837edb4 100644
+--- a/drivers/net/mdio/of_mdio.c
++++ b/drivers/net/mdio/of_mdio.c
+@@ -60,15 +60,19 @@ static struct mii_timestamper *of_find_mii_timestamper(struct device_node *node)
+ 	return register_mii_timestamper(arg.np, arg.args[0]);
+ }
+ 
+-int of_mdiobus_phy_device_register(struct mii_bus *mdio, struct phy_device *phy,
+-			      struct device_node *child, u32 addr)
++struct phy_device *of_phy_device_initialize(struct device_node *child,
++					    struct mii_bus *mdio, u32 addr)
+ {
++	struct phy_device *phy;
+ 	int rc;
+ 
++	phy = phy_device_initialize(mdio, addr);
++	if (IS_ERR(phy))
++		return phy;
++
+ 	rc = of_irq_get(child, 0);
+ 	if (rc == -EPROBE_DEFER)
+-		return rc;
+-
++		goto err_irq;
+ 	if (rc > 0) {
+ 		phy->irq = rc;
+ 		mdio->irq[addr] = rc;
+@@ -84,25 +88,21 @@ int of_mdiobus_phy_device_register(struct mii_bus *mdio, struct phy_device *phy,
+ 	of_property_read_u32(child, "reset-deassert-us",
+ 			     &phy->mdio.reset_deassert_delay);
+ 
+-	/* Associate the OF node with the device structure so it
+-	 * can be looked up later */
+-	of_node_get(child);
+-	phy->mdio.dev.of_node = child;
++	phy->mdio.dev.of_node = of_node_get(child);
+ 	phy->mdio.dev.fwnode = of_fwnode_handle(child);
+ 
+-	/* All data is now stored in the phy struct;
+-	 * register it */
+-	rc = phy_device_register(phy);
+-	if (rc) {
+-		of_node_put(child);
+-		return rc;
+-	}
++	rc = phy_device_attach_suppliers(phy);
++	if (rc)
++		goto err_suppliers;
+ 
+-	dev_dbg(&mdio->dev, "registered phy %pOFn at address %i\n",
+-		child, addr);
+-	return 0;
++	return phy;
++
++err_suppliers:
++err_irq:
++	phy_device_free(phy);
++	return ERR_PTR(rc);
+ }
+-EXPORT_SYMBOL(of_mdiobus_phy_device_register);
++EXPORT_SYMBOL(of_phy_device_initialize);
+ 
+ static int of_mdiobus_register_phy(struct mii_bus *mdio,
+ 				    struct device_node *child, u32 addr)
+@@ -117,26 +117,25 @@ static int of_mdiobus_register_phy(struct mii_bus *mdio,
+ 	if (IS_ERR(mii_ts))
+ 		return PTR_ERR(mii_ts);
+ 
++	phy = of_phy_device_initialize(child, mdio, addr);
++	if (IS_ERR(phy)) {
++		rc = PTR_ERR(phy);
++		goto err_phy_initialize;
++	}
++
+ 	is_c45 = of_device_is_compatible(child,
+ 					 "ethernet-phy-ieee802.3-c45");
+ 
+ 	if (!is_c45 && !of_get_phy_id(child, &phy_id))
+-		phy = phy_device_create(mdio, addr, phy_id, 0, NULL);
++		rc = phy_device_assign_ids(phy, phy_id, 0, NULL);
+ 	else
+-		phy = get_phy_device(mdio, addr, is_c45);
+-	if (IS_ERR(phy)) {
+-		if (mii_ts)
+-			unregister_mii_timestamper(mii_ts);
+-		return PTR_ERR(phy);
+-	}
++		rc = phy_device_probe_ids(phy, is_c45);
++	if (rc)
++		goto err_phy_ids;
+ 
+-	rc = of_mdiobus_phy_device_register(mdio, phy, child, addr);
+-	if (rc) {
+-		if (mii_ts)
+-			unregister_mii_timestamper(mii_ts);
+-		phy_device_free(phy);
+-		return rc;
+-	}
++	rc = phy_device_register(phy);
++	if (rc)
++		goto err_phy_register;
+ 
+ 	/* phy->mii_ts may already be defined by the PHY driver. A
+ 	 * mii_timestamper probed via the device tree will still have
+@@ -145,7 +144,18 @@ static int of_mdiobus_register_phy(struct mii_bus *mdio,
+ 	if (mii_ts)
+ 		phy->mii_ts = mii_ts;
+ 
++	dev_dbg(&mdio->dev, "registered phy %pOFn at address %i\n",
++		child, addr);
+ 	return 0;
++
++err_phy_register:
++err_phy_ids:
++	phy_device_free(phy);
++err_phy_initialize:
++	if (mii_ts)
++		unregister_mii_timestamper(mii_ts);
++
++	return rc;
+ }
+ 
+ static int of_mdiobus_register_device(struct mii_bus *mdio,
+diff --git a/drivers/net/phy/fixed_phy.c b/drivers/net/phy/fixed_phy.c
+index 18d81f43f2a8..5b98851cff39 100644
+--- a/drivers/net/phy/fixed_phy.c
++++ b/drivers/net/phy/fixed_phy.c
+@@ -18,6 +18,7 @@
+ #include <linux/err.h>
+ #include <linux/slab.h>
+ #include <linux/of.h>
++#include <linux/of_mdio.h>
+ #include <linux/gpio/consumer.h>
+ #include <linux/idr.h>
+ #include <linux/netdevice.h>
+@@ -254,10 +255,22 @@ static struct phy_device *__fixed_phy_register(unsigned int irq,
+ 		return ERR_PTR(ret);
+ 	}
+ 
+-	phy = get_phy_device(fmb->mii_bus, phy_addr, false);
++#if IS_ENABLED(CONFIG_OF_MDIO)
++	if (np)
++		phy = of_phy_device_initialize(np, fmb->mii_bus, phy_addr);
++	else
++#endif
++	phy = phy_device_initialize(fmb->mii_bus, phy_addr);
+ 	if (IS_ERR(phy)) {
+ 		fixed_phy_del(phy_addr);
+-		return ERR_PTR(-EINVAL);
++		return phy;
++	}
++
++	ret = phy_device_probe_ids(phy, false);
++	if (ret) {
++		phy_device_free(phy);
++		fixed_phy_del(phy_addr);
++		return ERR_PTR(ret);
+ 	}
+ 
+ 	/* propagate the fixed link values to struct phy_device */
+@@ -269,8 +282,6 @@ static struct phy_device *__fixed_phy_register(unsigned int irq,
+ 		phy->asym_pause = status->asym_pause;
+ 	}
+ 
+-	of_node_get(np);
+-	phy->mdio.dev.of_node = np;
+ 	phy->is_pseudo_fixed_link = true;
+ 
+ 	switch (status->speed) {
+@@ -299,7 +310,6 @@ static struct phy_device *__fixed_phy_register(unsigned int irq,
+ 	ret = phy_device_register(phy);
+ 	if (ret) {
+ 		phy_device_free(phy);
+-		of_node_put(np);
+ 		fixed_phy_del(phy_addr);
+ 		return ERR_PTR(ret);
+ 	}
+diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
+index 757e950fb745..71c2355db72b 100644
+--- a/drivers/net/phy/mdio_bus.c
++++ b/drivers/net/phy/mdio_bus.c
+@@ -27,7 +27,6 @@
+ #include <linux/of_gpio.h>
+ #include <linux/of_mdio.h>
+ #include <linux/phy.h>
+-#include <linux/reset.h>
+ #include <linux/skbuff.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+@@ -40,53 +39,11 @@
+ 
+ #include "mdio-boardinfo.h"
+ 
+-static int mdiobus_register_gpiod(struct mdio_device *mdiodev)
+-{
+-	/* Deassert the optional reset signal */
+-	mdiodev->reset_gpio = gpiod_get_optional(&mdiodev->dev,
+-						 "reset", GPIOD_OUT_LOW);
+-	if (IS_ERR(mdiodev->reset_gpio))
+-		return PTR_ERR(mdiodev->reset_gpio);
+-
+-	if (mdiodev->reset_gpio)
+-		gpiod_set_consumer_name(mdiodev->reset_gpio, "PHY reset");
+-
+-	return 0;
+-}
+-
+-static int mdiobus_register_reset(struct mdio_device *mdiodev)
+-{
+-	struct reset_control *reset;
+-
+-	reset = reset_control_get_optional_exclusive(&mdiodev->dev, "phy");
+-	if (IS_ERR(reset))
+-		return PTR_ERR(reset);
+-
+-	mdiodev->reset_ctrl = reset;
+-
+-	return 0;
+-}
+-
+ int mdiobus_register_device(struct mdio_device *mdiodev)
+ {
+-	int err;
+-
+ 	if (mdiodev->bus->mdio_map[mdiodev->addr])
+ 		return -EBUSY;
+ 
+-	if (mdiodev->flags & MDIO_DEVICE_FLAG_PHY) {
+-		err = mdiobus_register_gpiod(mdiodev);
+-		if (err)
+-			return err;
+-
+-		err = mdiobus_register_reset(mdiodev);
+-		if (err)
+-			return err;
+-
+-		/* Assert the reset signal */
+-		mdio_device_reset(mdiodev, 1);
+-	}
+-
+ 	mdiodev->bus->mdio_map[mdiodev->addr] = mdiodev;
+ 
+ 	return 0;
+@@ -98,8 +55,6 @@ int mdiobus_unregister_device(struct mdio_device *mdiodev)
+ 	if (mdiodev->bus->mdio_map[mdiodev->addr] != mdiodev)
+ 		return -EINVAL;
+ 
+-	reset_control_put(mdiodev->reset_ctrl);
+-
+ 	mdiodev->bus->mdio_map[mdiodev->addr] = NULL;
+ 
+ 	return 0;
+@@ -434,41 +389,6 @@ struct mii_bus *of_mdio_find_bus(struct device_node *mdio_bus_np)
+ 	return d ? to_mii_bus(d) : NULL;
+ }
+ EXPORT_SYMBOL(of_mdio_find_bus);
+-
+-/* Walk the list of subnodes of a mdio bus and look for a node that
+- * matches the mdio device's address with its 'reg' property. If
+- * found, set the of_node pointer for the mdio device. This allows
+- * auto-probed phy devices to be supplied with information passed in
+- * via DT.
+- */
+-static void of_mdiobus_link_mdiodev(struct mii_bus *bus,
+-				    struct mdio_device *mdiodev)
+-{
+-	struct device *dev = &mdiodev->dev;
+-	struct device_node *child;
+-
+-	if (dev->of_node || !bus->dev.of_node)
+-		return;
+-
+-	for_each_available_child_of_node(bus->dev.of_node, child) {
+-		int addr;
+-
+-		addr = of_mdio_parse_addr(dev, child);
+-		if (addr < 0)
+-			continue;
+-
+-		if (addr == mdiodev->addr) {
+-			dev->of_node = child;
+-			dev->fwnode = of_fwnode_handle(child);
+-			return;
+-		}
+-	}
+-}
+-#else /* !IS_ENABLED(CONFIG_OF_MDIO) */
+-static inline void of_mdiobus_link_mdiodev(struct mii_bus *mdio,
+-					   struct mdio_device *mdiodev)
+-{
+-}
+ #endif
+ 
+ /**
+@@ -616,9 +536,6 @@ void mdiobus_unregister(struct mii_bus *bus)
+ 		if (!mdiodev)
+ 			continue;
+ 
+-		if (mdiodev->reset_gpio)
+-			gpiod_put(mdiodev->reset_gpio);
+-
+ 		mdiodev->device_remove(mdiodev);
+ 		mdiodev->device_free(mdiodev);
+ 	}
+@@ -668,37 +585,49 @@ EXPORT_SYMBOL(mdiobus_free);
+  */
+ struct phy_device *mdiobus_scan(struct mii_bus *bus, int addr)
+ {
+-	struct phy_device *phydev = ERR_PTR(-ENODEV);
++	struct phy_device *phydev;
+ 	int err;
+ 
++#if IS_ENABLED(CONFIG_OF_MDIO)
++	struct device_node *child = NULL;
++
++	if (bus->dev.of_node) {
++		for_each_available_child_of_node(bus->dev.of_node, child) {
++			if (addr == of_mdio_parse_addr(&bus->dev, child))
++				break;
++		}
++	}
++
++	if (child)
++		phydev = of_phy_device_initialize(child, bus, addr);
++	else
++#endif
++	phydev = phy_device_initialize(bus, addr);
++
+ 	switch (bus->probe_capabilities) {
+ 	case MDIOBUS_NO_CAP:
+ 	case MDIOBUS_C22:
+-		phydev = get_phy_device(bus, addr, false);
++		err = phy_device_probe_ids(phydev, false);
+ 		break;
+ 	case MDIOBUS_C45:
+-		phydev = get_phy_device(bus, addr, true);
++		err = phy_device_probe_ids(phydev, true);
+ 		break;
+ 	case MDIOBUS_C22_C45:
+-		phydev = get_phy_device(bus, addr, false);
+-		if (IS_ERR(phydev))
+-			phydev = get_phy_device(bus, addr, true);
++		err = phy_device_probe_ids(phydev, false);
++		if (err)
++			err = phy_device_probe_ids(phydev, true);
+ 		break;
+ 	}
+ 
+-	if (IS_ERR(phydev))
+-		return phydev;
+-
+-	/*
+-	 * For DT, see if the auto-probed phy has a correspoding child
+-	 * in the bus node, and set the of_node pointer in this case.
+-	 */
+-	of_mdiobus_link_mdiodev(bus, &phydev->mdio);
++	if (err) {
++		phy_device_free(phydev);
++		return ERR_PTR(err);
++	}
+ 
+ 	err = phy_device_register(phydev);
+ 	if (err) {
+ 		phy_device_free(phydev);
+-		return ERR_PTR(-ENODEV);
++		return ERR_PTR(err);
+ 	}
+ 
+ 	return phydev;
+diff --git a/drivers/net/phy/mdio_device.c b/drivers/net/phy/mdio_device.c
+index 0837319a52d7..e6bbc68f0337 100644
+--- a/drivers/net/phy/mdio_device.c
++++ b/drivers/net/phy/mdio_device.c
+@@ -69,6 +69,48 @@ struct mdio_device *mdio_device_create(struct mii_bus *bus, int addr)
+ }
+ EXPORT_SYMBOL(mdio_device_create);
+ 
++int mdio_device_attach_suppliers(struct mdio_device *mdiodev)
++{
++	struct gpio_desc *reset_gpio;
++	struct reset_control *reset;
++	int ret;
++
++	reset_gpio = gpiod_get_optional(&mdiodev->dev, "reset", GPIOD_OUT_LOW);
++	if (IS_ERR(reset_gpio)) {
++		ret = PTR_ERR(reset_gpio);
++		goto gpio_err;
++	}
++
++	reset = reset_control_get_optional_exclusive(&mdiodev->dev, "phy");
++	if (IS_ERR(reset)) {
++		ret = PTR_ERR(reset);
++		goto reset_err;
++	}
++
++	mdiodev->reset_gpio = reset_gpio;
++	if (reset_gpio)
++		gpiod_set_consumer_name(reset_gpio, "PHY reset");
++	mdiodev->reset_ctrl = reset;
++
++	/* Assert the reset signal */
++	mdio_device_reset(mdiodev, 1);
++
++	return 0;
++
++reset_err:
++	gpiod_put(reset_gpio);
++gpio_err:
++	return ret;
++}
++EXPORT_SYMBOL(mdio_device_attach_suppliers);
++
++void mdio_device_release_suppliers(struct mdio_device *mdiodev)
++{
++	gpiod_put(mdiodev->reset_gpio);
++	reset_control_put(mdiodev->reset_ctrl);
++}
++EXPORT_SYMBOL(mdio_device_release_suppliers);
++
+ /**
+  * mdio_device_register - Register the mdio device on the MDIO bus
+  * @mdiodev: mdio_device structure to be added to the MDIO bus
+diff --git a/drivers/net/phy/nxp-tja11xx.c b/drivers/net/phy/nxp-tja11xx.c
+index a72fa0d2e7c7..26f92fdd4936 100644
+--- a/drivers/net/phy/nxp-tja11xx.c
++++ b/drivers/net/phy/nxp-tja11xx.c
+@@ -506,20 +506,28 @@ static void tja1102_p1_register(struct work_struct *work)
+ 			continue;
+ 		}
+ 
+-		/* Real PHY ID of Port 1 is 0 */
+-		phy = phy_device_create(bus, addr, PHY_ID_TJA1102, false, NULL);
++		phy = of_phy_device_initialize(child, bus, addr);
+ 		if (IS_ERR(phy)) {
+ 			dev_err(dev, "Can't create PHY device for Port 1: %i\n",
+ 				addr);
+ 			continue;
+ 		}
+ 
+-		/* Overwrite parent device. phy_device_create() set parent to
+-		 * the mii_bus->dev, which is not correct in case.
++		/* Overwrite parent device. phy_device_initialize() set parent
++		 * to the mii_bus->dev, which is not correct in case.
+ 		 */
+ 		phy->mdio.dev.parent = dev;
+ 
+-		ret = of_mdiobus_phy_device_register(bus, phy, child, addr);
++		/* Real PHY ID of Port 1 is 0 */
++		if (phy_device_assign_ids(phy, PHY_ID_TJA1102, false, NULL)) {
++			dev_err(dev,
++				"Can't assign PHY device id for Port 1: %i\n",
++				addr);
++			phy_device_free(phy);
++			continue;
++		}
++
++		ret = phy_device_register(phy);
+ 		if (ret) {
+ 			/* All resources needed for Port 1 should be already
+ 			 * available for Port 0. Both ports use the same
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+index a3136aa729bc..4e4903bed2b3 100644
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -214,6 +214,10 @@ static void phy_mdio_device_free(struct mdio_device *mdiodev)
+ 
+ static void phy_device_release(struct device *dev)
+ {
++	struct phy_device *phydev = to_phy_device(dev);
++
++	mdio_device_release_suppliers(&phydev->mdio);
++
+ 	kfree(to_phy_device(dev));
+ }
+ 
+diff --git a/include/linux/mdio.h b/include/linux/mdio.h
+index dbd69b3d170b..9c68ea6580a5 100644
+--- a/include/linux/mdio.h
++++ b/include/linux/mdio.h
+@@ -94,6 +94,8 @@ void mdio_device_remove(struct mdio_device *mdiodev);
+ void mdio_device_reset(struct mdio_device *mdiodev, int value);
+ int mdio_driver_register(struct mdio_driver *drv);
+ void mdio_driver_unregister(struct mdio_driver *drv);
++int mdio_device_attach_suppliers(struct mdio_device *mdiodev);
++void mdio_device_release_suppliers(struct mdio_device *mdiodev);
+ int mdio_device_bus_match(struct device *dev, struct device_driver *drv);
+ 
+ static inline bool mdio_phy_id_is_c45(int phy_id)
+diff --git a/include/linux/of_mdio.h b/include/linux/of_mdio.h
+index cfe8c607a628..4dc14924fc0d 100644
+--- a/include/linux/of_mdio.h
++++ b/include/linux/of_mdio.h
+@@ -34,8 +34,9 @@ struct mii_bus *of_mdio_find_bus(struct device_node *mdio_np);
+ int of_phy_register_fixed_link(struct device_node *np);
+ void of_phy_deregister_fixed_link(struct device_node *np);
+ bool of_phy_is_fixed_link(struct device_node *np);
+-int of_mdiobus_phy_device_register(struct mii_bus *mdio, struct phy_device *phy,
+-				   struct device_node *child, u32 addr);
++
++struct phy_device *of_phy_device_initialize(struct device_node *child,
++					    struct mii_bus *bus, u32 addr);
+ 
+ static inline int of_mdio_parse_addr(struct device *dev,
+ 				     const struct device_node *np)
+@@ -129,11 +130,11 @@ static inline bool of_phy_is_fixed_link(struct device_node *np)
+ 	return false;
+ }
+ 
+-static inline int of_mdiobus_phy_device_register(struct mii_bus *mdio,
+-					    struct phy_device *phy,
+-					    struct device_node *child, u32 addr)
++static inline struct phy_device *
++of_phy_device_initialize(struct device_node *child,
++			 struct mii_bus *bus, u32 addr)
+ {
+-	return -ENOSYS;
++	return PTR_ERR(-ENOSYS);
+ }
+ #endif
+ 
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index b5ae1b13d4af..74858c86896b 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -1432,6 +1432,11 @@ int phy_cable_test_result(struct phy_device *phydev, u8 pair, u16 result);
+ int phy_cable_test_fault_length(struct phy_device *phydev, u8 pair,
+ 				u16 cm);
+ 
++static inline int phy_device_attach_suppliers(struct phy_device *phydev)
++{
++	return mdio_device_attach_suppliers(&phydev->mdio);
++}
++
+ static inline void phy_device_reset(struct phy_device *phydev, int value)
+ {
+ 	mdio_device_reset(&phydev->mdio, value);
+-- 
+2.39.2
+

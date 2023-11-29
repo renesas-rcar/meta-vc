@@ -1,7 +1,7 @@
-From 8d94df0e571dca7afa879a8ac51176bf25d8c91c Mon Sep 17 00:00:00 2001
+From 72c9692aacea2f2d32b304709fc64271ea10a094 Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Tue, 13 Dec 2022 14:45:10 +0600
-Subject: [PATCH 40/92] can: rcar_canfd: Introduce is_gen4() helper
+Subject: [PATCH 40/85] can: rcar_canfd: Introduce is_gen4() helper
 
 In preparation to support more gen4 chips, use is_gen4() helper instead
 of direct checks for particular chips.
@@ -12,7 +12,7 @@ Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
  1 file changed, 37 insertions(+), 26 deletions(-)
 
 diff --git a/drivers/net/can/rcar/rcar_canfd.c b/drivers/net/can/rcar/rcar_canfd.c
-index 9c7f3e2f64dc..8f25edd9f957 100644
+index 1e22497f0117..f2e43ab0ac5f 100644
 --- a/drivers/net/can/rcar/rcar_canfd.c
 +++ b/drivers/net/can/rcar/rcar_canfd.c
 @@ -640,6 +640,17 @@ static const struct can_bittiming_const rcar_canfd_bittiming_const = {
@@ -168,7 +168,7 @@ index 9c7f3e2f64dc..8f25edd9f957 100644
  			       RCANFD_V3U_NCFG_NBRP(brp) |
  			       RCANFD_V3U_NCFG_NSJW(sjw) |
 @@ -1434,7 +1445,7 @@ static void rcar_canfd_set_bittiming(struct net_device *dev)
- 		tseg1 = dbt->prop_seg + dbt->phase_seg1 + 1;
+ 		tseg1 = dbt->prop_seg + dbt->phase_seg1 - 1;
  		tseg2 = dbt->phase_seg2 - 1;
  
 -		if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0)) {
@@ -267,5 +267,5 @@ index 9c7f3e2f64dc..8f25edd9f957 100644
  		addr2 = RCANFD_V3U_RFCC(ridx);
  	} else {
 -- 
-2.30.2
+2.39.2
 

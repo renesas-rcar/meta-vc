@@ -1,0 +1,32 @@
+From 50d3a8d55ac3f10ce749060895ccfdff14059a86 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Sat, 28 Oct 2023 11:46:58 +0600
+Subject: [PATCH 74/85] arm64: dts: renesas: vc4: limit PCIe speed to 2x
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+index c130a4d6a784..408d5d3898d0 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+@@ -263,10 +263,14 @@ &pciec0 {
+ 
+ 	pinctrl-0 = <&pcie0_pins>;
+ 	pinctrl-names = "default";
++
++	max-link-speed = <2>;
+ };
+ 
+ &pciec1 {
+ 	status = "okay";
++
++	max-link-speed = <2>;
+ };
+ 
+ &pcie_bus_clk {
+-- 
+2.39.2
+

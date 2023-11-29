@@ -1,7 +1,7 @@
-From 90c241726d53d684a1abff6ffd1728140ed78f47 Mon Sep 17 00:00:00 2001
+From ef9b9b80f0fd0bc09c18a965615a91ded11dc489 Mon Sep 17 00:00:00 2001
 From: Yanfei Xu <yanfei.xu@windriver.com>
 Date: Sun, 16 May 2021 17:50:10 +0800
-Subject: [PATCH 03/92] rcu: Fix stall-warning deadlock due to non-release of
+Subject: [PATCH 03/85] rcu: Fix stall-warning deadlock due to non-release of
  rcu_node ->lock
 
 [ Upstream commit dc87740c8a6806bd2162bfb441770e4e53be5601 ]
@@ -51,5 +51,5 @@ index 3e98dc517847..bcb6297c84d6 100644
  	       rnp->level, rnp->grplo, rnp->grphi);
  	t = list_entry(rnp->gp_tasks->prev,
 -- 
-2.30.2
+2.39.2
 

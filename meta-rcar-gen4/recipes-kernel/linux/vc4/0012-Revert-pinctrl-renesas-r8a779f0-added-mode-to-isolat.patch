@@ -1,7 +1,7 @@
-From 9d94abca88886df9adcf73c1392febf8bc37acc4 Mon Sep 17 00:00:00 2001
+From e85c46a4354f6612871f46034fc4e0c14bc4503f Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Thu, 25 May 2023 14:06:12 +0600
-Subject: [PATCH 12/92] Revert "pinctrl: renesas: r8a779f0: added mode to
+Subject: [PATCH 12/85] Revert "pinctrl: renesas: r8a779f0: added mode to
  isolate access to control domain"
 
 This reverts commit 74ad1cf7dd8df8f672756dc78d8e299e51448a72.
@@ -116,5 +116,5 @@ index de01d4d6b1b1..5b67fe1a1bc7 100644
  };
  
 -- 
-2.30.2
+2.39.2
 

@@ -1,7 +1,7 @@
-From 9e8a5e677b3d3a8d6de849acf8644eb8359f69c4 Mon Sep 17 00:00:00 2001
+From 5f1690cf7a37c7a2e3700829386f841c0b07eb3b Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Sat, 13 May 2023 23:51:46 +0600
-Subject: [PATCH 10/92] Revert "clk: renesas: r8a779f0: Remove RPC clock"
+Subject: [PATCH 10/85] Revert "clk: renesas: r8a779f0: Remove RPC clock"
 
 This reverts commit d43e969bc8a236f2864844cb34cdafdd8dfae39d.
 
@@ -42,5 +42,5 @@ index 14bb80d3e15a..964b985ac926 100644
  	DEF_MOD("rtdm1",	631,	R8A779F0_CLK_S0D2),
  	DEF_MOD("rtdm2",	700,	R8A779F0_CLK_S0D2),
 -- 
-2.30.2
+2.39.2
 

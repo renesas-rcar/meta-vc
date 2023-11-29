@@ -1,7 +1,7 @@
-From 5212b5edca0a991ccf5de0c2dcd4f5057a87d60e Mon Sep 17 00:00:00 2001
+From 4f8536b8a0afae02b99b9cc5a2c3263bb0573183 Mon Sep 17 00:00:00 2001
 From: Yanfei Xu <yanfei.xu@windriver.com>
 Date: Sun, 16 May 2021 00:45:11 +0800
-Subject: [PATCH 01/92] rcu: Fix to include first blocked task in stall warning
+Subject: [PATCH 01/85] rcu: Fix to include first blocked task in stall warning
 
 [ Upstream commit e6a901a44f76878ed1653626c9ff4cfc5a3f58f8 ]
 
@@ -58,5 +58,5 @@ index ca21d28a0f98..f626c6d13ace 100644
  			pr_cont(" P%d", t->pid);
  		else
 -- 
-2.30.2
+2.39.2
 

@@ -1,17 +1,17 @@
-From a83e2d98b9bab3e28d5bad6b2a2cf04d61533869 Mon Sep 17 00:00:00 2001
+From 37eca670c36df18913a971278f02760c9073da9f Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Wed, 18 May 2022 00:38:58 +0300
-Subject: [PATCH 47/92] arm64: dts: renesas: vc4: add CANFD devices
+Subject: [PATCH 47/85] arm64: dts: renesas: vc4: add CANFD devices
 
 Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 ---
  .../dts/renesas/r8a779f0-ctrl-domain.dtsi     | 156 +++++++++++++
- .../dts/renesas/r8a779f0-vc4-ctrl-domain.dts  | 212 ++++++++++++++++++
+ .../dts/renesas/r8a779f0-vc4-ctrl-domain.dts  | 214 ++++++++++++++++++
  .../renesas/r8a779f0-vc4V1-ctrl-domain.dts    |  30 +++
- 3 files changed, 398 insertions(+)
+ 3 files changed, 400 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
-index e7cb5af8484b..fdd6bd808da2 100644
+index 9bbe3375470a..4bea3a9096c1 100644
 --- a/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
 +++ b/arch/arm64/boot/dts/renesas/r8a779f0-ctrl-domain.dtsi
 @@ -1,6 +1,162 @@
@@ -174,17 +174,18 @@ index e7cb5af8484b..fdd6bd808da2 100644
 +		};
 +	};
 +
- 	etnb0: ethernet@df0a2000 {
- 		compatible = "renesas,etheravb-r8a779f0";
- 		reg = <0 0xdf0a2000 0 0x800>;
+ 	gpio4: gpio@dfd90180 {
+ 		compatible = "renesas,gpio-r8a779f0";
+ 		reg = <0 0xdfd90180 0 0x54>;
 diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
-index 8c96fbfcba93..551a956d0c4e 100644
+index d158c99dfe69..6cd74def317a 100644
 --- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
 +++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
-@@ -12,6 +12,132 @@
+@@ -11,3 +11,217 @@
+ 
  #include "r8a779f0-vc4.dts"
  #include "r8a779f0-ctrl-domain.dtsi"
- 
++
 +&canfd0 {
 +	status = "okay";
 +
@@ -311,13 +312,6 @@ index 8c96fbfcba93..551a956d0c4e 100644
 +	};
 +};
 +
- &etnb0 {
- 	/* keep it disabled until driver support is implemented */
- 	status = "disabled";
-@@ -33,6 +159,22 @@ etnb0_100base_t1_phy: ethernet-phy@2 {
- 	};
- };
- 
 +&gpio6 {
 +	sel-can-sent {
 +		gpio-hog;
@@ -334,13 +328,7 @@ index 8c96fbfcba93..551a956d0c4e 100644
 +	};
 +};
 +
- &gpio5 {
- 	etnb0-mux {
- 		gpio-hog;
-@@ -43,6 +185,76 @@ etnb0-mux {
- };
- 
- &pfc {
++&pfc {
 +	canfd0_pins: canfd0 {
 +		channel0 {
 +			groups = "canfd0_data";
@@ -410,10 +398,7 @@ index 8c96fbfcba93..551a956d0c4e 100644
 +			function = "canfd15";
 +		};
 +	};
-+
- 	etnb0_pins: etnb0 {
- 		groups = "etnb0_rmii", "etnb0_mdio", "etnb0_link";
- 		function = "etnb0";
++};
 diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-ctrl-domain.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-ctrl-domain.dts
 index 23a55378cc08..e23fda06556b 100644
 --- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4V1-ctrl-domain.dts
@@ -453,5 +438,5 @@ index 23a55378cc08..e23fda06556b 100644
 +	};
 +};
 -- 
-2.30.2
+2.39.2
 

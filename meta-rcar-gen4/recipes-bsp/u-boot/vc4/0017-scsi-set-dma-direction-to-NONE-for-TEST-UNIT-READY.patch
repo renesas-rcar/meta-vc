@@ -1,0 +1,45 @@
+From a1200819b687d73c5345afeabd5c9f79d4f10921 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Mon, 13 Nov 2023 09:15:13 +0600
+Subject: [PATCH 17/19] scsi: set dma direction to NONE for TEST UNIT READY
+
+SCSI device scan code was executing TEST UNIT READY command without
+explicitly setting dma direction in struct scsi_cmd to NONE, so command
+was passed to driver with dma direction set to DMA_FROM_DEVICE,
+inherited from older usage.
+
+With WDC SDINDDH6-64G ufs device, that caused TEST UNIT READY to
+return error.
+
+Fix that, by explicitly setting dma direction to NONE for
+TEST UNIT READY, and restoring it back DMA_FROM_DEVICE for the
+following READ CAPACITY.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/scsi/scsi.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index b89ceda7cdd..f492a1a78f9 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -376,6 +376,7 @@ static int scsi_read_capacity(struct udevice *dev, struct scsi_cmd *pccb,
+ 	pccb->cmd[0] = SCSI_RD_CAPAC10;
+ 	pccb->cmd[1] = pccb->lun << 5;
+ 	pccb->cmdlen = 10;
++	pccb->dma_dir = DMA_FROM_DEVICE;
+ 	pccb->msgout[0] = SCSI_IDENTIFY; /* NOT USED */
+ 
+ 	pccb->datalen = 8;
+@@ -540,6 +541,7 @@ static int scsi_detect_dev(struct udevice *dev, int target, int lun,
+ 
+ 	for (count = 0; count < 3; count++) {
+ 		pccb->datalen = 0;
++		pccb->dma_dir = DMA_NONE;
+ 		scsi_setup_test_unit_ready(pccb);
+ 		err = scsi_exec(dev, pccb);
+ 		if (!err)
+-- 
+2.39.2
+

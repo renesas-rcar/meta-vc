@@ -1,0 +1,29 @@
+From fdf7c03bb2ad15c051431b2ce5aad4f5acf2af62 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Tue, 31 Oct 2023 11:02:11 +0600
+Subject: [PATCH 79/85] arm64: dts: renesas: vc4: add ufs device
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+index 408d5d3898d0..cdc6786a2872 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+@@ -437,3 +437,11 @@ &scif_clk {
+ 
+ 	clock-frequency = <24000000>;
+ };
++
++&ufs {
++	status = "okay";
++};
++
++&ufs30_clk {
++	clock-frequency = <38400000>;
++};
+-- 
+2.39.2
+

@@ -1,7 +1,7 @@
-From a3e03e0ac65fa639fbae8be97d8dac920c22dce0 Mon Sep 17 00:00:00 2001
+From 0ed1fe5c378d51ce774f11517d3337e75aadafd1 Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Wed, 18 May 2022 00:34:08 +0300
-Subject: [PATCH 45/92] renesas-vc4-fpga4000: add CANFD signals control
+Subject: [PATCH 45/85] renesas-vc4-fpga4000: add CANFD signals control
 
 This turns fpga4000 driver into gpio-controller, so signals connected to
 CANFD transciever signals could be controlled using kernel gpio APIs.
@@ -15,12 +15,12 @@ Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
  create mode 100644 include/dt-bindings/mfd/renesas-vc4-fpga4000.h
 
 diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
-index 97be8a1795bc..8663db10f7be 100644
+index 168b1b8ae70a..b7b522b5ea17 100644
 --- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
 +++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
-@@ -9,6 +9,7 @@
- 
+@@ -10,6 +10,7 @@
  #include "r8a779f0.dtsi"
+ #include "r8a779f0-native.dtsi"
  #include <dt-bindings/gpio/gpio.h>
 +#include <dt-bindings/mfd/renesas-vc4-fpga4000.h>
  
@@ -250,5 +250,5 @@ index 000000000000..0603d04f2102
 +
 +#endif /* __DT_BINDINGS_RENESAS_VC4_FPGA4000_H__ */
 -- 
-2.30.2
+2.39.2
 
