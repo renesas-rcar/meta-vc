@@ -1,0 +1,48 @@
+From 59a4e461e9007ce302041fb3f6163e259a4817b6 Mon Sep 17 00:00:00 2001
+From: Dennis Ostermann <dennis.ostermann@renesas.com>
+Date: Sun, 28 Jan 2024 22:14:24 +0600
+Subject: [PATCH 94/95] arm64: dts: renesas: r8a779f0: Fix assignment of IRQs
+ to GPIO
+
+Fixed wrong assignment of IRQ lines connected to gpio1, gpio2, gpio3.
+
+Signed-of-by: Dennis Ostermann <dennis.ostermann@renesas.com>
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ arch/arm64/boot/dts/renesas/r8a779f0.dtsi | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+index f9ed26caeb6b..25f0f448c277 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
++++ b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+@@ -351,7 +351,7 @@ gpio0: gpio@e6050180 {
+ 		gpio1: gpio@e6050980 {
+ 			compatible = "renesas,gpio-r8a779f0";
+ 			reg = <0 0xe6050980 0 0x54>;
+-			interrupts = <GIC_SPI 823 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts = <GIC_SPI 826 IRQ_TYPE_LEVEL_HIGH>;
+ 			#gpio-cells = <2>;
+ 			gpio-controller;
+ 			gpio-ranges = <&pfc 0 32 25>;
+@@ -365,7 +365,7 @@ gpio1: gpio@e6050980 {
+ 		gpio2: gpio@e6051180 {
+ 			compatible = "renesas,gpio-r8a779f0";
+ 			reg = <0 0xe6051180 0 0x54>;
+-			interrupts = <GIC_SPI 824 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts = <GIC_SPI 916 IRQ_TYPE_LEVEL_HIGH>;
+ 			#gpio-cells = <2>;
+ 			gpio-controller;
+ 			gpio-ranges = <&pfc 0 64 17>;
+@@ -379,7 +379,7 @@ gpio2: gpio@e6051180 {
+ 		gpio3: gpio@e6051980 {
+ 			compatible = "renesas,gpio-r8a779f0";
+ 			reg = <0 0xe6051980 0 0x54>;
+-			interrupts = <GIC_SPI 825 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts = <GIC_SPI 920 IRQ_TYPE_LEVEL_HIGH>;
+ 			#gpio-cells = <2>;
+ 			gpio-controller;
+ 			gpio-ranges = <&pfc 0 96 19>;
+-- 
+2.34.1
+

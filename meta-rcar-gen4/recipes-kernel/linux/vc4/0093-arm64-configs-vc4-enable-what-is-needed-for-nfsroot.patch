@@ -1,0 +1,29 @@
+From 2ef6c583a403bdc584a0f4ecbbb1b310818a6208 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Sun, 28 Jan 2024 20:51:02 +0600
+Subject: [PATCH 93/95] arm64: configs: vc4: enable what is needed for nfsroot
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ arch/arm64/configs/renesas-vc4_defconfig | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/renesas-vc4_defconfig b/arch/arm64/configs/renesas-vc4_defconfig
+index efb9db873f61..6b295a81032c 100644
+--- a/arch/arm64/configs/renesas-vc4_defconfig
++++ b/arch/arm64/configs/renesas-vc4_defconfig
+@@ -404,7 +404,10 @@ CONFIG_EXFAT_FS=m
+ CONFIG_TMPFS=y
+ CONFIG_HUGETLBFS=y
+ # CONFIG_MISC_FILESYSTEMS is not set
+-# CONFIG_NETWORK_FILESYSTEMS is not set
++CONFIG_NFS_FS=y
++# CONFIG_NFS_V2 is not set
++CONFIG_ROOT_NFS=y
++# CONFIG_RPCSEC_GSS_KRB5 is not set
+ CONFIG_NLS_CODEPAGE_437=y
+ CONFIG_NLS_ISO8859_1=y
+ CONFIG_KEYS=y
+-- 
+2.34.1
+

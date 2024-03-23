@@ -1,0 +1,35 @@
+From 0f776dc0afb71ed62e57ecdc1c86c1eca8ee5413 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Fri, 12 Jan 2024 15:25:17 +0600
+Subject: [PATCH 90/95] arm64: dts: renesas: vc4: enable ravb device
+
+... with bounce buffers in "cluser0 RAM" area.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+index a954dca94055..9dd65f933fc9 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-ctrl-domain.dts
+@@ -140,11 +140,14 @@ channel7 {
+ 
+ &etnb0 {
+ 	/* keep it disabled until driver support is implemented */
+-	status = "disabled";
++	status = "okay";
+ 
+ 	pinctrl-0 = <&etnb0_pins>;
+ 	pinctrl-names = "default";
+ 
++	/* cpu-phys-addr dma-addr size */
++	bounce-buffer = <0xde000000 0xfe000000 0x00080000>; /* cluster0 ram */
++
+ 	phy-mode = "rmii";
+ 	phy-handle = <&etnb0_100base_tx_phy>;
+ 
+-- 
+2.34.1
+

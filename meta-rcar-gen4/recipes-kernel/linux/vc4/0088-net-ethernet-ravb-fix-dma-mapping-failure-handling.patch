@@ -1,0 +1,44 @@
+From 7d652052d35990aa59ba6ba311c31ba2bb3178c7 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Fri, 12 Jan 2024 10:40:43 +0600
+Subject: [PATCH 88/95] net: ethernet: ravb: fix dma mapping failure handling
+
+dma_mapping_error() depends on getting full 64-bit dma_addr_t and does
+not work correctly if 32-bit value is passed instead.
+
+Fix handling of dma_map_single() failures on Rx ring entries:
+- do not store return value of dma_map_signle() in 32-bit variable,
+- do not use dma_mapping_error() against 32-bit descriptor field when
+  checking if unmap is needed, check for zero size instead.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/net/ethernet/renesas/ravb_main.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/renesas/ravb_main.c b/drivers/net/ethernet/renesas/ravb_main.c
+index 4d343c87e629..23ea092a8b2d 100644
+--- a/drivers/net/ethernet/renesas/ravb_main.c
++++ b/drivers/net/ethernet/renesas/ravb_main.c
+@@ -233,8 +233,7 @@ static void ravb_ring_free(struct net_device *ndev, int q)
+ 		for (i = 0; i < priv->num_rx_ring[q]; i++) {
+ 			struct ravb_ex_rx_desc *desc = &priv->rx_ring[q][i];
+ 
+-			if (!dma_mapping_error(ndev->dev.parent,
+-					       le32_to_cpu(desc->dptr)))
++			if (le16_to_cpu(desc->ds_cc) != 0)
+ 				dma_unmap_single(ndev->dev.parent,
+ 						 le32_to_cpu(desc->dptr),
+ 						 RX_BUF_SZ,
+@@ -1506,7 +1505,7 @@ static netdev_tx_t ravb_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 	struct ravb_tstamp_skb *ts_skb;
+ 	struct ravb_tx_desc *desc;
+ 	unsigned long flags;
+-	u32 dma_addr;
++	dma_addr_t dma_addr;
+ 	void *buffer;
+ 	u32 entry;
+ 	u32 len;
+-- 
+2.34.1
+

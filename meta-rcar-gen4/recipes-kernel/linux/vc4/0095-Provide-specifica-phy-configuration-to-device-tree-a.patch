@@ -1,0 +1,55 @@
+From 48dd6a9e2997412208c913e4e777d15a714bd4b5 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Christian=20Mardm=C3=B6ller=20=28p620=29?=
+ <christian.mardmoeller@renesas.com>
+Date: Thu, 21 Mar 2024 12:09:19 +0100
+Subject: [PATCH 95/95] Provide specifica phy configuration to device tree, as
+ per 3.13.0 release
+
+---
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1g.dtso | 2 +-
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1g.dtso | 2 +-
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn2-phy-1g.dtso | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1g.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1g.dtso
+index b160a9642764..c4e0b445d1e1 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1g.dtso
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn0-phy-1g.dtso
+@@ -28,7 +28,7 @@
+ 
+ 	tsn0_phy_1g: ethernet-phy@3 {
+ 		reg = <3>;
+-		compatible = "ethernet-phy-ieee802.3-c45";
++		compatible = "ethernet-phy-id002B.0218";
+ 		status = "okay";
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1g.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1g.dtso
+index 3a162422c516..c5ac46aceb3b 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1g.dtso
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn1-phy-1g.dtso
+@@ -21,7 +21,7 @@
+ 
+ 	tsn1_phy_1g: ethernet-phy@3 {
+ 		reg = <3>;
+-		compatible = "ethernet-phy-ieee802.3-c45";
++		compatible = "ethernet-phy-id002B.0218";
+ 		status = "okay";
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn2-phy-1g.dtso b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn2-phy-1g.dtso
+index 06529dcc35ee..b5a87843b990 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn2-phy-1g.dtso
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4-tsn2-phy-1g.dtso
+@@ -21,7 +21,7 @@
+ 
+ 	tsn2_phy_1g: ethernet-phy@3 {
+ 		reg = <3>;
+-		compatible = "ethernet-phy-ieee802.3-c45";
++		compatible = "ethernet-phy-id002B.0218";
+ 		status = "okay";
+ 	};
+ };
+-- 
+2.34.1
+

@@ -85,4 +85,13 @@ PATCHES += "\
   file://0083-scsi-ufs-core-Use-a-function-to-calculate-versions.patch \
   file://0084-scsi-ufs-core-workaround-REQUEST_SENSE-errors.patch \
   file://0085-scsi-ufs-renesas-Reset-UFS-controller-before-probe.patch \
+  file://0086-arm64-dts-renesas-vc4-enable-iommu-for-rswitch.patch \
+  file://0087-net-ethernet-ravb-add-support-for-R-Car-S4.patch \
+  file://0088-net-ethernet-ravb-fix-dma-mapping-failure-handling.patch \
+  file://0089-net-ethernet-ravb-implement-dma-bounce-buffers.patch \
+  file://0090-arm64-dts-renesas-vc4-enable-ravb-device.patch \
+  file://0091-arm64-configs-vc4-enable-micrel-phy-support.patch \
+  file://0093-arm64-configs-vc4-enable-what-is-needed-for-nfsroot.patch \
+  file://0094-arm64-dts-renesas-r8a779f0-Fix-assignment-of-IRQs-to.patch \
+  file://0095-Provide-specifica-phy-configuration-to-device-tree-a.patch \
 "

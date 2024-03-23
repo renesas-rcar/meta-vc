@@ -1,0 +1,106 @@
+From a5e4fc20b8a4a6b69aacef27c9e130641a3fc976 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Fri, 12 Jan 2024 10:34:36 +0600
+Subject: [PATCH 87/95] net: ethernet: ravb: add support for R-Car S4
+
+On S4, ravb device is similar to R-Car Gen2 chips.
+
+The only significant difference is that it has RIMR register at 0x8c
+offset that must be written to enable operation at 100 Mbps.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ drivers/net/ethernet/renesas/ravb.h      |  6 ++++++
+ drivers/net/ethernet/renesas/ravb_main.c | 17 +++++++++++++++++
+ 2 files changed, 23 insertions(+)
+
+diff --git a/drivers/net/ethernet/renesas/ravb.h b/drivers/net/ethernet/renesas/ravb.h
+index d2075428ac5e..1bb3dc3a3c50 100644
+--- a/drivers/net/ethernet/renesas/ravb.h
++++ b/drivers/net/ethernet/renesas/ravb.h
+@@ -74,6 +74,7 @@ enum ravb_reg {
+ 	CDAR21	= 0x0064,
+ 	ESR	= 0x0088,
+ 	APSR	= 0x008C,	/* R-Car Gen3 only */
++	RIMR	= 0x008C,	/* R-Car S4 only */
+ 	RCR	= 0x0090,
+ 	RQC0	= 0x0094,
+ 	RQC1	= 0x0098,
+@@ -331,6 +332,11 @@ enum APSR_BIT {
+ 	APSR_DM_TDM		= 0x00004000,
+ };
+ 
++/* RIMR */
++enum RIMR_BIT {
++	RIMR_SPEED_100		= 0x00000001,
++};
++
+ /* RCR */
+ enum RCR_BIT {
+ 	RCR_EFFS	= 0x00000001,
+diff --git a/drivers/net/ethernet/renesas/ravb_main.c b/drivers/net/ethernet/renesas/ravb_main.c
+index f1ad2d682eba..4d343c87e629 100644
+--- a/drivers/net/ethernet/renesas/ravb_main.c
++++ b/drivers/net/ethernet/renesas/ravb_main.c
+@@ -50,6 +50,7 @@ static const char *ravb_tx_irqs[NUM_TX_QUEUE] = {
+ 	"ch19", /* RAVB_NC */
+ };
+ 
++static const struct soc_device_attribute r8a779f0[];
+ static const struct soc_device_attribute r8a779g0[];
+ 
+ void ravb_modify(struct net_device *ndev, enum ravb_reg reg, u32 clear,
+@@ -88,6 +89,10 @@ static void ravb_set_rate(struct net_device *ndev)
+ {
+ 	struct ravb_private *priv = netdev_priv(ndev);
+ 
++	/* On S4, there is no GECMR */
++	if (soc_device_match(r8a779f0))
++		return;
++
+ 	switch (priv->speed) {
+ 	case 100:		/* 100BASE */
+ 		ravb_write(ndev, GECMR_SPEED_100, GECMR);
+@@ -472,6 +477,11 @@ static int ravb_dmac_init(struct net_device *ndev)
+ 	/* Frame transmitted, timestamp FIFO updated */
+ 	ravb_write(ndev, TIC_FTE0 | TIC_FTE1, TIC);
+ 
++	/* On R-Car S4, this register write is needed to set 100 MBps
++	 * (this driver does not currently support 10 MBps) */
++	if (soc_device_match(r8a779f0))
++		ravb_write(ndev, RIMR_SPEED_100, RIMR);
++
+ 	/* Setting the control will start the AVB-DMAC process. */
+ 	ravb_modify(ndev, CCC, CCC_OPC, CCC_OPC_OPERATION);
+ 
+@@ -980,6 +990,11 @@ static const struct soc_device_attribute r8a7795es10[] = {
+ 	{ /* sentinel */ }
+ };
+ 
++static const struct soc_device_attribute r8a779f0[] = {
++	{ .soc_id = "r8a779f0" },
++	{ /* sentinel */ }
++};
++
+ static const struct soc_device_attribute r8a779g0[] = {
+ 	{ .soc_id = "r8a779g0" },
+ 	{ /* sentinel */ }
+@@ -988,6 +1003,7 @@ static const struct soc_device_attribute r8a779g0[] = {
+ static const struct soc_device_attribute ravb_quirks_match[] = {
+ 	{ .soc_id = "r8a77990", .revision = "ES1.*" },
+ 	{ .soc_id = "r8a77995", .revision = "ES1.*" },
++	{ .soc_id = "r8a779f0" },
+ 	{ /* sentinel */ }
+ };
+ 
+@@ -1930,6 +1946,7 @@ static const struct of_device_id ravb_match_table[] = {
+ 	{ .compatible = "renesas,etheravb-r8a77961", .data = (void *)RCAR_GEN3 },
+ 	{ .compatible = "renesas,etheravb-rcar-gen3", .data = (void *)RCAR_GEN3 },
+ 	{ .compatible = "renesas,etheravb-rcar-gen4", .data = (void *)RCAR_GEN4 },
++	{ .compatible = "renesas,etheravb-r8a779f0", .data = (void *)RCAR_GEN2 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(of, ravb_match_table);
+-- 
+2.34.1
+

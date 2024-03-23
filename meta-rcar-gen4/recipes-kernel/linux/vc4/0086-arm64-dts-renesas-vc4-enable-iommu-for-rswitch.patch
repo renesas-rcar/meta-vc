@@ -1,0 +1,31 @@
+From 692d3eefef1c87e51e9776080784dc773a3d146b Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Fri, 12 Jan 2024 15:26:11 +0600
+Subject: [PATCH 86/95] arm64: dts: renesas: vc4: enable iommu for rswitch
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+---
+ arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+index cdc6786a2872..a7c388c09f1e 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-vc4.dts
+@@ -357,6 +357,13 @@ &rswitch {
+ 	pinctrl-0 = <&rswitch_pins>;
+ 	pinctrl-names = "default";
+ 
++	/* this setting is valid only while only one CPU port is used, and
++	   OSID register fields always contain zero
++
++           (iommu part of S4 RM says this binding is for "port5",
++            rswitch2 manual says it is port3) */
++	iommus = <&ipmmu_hc 16>;
++
+ 	/* normally gateway port MAC address comes from EEPROM ... */
+ 	nvmem-cells = <&rswitch2_gw_mac>;
+ 	nvmem-cell-names = "mac-address";
+-- 
+2.34.1
+
