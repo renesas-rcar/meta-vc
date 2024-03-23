@@ -61,6 +61,7 @@ IMAGE_INSTALL_append = " \
 
 # Prebuild binary packages
 IMAGE_INSTALL_append = " \
+     marvell-88q211x \
      marvell-88q3344-es \
      lan865x \
 "
