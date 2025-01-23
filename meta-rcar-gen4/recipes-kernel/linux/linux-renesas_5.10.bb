@@ -7,20 +7,24 @@ require recipes-kernel/linux/linux-yocto.inc
 COMPATIBLE_MACHINE = "vc4"
 
 PATCHES = ""
-require vc4_kernel_patches.inc
-include vc4_kernel_patches_proprietary.inc
+#require vc4_kernel_patches.inc
+#include vc4_kernel_patches_proprietary.inc
 
-RENESAS_BSP_URL = " \
-    git://github.com/renesas-rcar/linux-bsp.git"
-BRANCH = "v5.10.41/rcar-5.1.7.rc9"
-SRCREV = "ab6affd8d52588e08c8a94081d17b4e713942775"
+#RENESAS_BSP_URL = " \
+#    git://github.com/renesas-rcar/linux-bsp.git"
+#BRANCH = "v5.10.41/rcar-5.1.7.rc9"
+#SRCREV = "ab6affd8d52588e08c8a94081d17b4e713942775"
+
+RENESAS_BSP_URL = "git://partnergitlab.renesas.solutions/vehicle-computer/renesas-linux.git"
+BRANCH = "vc4-on-3.16.7"
+SRCREV = "2000c0688d62c46c796df225ddca7f15bcbfa0dc"
 
 SRC_URI = "${RENESAS_BSP_URL};nocheckout=1;branch=${BRANCH};protocol=https"
 SRC_URI += "${@' '.join(sorted(d.getVar('PATCHES').split()))}"
 
 # Using in-tree defconfig does not work if the defconfig comes via patches,
 # because kernel-yocto.bbclass uses it before applying patches.
-#KBUILD_DEFCONFIG = "renesas-vc4_defconfig"
+# KBUILD_DEFCONFIG = "renesas-vc4_defconfig"
 # Have to depend on a copy of that file copied to recipe.
 # Thus depend on a copy of arch/arm64/configs/renesas-vc4_defconfig copied to
 # the recipes's defconfig
@@ -28,7 +32,7 @@ KCONFIG_MODE = "alldefconfig"
 SRC_URI += "file://defconfig"
 
 # Allow temporary overrides for development
-include vc4_kernel_devel.inc
+# include vc4_kernel_devel.inc
 
 LINUX_VERSION ?= "5.10.41"
 PV = "${LINUX_VERSION}+git${SRCPV}"

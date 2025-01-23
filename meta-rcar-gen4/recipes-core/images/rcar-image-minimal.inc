@@ -17,6 +17,7 @@ IMAGE_INSTALL_append = " \
     net-tools \
     iputils \
     iproute2 \
+	iproute2-tc \
     snott \
     packeth \
     iperf2 \
