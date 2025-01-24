@@ -1,19 +1,16 @@
-From bf079385db0854df27ac3ea9b9950f615e99a276 Mon Sep 17 00:00:00 2001
+From 6d50d9547cec9ecf5ef69588cada1ed52b108d28 Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Wed, 18 May 2022 00:29:43 +0300
-Subject: [PATCH 58/92] pinctrl: renesas: r8a779f0: add MSPI pin settings
+Subject: [PATCH 058/157] pinctrl: renesas: r8a779f0: add MSPI pin settings
 
 Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
----
- drivers/pinctrl/renesas/pfc-r8a779f0.c | 546 +++++++++++++++++++++++++
- 1 file changed, 546 insertions(+)
 
 diff --git a/drivers/pinctrl/renesas/pfc-r8a779f0.c b/drivers/pinctrl/renesas/pfc-r8a779f0.c
-index ddf7125f26ed..c0657223f900 100644
+index e13860782bcb..84a1b97f8f6e 100644
 --- a/drivers/pinctrl/renesas/pfc-r8a779f0.c
 +++ b/drivers/pinctrl/renesas/pfc-r8a779f0.c
-@@ -2208,6 +2208,397 @@ static const unsigned int canfd15_data_mux[] = {
- 	CAN15TX_MARK, CAN15RX_INTP15_MARK,
+@@ -2209,6 +2209,396 @@ static const unsigned int etnb0_magic_mux[] = {
+ 	ETNB0WOL_MARK,
  };
  
 +/* - MSPI0 -------------------------------------------------------------------*/
@@ -406,14 +403,13 @@ index ddf7125f26ed..c0657223f900 100644
 +	MSPI5CSS3_MARK,
 +};
 +
-+
  static const struct sh_pfc_pin_group pinmux_groups[] = {
  	SH_PFC_PIN_GROUP(tsn0_link),
  	SH_PFC_PIN_GROUP(tsn0_magic),
-@@ -2373,6 +2764,74 @@ static const struct sh_pfc_pin_group pinmux_groups[] = {
- 	SH_PFC_PIN_GROUP(canfd13_data),
- 	SH_PFC_PIN_GROUP(canfd14_data),
- 	SH_PFC_PIN_GROUP(canfd15_data),
+@@ -2374,6 +2764,74 @@ static const struct sh_pfc_pin_group pinmux_groups[] = {
+ 	SH_PFC_PIN_GROUP(etnb0_mdio),
+ 	SH_PFC_PIN_GROUP(etnb0_link),
+ 	SH_PFC_PIN_GROUP(etnb0_magic),
 +
 +	SH_PFC_PIN_GROUP(mspi0_sck),
 +	SH_PFC_PIN_GROUP(mspi0_din),
@@ -485,8 +481,8 @@ index ddf7125f26ed..c0657223f900 100644
  };
  
  static const char * const tsn0_groups[] = {
-@@ -2647,6 +3106,86 @@ static const char * const canfd15_groups[] = {
- 	"canfd15_data",
+@@ -2648,6 +3106,86 @@ static const char * const etnb0_groups[] = {
+ 	"etnb0_magic",
  };
  
 +static const char * const mspi0_groups[] = {
@@ -572,10 +568,10 @@ index ddf7125f26ed..c0657223f900 100644
  static const struct sh_pfc_function pinmux_functions[] = {
  	SH_PFC_FUNCTION(tsn0),
  	SH_PFC_FUNCTION(tsn1),
-@@ -2703,6 +3242,13 @@ static const struct sh_pfc_function pinmux_functions[] = {
- 	SH_PFC_FUNCTION(canfd13),
- 	SH_PFC_FUNCTION(canfd14),
+@@ -2704,6 +3242,13 @@ static const struct sh_pfc_function pinmux_functions[] = {
  	SH_PFC_FUNCTION(canfd15),
+ 
+ 	SH_PFC_FUNCTION(etnb0),
 +
 +	SH_PFC_FUNCTION(mspi0),
 +	SH_PFC_FUNCTION(mspi1),
@@ -587,5 +583,5 @@ index ddf7125f26ed..c0657223f900 100644
  
  static const struct pinmux_cfg_reg pinmux_config_regs[] = {
 -- 
-2.30.2
+2.25.1
 

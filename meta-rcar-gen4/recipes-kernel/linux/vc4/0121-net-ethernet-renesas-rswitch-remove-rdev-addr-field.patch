@@ -1,0 +1,61 @@
+From 504993297dfefb786d2c445167bc2030ef1f66a0 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Wed, 3 Jul 2024 17:32:22 +0500
+Subject: [PATCH 121/157] net: ethernet: renesas: rswitch: remove rdev->addr
+ field
+
+This field is redundant after rdev->priv->addr, convert remaining several
+usages and remove it.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+
+diff --git a/drivers/net/ethernet/renesas/rswitch.c b/drivers/net/ethernet/renesas/rswitch.c
+index 94b7ab1e8e50..5ea60de278d8 100644
+--- a/drivers/net/ethernet/renesas/rswitch.c
++++ b/drivers/net/ethernet/renesas/rswitch.c
+@@ -1158,7 +1158,6 @@ struct rswitch_device {
+ 	struct rswitch_private *priv;
+ 	struct net_device *ndev;
+ 	struct napi_struct napi;
+-	void __iomem *addr;
+ 	struct rswitch_gwca_chain *tx_chain;
+ 	struct rswitch_gwca_chain *rx_chain;
+ 	spinlock_t lock;
+@@ -2393,7 +2392,7 @@ static int rswitch_open(struct net_device *ndev)
+ 	netif_start_queue(ndev);
+ 
+ 	/* Enable RX */
+-	rswitch_modify(rdev->addr, GWTRC0, 0, BIT(rdev->rx_chain->index));
++	rswitch_modify(rdev->priv->addr, GWTRC0, 0, BIT(rdev->rx_chain->index));
+ 
+ 	/* Enable interrupt */
+ 	pr_debug("%s: tx = %d, rx = %d\n", __func__, rdev->tx_chain->index, rdev->rx_chain->index);
+@@ -2545,7 +2544,7 @@ static int rswitch_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 	}
+ 
+ 	c->cur += num_desc;
+-	rswitch_modify(rdev->addr, GWTRC0, 0, BIT(c->index));
++	rswitch_modify(rdev->priv->addr, GWTRC0, 0, BIT(c->index));
+ 
+ out:
+ 	spin_unlock_irqrestore(&rdev->lock, flags);
+@@ -3366,7 +3365,6 @@ static int rswitch_ndev_create(struct rswitch_private *priv, int index)
+ 		rdev->port = -1;
+ 		rdev->etha = NULL;
+ 	}
+-	rdev->addr = priv->addr;
+ 
+ 	spin_lock_init(&rdev->lock);
+ 
+@@ -3376,7 +3374,7 @@ static int rswitch_ndev_create(struct rswitch_private *priv, int index)
+ 
+ 	ndev->features = NETIF_F_RXCSUM;
+ 	ndev->hw_features = NETIF_F_RXCSUM;
+-	ndev->base_addr = (unsigned long)rdev->addr;
++	ndev->base_addr = (unsigned long)rdev->priv->addr;
+ 	snprintf(ndev->name, IFNAMSIZ, "tsn%d", index);
+ 	ndev->netdev_ops = &rswitch_netdev_ops;
+ 	ndev->ethtool_ops = &rswitch_ethtool_ops;
+-- 
+2.25.1
+

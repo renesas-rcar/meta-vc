@@ -1,0 +1,26 @@
+From f585f8e86c6eaf1d9db3e57774efadfb54e7b642 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Tue, 9 Jul 2024 23:27:43 +0500
+Subject: [PATCH 135/157] net: ethernet: renesas: rswitch: remove duplicate
+ etha hw init on resume
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+
+diff --git a/drivers/net/ethernet/renesas/rswitch.c b/drivers/net/ethernet/renesas/rswitch.c
+index f37f19db7a4e..1d3bea259560 100644
+--- a/drivers/net/ethernet/renesas/rswitch.c
++++ b/drivers/net/ethernet/renesas/rswitch.c
+@@ -5055,10 +5055,6 @@ static int rswitch_resume_chan(struct net_device *ndev)
+ 	struct rswitch_device *rdev = netdev_priv(ndev);
+ 	int ret;
+ 
+-	ret = rswitch_etha_hw_init(rdev);
+-	if (ret)
+-		return ret;
+-
+ 	ret = rswitch_rxdmac_init(ndev, rdev->priv);
+ 	if (ret)
+ 		goto out_dmac;
+-- 
+2.25.1
+

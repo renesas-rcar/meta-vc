@@ -1,7 +1,7 @@
-From 6952e5ac79a60b5f15d6dea0174b657b54a60044 Mon Sep 17 00:00:00 2001
+From b97a2742ca5a6f4a84e7e5c2e3b03c01aa4b8568 Mon Sep 17 00:00:00 2001
 From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
 Date: Wed, 17 Aug 2022 13:09:06 +0300
-Subject: [PATCH 59/92] pinctrl: renesas: r8a779f0: set MODSEL4 bits for
+Subject: [PATCH 059/157] pinctrl: renesas: r8a779f0: set MODSEL4 bits for
  MSPIn_SC
 
 To get MSPI SC output, need to not only select pin function in IPSR, but
@@ -11,15 +11,12 @@ Note: this only has support for SC output (spi master), not for SC input
 (spi slave).
 
 Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
----
- drivers/pinctrl/renesas/pfc-r8a779f0.c | 52 ++++++++++++++++++++++----
- 1 file changed, 45 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/pinctrl/renesas/pfc-r8a779f0.c b/drivers/pinctrl/renesas/pfc-r8a779f0.c
-index c0657223f900..cfc97ba29021 100644
+index 84a1b97f8f6e..ab0b271c7bec 100644
 --- a/drivers/pinctrl/renesas/pfc-r8a779f0.c
 +++ b/drivers/pinctrl/renesas/pfc-r8a779f0.c
-@@ -510,6 +510,14 @@ FM(IP0SR7_31_28)	IP0SR7_31_28	FM(IP1SR7_31_28)	IP1SR7_31_28	FM(IP2SR7_31_28)	IP2
+@@ -511,6 +511,14 @@ FM(IP0SR7_31_28)	IP0SR7_31_28	FM(IP1SR7_31_28)	IP1SR7_31_28	FM(IP2SR7_31_28)	IP2
  #define MOD_SEL1_2_3		FM(SEL_I2C1_0)	F_(0, 0)	F_(0, 0)	FM(SEL_I2C1_3)
  #define MOD_SEL1_0_1		FM(SEL_I2C0_0)	F_(0, 0)	F_(0, 0)	FM(SEL_I2C0_3)
  
@@ -34,7 +31,7 @@ index c0657223f900..cfc97ba29021 100644
  #define PINMUX_MOD_SELS \
  \
  MOD_SEL1_10_11 \
-@@ -517,7 +525,13 @@ MOD_SEL1_8_9 \
+@@ -518,7 +526,13 @@ MOD_SEL1_8_9 \
  MOD_SEL1_6_7 \
  MOD_SEL1_4_5 \
  MOD_SEL1_2_3 \
@@ -49,7 +46,7 @@ index c0657223f900..cfc97ba29021 100644
  
  #define PINMUX_PHYS \
  	FM(SCL0) FM(SDA0) FM(SCL1) FM(SDA1) FM(SCL2) FM(SDA2) FM(SCL3) FM(SDA3) \
-@@ -778,7 +792,7 @@ static const u16 pinmux_data[] = {
+@@ -779,7 +793,7 @@ static const u16 pinmux_data[] = {
  
  	/* IP0SR4 */
  	PINMUX_IPSR_GPSR(IP0SR4_3_0,	GP4_00),
@@ -58,7 +55,7 @@ index c0657223f900..cfc97ba29021 100644
  	PINMUX_IPSR_GPSR(IP0SR4_3_0,	TAUD0I2),
  	PINMUX_IPSR_GPSR(IP0SR4_3_0,	TAUD0O2),
  
-@@ -803,7 +817,7 @@ static const u16 pinmux_data[] = {
+@@ -804,7 +818,7 @@ static const u16 pinmux_data[] = {
  	PINMUX_IPSR_GPSR(IP0SR4_19_16,	MSPI4SSI_N),
  	PINMUX_IPSR_GPSR(IP0SR4_19_16,	TAUD0I5),
  	PINMUX_IPSR_GPSR(IP0SR4_19_16,	TAUD0O5),
@@ -67,7 +64,7 @@ index c0657223f900..cfc97ba29021 100644
  
  	PINMUX_IPSR_GPSR(IP0SR4_23_20,	GP4_05),
  	PINMUX_IPSR_GPSR(IP0SR4_23_20,	MSPI4CSS3),
-@@ -882,7 +896,7 @@ static const u16 pinmux_data[] = {
+@@ -883,7 +897,7 @@ static const u16 pinmux_data[] = {
  	PINMUX_IPSR_GPSR(IP2SR4_15_12,	TAUD1I4),
  	PINMUX_IPSR_GPSR(IP2SR4_15_12,	TAUD1O4),
  
@@ -76,7 +73,7 @@ index c0657223f900..cfc97ba29021 100644
  	PINMUX_IPSR_GPSR(IP2SR4_19_16,	MSPI1CSS7),
  	PINMUX_IPSR_GPSR(IP2SR4_19_16,	TAUD1I5),
  	PINMUX_IPSR_GPSR(IP2SR4_19_16,	TAUD1O5),
-@@ -921,7 +935,7 @@ static const u16 pinmux_data[] = {
+@@ -922,7 +936,7 @@ static const u16 pinmux_data[] = {
  	PINMUX_IPSR_GPSR(IP3SR4_15_12,	TAUD1I13),
  	PINMUX_IPSR_GPSR(IP3SR4_15_12,	TAUD1O13),
  
@@ -85,7 +82,7 @@ index c0657223f900..cfc97ba29021 100644
  	PINMUX_IPSR_GPSR(IP3SR4_19_16,	MSPI0CSS2),
  	PINMUX_IPSR_GPSR(IP3SR4_19_16,	TAUD1I10),
  	PINMUX_IPSR_GPSR(IP3SR4_19_16,	TAUD1O10),
-@@ -1027,7 +1041,7 @@ static const u16 pinmux_data[] = {
+@@ -1028,7 +1042,7 @@ static const u16 pinmux_data[] = {
  	PINMUX_IPSR_GPSR(IP0SR7_7_4,	CAN0RX_INTP0),
  	PINMUX_IPSR_GPSR(IP0SR7_7_4,	RSENT0RX),
  	PINMUX_IPSR_GPSR(IP0SR7_7_4,	RSENT0RX_RSENT0SPCO),
@@ -94,7 +91,7 @@ index c0657223f900..cfc97ba29021 100644
  
  	PINMUX_IPSR_GPSR(IP0SR7_11_8,	CAN1TX),
  	PINMUX_IPSR_GPSR(IP0SR7_11_8,	RSENT1SPCO),
-@@ -1082,7 +1096,7 @@ static const u16 pinmux_data[] = {
+@@ -1083,7 +1097,7 @@ static const u16 pinmux_data[] = {
  	PINMUX_IPSR_GPSR(IP1SR7_23_20,	CAN6RX_INTP6),
  	PINMUX_IPSR_GPSR(IP1SR7_23_20,	RSENT6RX),
  	PINMUX_IPSR_GPSR(IP1SR7_23_20,	RSENT6RX_RSENT6SPCO),
@@ -135,5 +132,5 @@ index c0657223f900..cfc97ba29021 100644
  };
  
 -- 
-2.30.2
+2.25.1
 

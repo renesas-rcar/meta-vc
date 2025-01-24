@@ -5,8 +5,8 @@ require ../linux/vc4_kernel_patches.inc
 
 RENESAS_BSP_URL = " \
     git://github.com/renesas-rcar/linux-bsp.git"
-BRANCH = "v5.10.41/rcar-5.1.7.rc9"
-SRCREV = "ab6affd8d52588e08c8a94081d17b4e713942775"
+BRANCH = "v5.10.41/rcar-5.1.7.rc11.2"
+SRCREV = "0fc797171e95ae55eca74bceff6679b162dec47b"
 
 SRC_URI = "${RENESAS_BSP_URL};branch=${BRANCH};protocol=https"
 SRC_URI += "${@' '.join(sorted(d.getVar('PATCHES').split()))}"

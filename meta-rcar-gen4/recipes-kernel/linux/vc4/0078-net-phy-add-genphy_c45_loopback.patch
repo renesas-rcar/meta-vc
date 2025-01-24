@@ -1,0 +1,51 @@
+From 0044ce9603d276435daa643b732c31d4d6c09eb5 Mon Sep 17 00:00:00 2001
+From: Wong Vee Khee <vee.khee.wong@linux.intel.com>
+Date: Wed, 24 Mar 2021 00:46:40 +0800
+Subject: [PATCH 078/157] net: phy: add genphy_c45_loopback
+
+Commit 0ef25ed104ac17fa0586fbb076f24a5e8940b966 upstream.
+
+Add generic code to enable C45 PHY loopback into the common phy-c45.c
+file. This will allow C45 PHY drivers aceess this by setting
+.set_loopback.
+
+Suggested-by: Heiner Kallweit <hkallweit1@gmail.com>
+Signed-off-by: Wong Vee Khee <vee.khee.wong@linux.intel.com>
+Reviewed-by: Heiner Kallweit <hkallweit1@gmail.com>
+Reviewed-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+
+diff --git a/drivers/net/phy/phy-c45.c b/drivers/net/phy/phy-c45.c
+index bd11e62bfdfe..debdf75fa989 100644
+--- a/drivers/net/phy/phy-c45.c
++++ b/drivers/net/phy/phy-c45.c
+@@ -560,6 +560,14 @@ int gen10g_config_aneg(struct phy_device *phydev)
+ }
+ EXPORT_SYMBOL_GPL(gen10g_config_aneg);
+ 
++int genphy_c45_loopback(struct phy_device *phydev, bool enable)
++{
++	return phy_modify_mmd(phydev, MDIO_MMD_PCS, MDIO_CTRL1,
++			      MDIO_PCS_CTRL1_LOOPBACK,
++			      enable ? MDIO_PCS_CTRL1_LOOPBACK : 0);
++}
++EXPORT_SYMBOL_GPL(genphy_c45_loopback);
++
+ struct phy_driver genphy_c45_driver = {
+ 	.phy_id         = 0xffffffff,
+ 	.phy_id_mask    = 0xffffffff,
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index fd668d880dfe..874c7f5f00cd 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -1532,6 +1532,7 @@ int genphy_c45_read_mdix(struct phy_device *phydev);
+ int genphy_c45_pma_read_abilities(struct phy_device *phydev);
+ int genphy_c45_read_status(struct phy_device *phydev);
+ int genphy_c45_config_aneg(struct phy_device *phydev);
++int genphy_c45_loopback(struct phy_device *phydev, bool enable);
+ 
+ /* Generic C45 PHY driver */
+ extern struct phy_driver genphy_c45_driver;
+-- 
+2.25.1
+

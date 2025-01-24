@@ -1,0 +1,37 @@
+From 3180db3eaf8f6ff236a4fc73193ae9558ab24900 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Mon, 10 Jun 2024 14:08:47 +0500
+Subject: [PATCH 099/157] net: phy: phy_ethtool_ksettings_set: allow any
+ supported speed
+
+When auto-negotiation is not used, allow any speed/duplex pair supported
+by the PHY, not only 10/100/1000 half/full.
+
+This enables drivers to use phy_ethtool_set_link_ksettings() in their
+ethtool_ops and still support configuring PHYs for speeds above 1 GBps.
+
+Also this will error out if trying to set speed/duplex pair that is not
+supported by the PHY.
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+
+diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+index 28ddaad721ed..06eb9530c794 100644
+--- a/drivers/net/phy/phy.c
++++ b/drivers/net/phy/phy.c
+@@ -284,11 +284,7 @@ int phy_ethtool_ksettings_set(struct phy_device *phydev,
+ 		return -EINVAL;
+ 
+ 	if (autoneg == AUTONEG_DISABLE &&
+-	    ((speed != SPEED_1000 &&
+-	      speed != SPEED_100 &&
+-	      speed != SPEED_10) ||
+-	     (duplex != DUPLEX_HALF &&
+-	      duplex != DUPLEX_FULL)))
++			!phy_check_valid(speed, duplex, phydev->supported))
+ 		return -EINVAL;
+ 
+ 	phydev->autoneg = autoneg;
+-- 
+2.25.1
+

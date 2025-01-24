@@ -7,19 +7,16 @@ require recipes-kernel/linux/linux-yocto.inc
 COMPATIBLE_MACHINE = "vc4"
 
 PATCHES = ""
-#require vc4_kernel_patches.inc
+require vc4_kernel_patches.inc
 #include vc4_kernel_patches_proprietary.inc
 
-#RENESAS_BSP_URL = " \
-#    git://github.com/renesas-rcar/linux-bsp.git"
-#BRANCH = "v5.10.41/rcar-5.1.7.rc9"
-#SRCREV = "ab6affd8d52588e08c8a94081d17b4e713942775"
-
-RENESAS_BSP_URL = "git://partnergitlab.renesas.solutions/vehicle-computer/renesas-linux.git"
-BRANCH = "vc4-on-3.16.7"
-SRCREV = "2000c0688d62c46c796df225ddca7f15bcbfa0dc"
+RENESAS_BSP_URL = " \
+    git://github.com/renesas-rcar/linux-bsp.git"
+BRANCH = "v5.10.41/rcar-5.1.7.rc11.2"
+SRCREV = "0fc797171e95ae55eca74bceff6679b162dec47b"
 
 SRC_URI = "${RENESAS_BSP_URL};nocheckout=1;branch=${BRANCH};protocol=https"
+SRC_URI += "file://r8a779f0_ufs.bin"
 SRC_URI += "${@' '.join(sorted(d.getVar('PATCHES').split()))}"
 
 # Using in-tree defconfig does not work if the defconfig comes via patches,
@@ -52,3 +49,16 @@ KERNEL_DEVICETREE_append = " \
     renesas/r8a779f0-vc4-tsn2-phy-1g.dtbo \
     renesas/r8a779f0-vc4-tsn2-phy-1g-rh.dtbo \
 "
+
+do_download_firmware () {
+    install -d ${STAGING_KERNEL_DIR}/firmware
+    install -m 755 ${WORKDIR}/r8a779f0_ufs.bin ${STAGING_KERNEL_DIR}/firmware/
+}
+
+addtask do_download_firmware after do_configure before do_compile
+
+# Install S4 specific UAPI headers and ufs firmware
+do_install_append() {
+    install -d ${D}/lib/firmware/
+    install -m 0644 ${S}/firmware/r8a779f0_ufs.bin ${D}/lib/firmware/
+}

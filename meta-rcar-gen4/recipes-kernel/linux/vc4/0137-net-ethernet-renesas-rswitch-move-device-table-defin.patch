@@ -1,0 +1,40 @@
+From 29d8275cb37cdc932154431fa95b134974fe33f3 Mon Sep 17 00:00:00 2001
+From: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+Date: Fri, 12 Jul 2024 12:59:18 +0500
+Subject: [PATCH 137/157] net: ethernet: renesas: rswitch: move device table
+ definition closer to usage
+
+Signed-off-by: Nikita Yushchenko <nikita.yoush@cogentembedded.com>
+
+diff --git a/drivers/net/ethernet/renesas/rswitch.c b/drivers/net/ethernet/renesas/rswitch.c
+index a492fe1631ab..dfb74e6d9013 100644
+--- a/drivers/net/ethernet/renesas/rswitch.c
++++ b/drivers/net/ethernet/renesas/rswitch.c
+@@ -2756,11 +2756,6 @@ static const struct ethtool_ops rswitch_ethtool_ops = {
+ 	.set_link_ksettings = phy_ethtool_set_link_ksettings,
+ };
+ 
+-static const struct of_device_id renesas_eth_sw_of_table[] = {
+-	{ .compatible = "renesas,etherswitch", },
+-	{ }
+-};
+-MODULE_DEVICE_TABLE(of, renesas_eth_sw_of_table);
+ 
+ static void rswitch_clock_enable(struct rswitch_private *priv)
+ {
+@@ -5145,6 +5140,12 @@ static const struct dev_pm_ops rswitch_dev_pm_ops = {
+ 	SET_RUNTIME_PM_OPS(rswitch_runtime_nop, rswitch_runtime_nop, NULL)
+ };
+ 
++static const struct of_device_id renesas_eth_sw_of_table[] = {
++	{ .compatible = "renesas,etherswitch", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, renesas_eth_sw_of_table);
++
+ static struct platform_driver renesas_eth_sw_driver_platform = {
+ 	.probe = renesas_eth_sw_probe,
+ 	.remove = renesas_eth_sw_remove,
+-- 
+2.25.1
+
