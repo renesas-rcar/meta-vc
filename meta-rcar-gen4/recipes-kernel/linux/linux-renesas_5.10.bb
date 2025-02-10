@@ -8,12 +8,11 @@ COMPATIBLE_MACHINE = "(vc4|spider|s4sk)"
 
 PATCHES = ""
 require vc4_kernel_patches.inc
-#include vc4_kernel_patches_proprietary.inc
 
 RENESAS_BSP_URL = " \
-    git://github.com/renesas-rcar/linux-bsp.git"
-BRANCH = "v5.10.41/rcar-5.1.7.rc11.2"
-SRCREV = "0fc797171e95ae55eca74bceff6679b162dec47b"
+    git://github.com/renesas-rcar/linux-bsp-vc.git"
+BRANCH = "v5.10.41/rcar-5.1.7.rc11.2-unified-RSW"
+SRCREV = "13960dc40351eba2dc91e82c306fd4c8feca03ce"
 
 SRC_URI = "${RENESAS_BSP_URL};nocheckout=1;branch=${BRANCH};protocol=https"
 SRC_URI += "file://r8a779f0_ufs.bin"
@@ -27,9 +26,6 @@ SRC_URI += "${@' '.join(sorted(d.getVar('PATCHES').split()))}"
 # the recipes's defconfig
 KCONFIG_MODE = "alldefconfig"
 SRC_URI += "file://defconfig"
-
-# Allow temporary overrides for development
-# include vc4_kernel_devel.inc
 
 LINUX_VERSION ?= "5.10.41"
 PV = "${LINUX_VERSION}+git${SRCPV}"
