@@ -6,12 +6,5 @@
  |_|  \_\___|_| |_|\___||___/\__,_|___/ |_____/   |_|  
                                                        
 Some hints:
-- The configuration of the Switch ports is done in /etc/systemd/network.
-  Default config for sw0 is DHCP, for all sw0pX it is 1G/master. 
-  See 'man vc4-net-config' more information
-- There is a CAN example in /home/root/examples/startCAN.sh
-- There is a T1S example in /home/root/examples/startT1S.sh
-- Disable auto start of switch driver during boot
-  'echo "blacklist rswitch2" >> /etc/modprobe.d/blacklist.conf'
-- Change VC4 name 'echo vc8 > /etc/hostname'
+- Change S4 name 'echo vc8 > /etc/hostname'
 - To update/remove this message edit /etc/motd

@@ -5,14 +5,12 @@ inherit image-buildinfo
 
 S = "${WORKDIR}"
 
-SRC_URI += "file://blacklist.conf \
-            file://motd \
+SRC_URI += "file://motd \
             file://buildinfo \
             file://issue \
 	   "
 
 CONFFILES_${PN} += " \
-            ${sysconfdir}/modprobe.d/blacklist.conf \
             ${sysconfdir}/motd \
             ${sysconfdir}/buildinfo \
             ${sysconfdir}/issue \
@@ -58,8 +56,6 @@ do_install_append () {
     install -d ${D}${sysconfdir}
     install -m 0644 ${S}/buildinfo ${D}${sysconfdir}
 
-    install -d ${D}${sysconfdir}/modprobe.d/
-    install -m 755 ${WORKDIR}/blacklist.conf ${D}${sysconfdir}/modprobe.d
     install -m 644 ${WORKDIR}/motd ${D}${sysconfdir}
 
 #    # change the default hostname
