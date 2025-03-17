@@ -17,8 +17,7 @@ IMAGE_INSTALL_append = " \
     net-tools \
     iputils \
     iproute2 \
-	iproute2-tc \
-    snott \
+    iproute2-tc \
     packeth \
     iperf2 \
     iperf3 \
@@ -30,8 +29,6 @@ IMAGE_INSTALL_append = " \
 # Development tools
 IMAGE_INSTALL_append = " \
     devmem2 \
-    devdump \
-    rsw2dump \
     nano \
     git \
     subversion \
